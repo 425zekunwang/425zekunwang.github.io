@@ -1,0 +1,46 @@
+name: Deploy to GitHub Pages
+
+on:
+  # 推送到 main 就构建并部署
+  push:
+    branches: [main]
+  # 也可以在 Actions 页面手动触发
+  workflow_dispatch:
+
+# 允许工作流读取仓库并发布 Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 只保留一个进行中的部署；正在跑的部署不打断
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # withastro/action 会识别 pnpm-lock.yaml 与 package.json 里的 packageManager，
+      # 安装依赖、执行 build 脚本（含 astro check 与 Pagefind 索引），
+      # 再把 dist/ 打包成 Pages 产物，并自动注入 configure-pages。
+      - name: Install, build and upload
+        uses: withastro/action@v6
+        with:
+          node-version: 22
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

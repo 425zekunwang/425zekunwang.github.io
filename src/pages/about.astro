@@ -1,0 +1,200 @@
+---
+import { Icon } from "astro-icon/components";
+import MainCard from "@/components/MainCard.astro";
+import { USER_AVATAR, USER_NAME } from "@/config";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+
+const SIMULATOR_URL = "https://425zekunwang.github.io/android_reverse_simulator/";
+
+const focus = [
+  {
+    icon: "ri:android-fill",
+    title: "Android 逆向",
+    desc: "静态分析、动态调试、脱壳，以及 Smali 与 native 层各自的适用范围。",
+  },
+  {
+    icon: "ri:bug-line",
+    title: "运行时插桩",
+    desc: "Frida 的用法与坑、ART 内部结构、hook 的稳定性问题。",
+  },
+  {
+    icon: "ri:shield-keyhole-line",
+    title: "反调试与对抗",
+    desc: "检测手段的原理，以及为什么大部分「一键过检测」并不靠谱。",
+  },
+  {
+    icon: "ri:tools-line",
+    title: "工具链",
+    desc: "把零散脚本整理成能复用的流程，而不是每次现查命令。",
+  },
+];
+
+const stack = [
+  { name: "Astro", icon: "simple-icons:astro", color: "oklch(0.5 0.2 300)" },
+  { name: "TypeScript", icon: "simple-icons:typescript", color: "oklch(0.6 0.2 250)" },
+  { name: "TailwindCSS", icon: "simple-icons:tailwindcss", color: "oklch(0.6 0.2 220)" },
+  { name: "daisyUI", icon: "simple-icons:daisyui", color: "oklch(0.7 0.18 140)" },
+  { name: "Frida", icon: "ri:bug-line", color: "oklch(0.65 0.2 20)" },
+  { name: "Android", icon: "simple-icons:android", color: "oklch(0.7 0.18 140)" },
+];
+---
+
+<BaseLayout title="关于">
+  <MainCard
+    title="关于"
+    description="关于这个站、在关注什么，以及它是怎么搭起来的。"
+    textOverlay="ABOUT"
+    infoIcon="lucide:user"
+  >
+    <div class="space-y-10 mb-8">
+      <!-- 个人简介 -->
+      <section class="flex flex-col md:flex-row gap-8 items-center md:items-start">
+        <div class="avatar">
+          <div
+            class="w-32 h-32 md:w-40 md:h-40 rounded-xl ring ring-primary ring-offset-base-100 ring-offset-2 overflow-hidden"
+          >
+            <img src={USER_AVATAR} alt={USER_NAME} width="160" height="160" loading="eager" />
+          </div>
+        </div>
+
+        <div class="flex-1 text-center md:text-left">
+          <h2 class="text-3xl md:text-4xl font-bold mb-2">{USER_NAME}</h2>
+          <p class="text-xl text-base-content/80 mb-4">Android 逆向 / 移动安全</p>
+
+          <div class="flex flex-wrap gap-3 justify-center md:justify-start mb-6">
+            <a
+              href="https://github.com/425zekunwang"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-sm btn-outline gap-2"
+            >
+              <Icon name="ri:github-line" class="w-4 h-4" />
+              <span>GitHub</span>
+            </a>
+            <a
+              href={SIMULATOR_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-sm btn-outline gap-2"
+            >
+              <Icon name="ri:android-fill" class="w-4 h-4" />
+              <span>课程模拟器</span>
+            </a>
+            <a href="/rss.xml" class="btn btn-sm btn-outline gap-2">
+              <Icon name="ri:rss-line" class="w-4 h-4" />
+              <span>RSS</span>
+            </a>
+          </div>
+
+          <p class="text-base-content/80">
+            这是一个人的技术笔记，主要写 Android 逆向和移动安全里那些「当时查了半天、下次还会再查」的东西。
+            写下来的标准只有一条：<strong>三个月后的自己能不能照着做出来</strong>。所以能跑的命令就写成命令，
+            能验证的结论会附上验证方式，不确定的地方会直接写「这里我也没完全搞清楚」。
+          </p>
+        </div>
+      </section>
+
+      <!-- 在关注什么 -->
+      <section>
+        <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
+          <Icon name="lucide:target" class="w-6 h-6 text-primary" />
+          <span>在关注什么</span>
+        </h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {
+            focus.map((item) => (
+              <div class="flex gap-4 p-4 bg-base-200 rounded-lg">
+                <div class="flex-shrink-0 text-2xl text-primary">
+                  <Icon name={item.icon} class="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 class="font-bold mb-1">{item.title}</h3>
+                  <p class="text-sm text-base-content/75">{item.desc}</p>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </section>
+
+      <!-- 技术栈 -->
+      <section>
+        <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
+          <Icon name="lucide:layers" class="w-6 h-6 text-primary" />
+          <span>常打交道的东西</span>
+        </h2>
+
+        <div class="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-6 gap-4">
+          {
+            stack.map((tech) => (
+              <div class="flex flex-col items-center justify-center p-4 bg-base-200 rounded-lg hover:bg-base-300 transition-colors">
+                <div class="text-3xl mb-2" style={`color: ${tech.color}`}>
+                  <Icon name={tech.icon} class="w-10 h-10" />
+                </div>
+                <span class="text-sm font-medium">{tech.name}</span>
+              </div>
+            ))
+          }
+        </div>
+      </section>
+
+      <!-- 这个站怎么搭的 -->
+      <section>
+        <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
+          <Icon name="lucide:settings-2" class="w-6 h-6 text-primary" />
+          <span>这个站怎么搭的</span>
+        </h2>
+
+        <ul class="space-y-3 text-base-content/80">
+          <li class="flex gap-3">
+            <Icon name="lucide:check" class="w-5 h-5 text-primary flex-shrink-0 mt-1" />
+            <span>
+              框架 <a href="https://astro.build/" target="_blank" rel="noopener noreferrer" class="link link-primary">Astro</a>
+              ，主题 <a href="https://github.com/EveSunMaple/Frosti" target="_blank" rel="noopener noreferrer" class="link link-primary">Frosti</a>
+            </span>
+          </li>
+          <li class="flex gap-3">
+            <Icon name="lucide:check" class="w-5 h-5 text-primary flex-shrink-0 mt-1" />
+            <span>托管在 GitHub Pages，仓库是 <code>425zekunwang.github.io</code>，推送到 <code>main</code> 后由 GitHub Actions 自动构建部署</span>
+          </li>
+          <li class="flex gap-3">
+            <Icon name="lucide:check" class="w-5 h-5 text-primary flex-shrink-0 mt-1" />
+            <span>文章放在 <code>src/content/blog/</code>，写 Markdown 保存即发布</span>
+          </li>
+          <li class="flex gap-3">
+            <Icon name="lucide:check" class="w-5 h-5 text-primary flex-shrink-0 mt-1" />
+            <span>站内搜索由 <a href="https://pagefind.app/" target="_blank" rel="noopener noreferrer" class="link link-primary">Pagefind</a> 在构建期生成索引，没有后端</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- 许可 -->
+      <section>
+        <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
+          <Icon name="lucide:scale" class="w-6 h-6 text-primary" />
+          <span>联系与许可</span>
+        </h2>
+
+        <p class="text-base-content/80 mb-4">
+          有问题或者发现文中错误，欢迎到
+          <a href="https://github.com/425zekunwang" target="_blank" rel="noopener noreferrer" class="link link-primary">GitHub</a>
+          提 Issue。技术讨论请尽量带上复现步骤和环境信息，这比「我这儿跑不通」有用得多。
+        </p>
+
+        <p class="text-base-content/80 mb-4">
+          站内文章采用
+          <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" target="_blank" rel="noopener noreferrer" class="link link-primary">CC BY-NC-SA 4.0</a>
+          许可协议：可以自由转载和改编，但需要署名、不能商用、且以相同方式共享。
+        </p>
+
+        <div class="alert bg-warning/10 border border-warning/30">
+          <Icon name="lucide:alert-triangle" class="w-6 h-6 text-warning" />
+          <span class="text-sm">
+            站内所有内容仅用于<strong>合法的安全研究与学习</strong>。请勿用于未授权的目标；因误用造成的后果与本站无关。
+          </span>
+        </div>
+      </section>
+    </div>
+  </MainCard>
+</BaseLayout>

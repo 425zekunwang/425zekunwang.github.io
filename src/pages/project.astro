@@ -1,0 +1,100 @@
+---
+import { Icon } from "astro-icon/components";
+import MainCard from "@/components/MainCard.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+
+const projects = [
+  {
+    name: "安卓高级研修班 · 交互式模拟器",
+    desc: "把 32 章 Android 逆向课程做成零依赖的纯静态站点。52 个实验全部在浏览器里真算（MD5/SHA-1/CRC32/RC4/AES 都对过标准测试向量），170 道苏格拉底式追问带三轮提示与「待复述」判定，600+ 交互组件，双击 index.html 即可离线使用。",
+    href: "https://425zekunwang.github.io/android_reverse_simulator/",
+    repo: "https://github.com/425zekunwang/android_reverse_simulator",
+    icon: "ri:android-fill",
+    badge: "Pin",
+    tags: ["Android 逆向", "纯静态", "教学实验", "无依赖"],
+  },
+];
+---
+
+<BaseLayout title="项目">
+  <MainCard
+    title="项目"
+    description="自己写的、能点开验证的东西。Fork 过来的仓库不往这里放。"
+    textOverlay="PROJECTS"
+    infoIcon="lucide:code-2"
+  >
+    <section class="py-4">
+      <div class="grid grid-cols-1 gap-6">
+        {
+          projects.map((project) => (
+            <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow border border-base-200">
+              <div class="card-body">
+                <div class="flex flex-wrap items-center gap-3 mb-2">
+                  <div class="rounded-full bg-primary/10 p-3">
+                    <Icon name={project.icon} class="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 class="card-title text-xl">{project.name}</h3>
+                  {project.badge && <span class="badge badge-primary badge-sm">{project.badge}</span>}
+                </div>
+
+                <p class="text-base-content/80">{project.desc}</p>
+
+                <div class="flex flex-wrap gap-2 mt-3">
+                  {project.tags.map((tag) => (
+                    <span class="badge badge-outline badge-sm">{tag}</span>
+                  ))}
+                </div>
+
+                <div class="card-actions justify-end mt-4">
+                  <a
+                    href={project.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="btn btn-primary btn-sm gap-2"
+                  >
+                    <Icon name="lucide:external-link" class="w-4 h-4" />
+                    <span>打开站点</span>
+                  </a>
+                  <a
+                    href={project.repo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="btn btn-outline btn-sm gap-2"
+                  >
+                    <Icon name="ri:github-line" class="w-4 h-4" />
+                    <span>源码</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="py-4">
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <h3 class="card-title text-lg flex items-center gap-2">
+            <Icon name="ri:github-line" class="w-5 h-5 text-primary" />
+            <span>更多仓库</span>
+          </h3>
+          <p class="text-sm text-base-content/75">
+            逆向工具、MCP 服务端、脚本，以及一些半成品。质量参差，但都在那儿。
+          </p>
+          <div class="card-actions justify-end">
+            <a
+              href="https://github.com/425zekunwang?tab=repositories"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-ghost btn-sm gap-2"
+            >
+              <span>在 GitHub 上查看</span>
+              <Icon name="lucide:arrow-right" class="w-4 h-4" />
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </MainCard>
+</BaseLayout>

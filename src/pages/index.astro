@@ -1,0 +1,162 @@
+---
+import { Icon } from "astro-icon/components";
+import MainCard from "@/components/MainCard.astro";
+import PostCard from "@/components/PostCard.astro";
+import CardGroup from "@/components/temple/CardGroup.astro";
+import { USER_NAME } from "@/config";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import {
+  getAllPosts,
+  getPostsWithStats,
+  sortPostsByPinAndDate,
+} from "@/utils/blogUtils";
+
+// 置顶文章优先，其余按时间倒序；首页只陈列最近 3 篇
+const posts = await getPostsWithStats(sortPostsByPinAndDate(await getAllPosts()));
+const recent = posts.slice(0, 3);
+const total = posts.length;
+
+const SIMULATOR_URL = "https://425zekunwang.github.io/android_reverse_simulator/";
+const SIMULATOR_REPO = "https://github.com/425zekunwang/android_reverse_simulator";
+
+const projects = [
+  {
+    name: "安卓高级研修班 · 交互式模拟器",
+    desc: "把 32 章 Android 逆向课程做成零依赖的纯静态站点：52 个跑得出真实结果的实验、170 道苏格拉底式追问、600+ 交互组件，双击 index.html 就能用。",
+    href: SIMULATOR_URL,
+    repo: SIMULATOR_REPO,
+    icon: "ri:android-fill",
+    tags: ["Android 逆向", "纯静态", "教学"],
+  },
+];
+---
+
+<BaseLayout title="首页">
+  <MainCard
+    title={`${USER_NAME} 的技术笔记`}
+    description="Android 逆向 · 移动安全 · 工具链"
+    textOverlay="HOME"
+    infoIcon="lucide:info"
+  >
+    <div class="space-y-10">
+      <!-- Hero -->
+      <section class="py-4">
+        <div class="flex flex-col items-center text-center">
+          <h2
+            class="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent leading-relaxed"
+          >
+            把逆向踩过的坑，写成能复用的笔记
+          </h2>
+          <p class="text-lg text-base-content/80 max-w-3xl mb-8">
+            记录 Android 逆向与移动安全里那些「当时查了半天、下次还会再查」的东西：脱壳、反调试、Frida、
+            静态分析与工具链。写下来的标准只有一条——三个月后的自己能不能照着做出来。
+          </p>
+          <div class="flex flex-wrap gap-4 justify-center">
+            <a href="/blog" class="btn btn-primary gap-2 btn-shine-effect">
+              <Icon name="lucide:book-open" class="w-5 h-5" />
+              <span>读文章（{total} 篇）</span>
+            </a>
+            <a
+              href={SIMULATOR_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline gap-2"
+            >
+              <Icon name="ri:android-fill" class="w-5 h-5" />
+              <span>课程模拟器</span>
+            </a>
+            <a href="/rss.xml" class="btn btn-ghost gap-2">
+              <Icon name="ri:rss-line" class="w-5 h-5" />
+              <span>RSS 订阅</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 最新文章 -->
+      {
+        recent.length > 0 && (
+          <section class="py-4">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+              <h2 class="text-2xl font-bold flex items-center gap-2">
+                <Icon name="lucide:sparkles" class="w-6 h-6 text-primary" />
+                <span>最新文章</span>
+              </h2>
+              <a href="/blog" class="btn btn-ghost btn-sm gap-1">
+                <span>全部文章</span>
+                <Icon name="lucide:arrow-right" class="w-4 h-4" />
+              </a>
+            </div>
+            <CardGroup cols="1">
+              {recent.map((post, index) => (
+                <PostCard
+                  priority={index === 0}
+                  title={post.data.title}
+                  image={post.data.image}
+                  description={post.data.description}
+                  url={"/blog/" + post.id}
+                  pubDate={post.data.pubDate}
+                  badge={post.data.badge}
+                  categories={post.data.categories}
+                  tags={post.data.tags}
+                  word={post.remarkPluginFrontmatter.totalCharCount}
+                  time={post.remarkPluginFrontmatter.readingTime}
+                />
+              ))}
+            </CardGroup>
+          </section>
+        )
+      }
+
+      <!-- 作品 -->
+      <section class="py-4">
+        <h2 class="text-2xl font-bold flex items-center gap-2 mb-6">
+          <Icon name="lucide:code-2" class="w-6 h-6 text-primary" />
+          <span>作品</span>
+        </h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {
+            projects.map((project) => (
+              <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow border border-base-200">
+                <div class="card-body">
+                  <div class="flex items-center gap-3 mb-2">
+                    <div class="rounded-full bg-primary/10 p-3">
+                      <Icon name={project.icon} class="w-6 h-6 text-primary" />
+                    </div>
+                    <h3 class="card-title text-lg">{project.name}</h3>
+                  </div>
+                  <p class="text-sm text-base-content/75">{project.desc}</p>
+                  <div class="flex flex-wrap gap-2 mt-2">
+                    {project.tags.map((tag) => (
+                      <span class="badge badge-outline badge-sm">{tag}</span>
+                    ))}
+                  </div>
+                  <div class="card-actions justify-end mt-4">
+                    <a
+                      href={project.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="btn btn-primary btn-sm gap-2"
+                    >
+                      <Icon name="lucide:external-link" class="w-4 h-4" />
+                      <span>打开</span>
+                    </a>
+                    <a
+                      href={project.repo}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="btn btn-ghost btn-sm gap-2"
+                    >
+                      <Icon name="ri:github-line" class="w-4 h-4" />
+                      <span>源码</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </section>
+    </div>
+  </MainCard>
+</BaseLayout>
