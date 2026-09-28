@@ -26,13 +26,37 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      # withastro/action 会识别 pnpm-lock.yaml 与 package.json 里的 packageManager，
-      # 安装依赖、执行 build 脚本（含 astro check 与 Pagefind 索引），
-      # 再把 dist/ 打包成 Pages 产物，并自动注入 configure-pages。
-      - name: Install, build and upload
-        uses: withastro/action@v6
+      # pnpm 版本取自 package.json 的 packageManager 字段
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
         with:
           node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 每次部署前重新扫一遍 GitHub Pages 站点列表，
+      # 这样在别处新开的 Pages 不用改代码就会出现在 /sites 页上。
+      # 脚本只依赖 Node 内置 fetch；失败时会保留仓库里已提交的数据，不会让构建挂掉。
+      - name: Sync GitHub Pages sites
+        run: pnpm sync:sites
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        run: pnpm build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: ./dist
 
   deploy:
     needs: build

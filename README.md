@@ -18,6 +18,7 @@
 | 关于页 | `src/pages/about.astro` |
 | 项目页 | `src/pages/project.astro` |
 | 头像 / 默认分享图 | `public/profile.png` / `public/og-default.png` |
+| 站点页数据（自动生成，勿手改） | `src/data/pages-sites.ts` ← `pnpm sync:sites` |
 
 站点地址由 `frosti.config.yaml` 里的 `user.site` 决定，它同时也是 Astro 的 `site`（影响 RSS、sitemap、canonical）。
 
@@ -58,6 +59,20 @@ pnpm preview     # 用真实产物起本地服务
 pnpm check       # 仅做类型与错误检查
 pnpm lint        # Biome 检查并修复 ./src
 ```
+
+## 两个自动化脚本
+
+```bash
+pnpm import:notes                 # 把 E:/workspace/read_book 的读书笔记导入成文章
+pnpm import:notes -- "D:/其他目录"  # 指定别的源目录
+pnpm sync:sites                   # 扫描 GitHub 上开启了 Pages 的仓库，更新 /sites 页面数据
+```
+
+- **`import:notes`**：正文首个 `# 标题` 会变成文章标题，`§0 一句话模型` 会变成摘要，
+  发布日期取文件修改时间。新增书目时在脚本的 `MAP` 里加一行英文 slug 映射再跑一次即可。
+- **`sync:sites`**：只扫公开仓库，用 GitHub API 判断哪些开了 Pages。
+  部署时（`.github/workflows/deploy.yml`）会自动跑一次，所以别处新开的 Pages 不用改代码就会出现；
+  API 失败时会保留仓库里已提交的数据，不会让构建挂掉。
 
 ## 部署
 

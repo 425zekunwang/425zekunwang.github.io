@@ -1,0 +1,152 @@
+---
+import { Icon } from "astro-icon/components";
+import MainCard from "@/components/MainCard.astro";
+import Card from "@/components/temple/Card.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import {
+  OTHER_REPOS,
+  PAGES_SITES,
+  SITES_SYNCED_AT,
+  SITES_SYNCED_USER,
+} from "@/data/pages-sites";
+
+// 同步时间只保留到分钟，避免每次构建都显示成「刚刚」
+const syncedAt = SITES_SYNCED_AT.slice(0, 16).replace("T", " ") + " UTC";
+const forkCount = OTHER_REPOS.filter((repo) => repo.isFork).length;
+---
+
+<BaseLayout title="站点" description="自动同步的 GitHub Pages 站点与公开仓库列表。">
+  <MainCard
+    title="我的站点"
+    description="从 GitHub 自动同步的 Pages 站点与公开仓库。"
+    textOverlay="SITES"
+    infoIcon="lucide:globe"
+  >
+    <!-- Pages 站点 -->
+    <section class="py-4">
+      <h2 class="text-2xl font-bold flex items-center gap-2 mb-6">
+        <Icon name="lucide:globe" class="w-6 h-6 text-primary" />
+        <span>GitHub Pages 站点</span>
+        <span class="badge badge-primary badge-sm">{PAGES_SITES.length}</span>
+      </h2>
+
+      {
+        PAGES_SITES.length > 0 ? (
+          <div class="grid grid-cols-1 gap-6">
+            {PAGES_SITES.map((site) => (
+              <Card class="overflow-hidden">
+                <div class="card-body">
+                  <div class="flex flex-wrap items-center gap-2 mb-2">
+                    <h3 class="card-title text-xl">{site.title}</h3>
+                    {site.isUserSite && <span class="badge badge-secondary badge-sm">主站</span>}
+                    {site.isFork && <span class="badge badge-ghost badge-sm">fork</span>}
+                  </div>
+
+                  {site.description && <p class="text-base-content/80">{site.description}</p>}
+
+                  <div class="flex flex-wrap gap-x-5 gap-y-2 text-xs text-base-content/60 mt-3">
+                    <span class="flex items-center gap-1">
+                      <Icon name="lucide:link" class="w-4 h-4" />
+                      <a href={site.url} target="_blank" rel="noopener noreferrer" class="link link-primary">
+                        {site.url.replace("https://", "")}
+                      </a>
+                    </span>
+                    {site.language && (
+                      <span class="flex items-center gap-1">
+                        <Icon name="lucide:code-2" class="w-4 h-4" />
+                        {site.language}
+                      </span>
+                    )}
+                    <span class="flex items-center gap-1">
+                      <Icon name="lucide:star" class="w-4 h-4" />
+                      {site.stars}
+                    </span>
+                    <span class="flex items-center gap-1">
+                      <Icon name="lucide:clock" class="w-4 h-4" />
+                      最近提交 {site.pushedAt}
+                    </span>
+                  </div>
+
+                  <div class="card-actions justify-end mt-4">
+                    <a
+                      href={site.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="btn btn-primary btn-sm gap-2"
+                    >
+                      <Icon name="lucide:external-link" class="w-4 h-4" />
+                      <span>访问站点</span>
+                    </a>
+                    <a
+                      href={site.repo}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="btn btn-ghost btn-sm gap-2"
+                    >
+                      <Icon name="ri:github-line" class="w-4 h-4" />
+                      <span>源码</span>
+                    </a>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div class="alert bg-base-200">
+            <Icon name="lucide:info" class="w-6 h-6" />
+            <span>暂时没有检测到开启 GitHub Pages 的仓库。</span>
+          </div>
+        )
+      }
+    </section>
+
+    <!-- 其它公开仓库 -->
+    <section class="py-4">
+      <h2 class="text-2xl font-bold flex items-center gap-2 mb-2">
+        <Icon name="ri:github-line" class="w-6 h-6 text-primary" />
+        <span>其它公开仓库</span>
+        <span class="badge badge-ghost badge-sm">{OTHER_REPOS.length}</span>
+      </h2>
+      <p class="text-sm text-base-content/60 mb-6">
+        没有开启 Pages 的仓库{OTHER_REPOS.length > 0 && forkCount > 0 ? `，其中 ${forkCount} 个是 fork 过来的项目` : ""}。
+        质量参差，列在这里只是为了好找。
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {
+          OTHER_REPOS.map((repo) => (
+            <a
+              href={repo.repo}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="card bg-base-200 hover:bg-base-300 transition-colors"
+            >
+              <div class="card-body p-4">
+                <div class="flex items-center gap-2">
+                  <h3 class="font-bold truncate">{repo.name}</h3>
+                  {repo.isFork && <span class="badge badge-ghost badge-xs">fork</span>}
+                </div>
+                {repo.description && (
+                  <p class="text-xs text-base-content/70 line-clamp-3">{repo.description}</p>
+                )}
+                <div class="flex flex-wrap gap-x-4 text-xs text-base-content/50 mt-1">
+                  {repo.language && <span>{repo.language}</span>}
+                  <span>★ {repo.stars}</span>
+                  <span>{repo.pushedAt}</span>
+                </div>
+              </div>
+            </a>
+          ))
+        }
+      </div>
+    </section>
+
+    <p class="text-xs text-base-content/50 mt-6 flex items-start gap-2">
+      <Icon name="lucide:refresh-cw" class="w-4 h-4 mt-0.5 flex-shrink-0" />
+      <span>
+        本页数据由 <code>scripts/sync-pages-sites.mjs</code> 通过 GitHub API 自动同步
+        （用户 {SITES_SYNCED_USER}，同步于 {syncedAt}）。在仓库里开启新的 Pages 后，下次部署会自动出现。
+      </span>
+    </p>
+  </MainCard>
+</BaseLayout>
