@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>《无职转生》· 争议解剖与成长叙事检验</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a20; --panel2:#1e222a; --line:#2a2f3a;
+    --fg:#e8eaed; --dim:#8b93a1; --gold:#d4a24c; --jade:#4bbf8a;
+    --rose:#c96a7a; --blue:#5b9bd5; --purple:#a97bd6; --red:#e05252;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);line-height:1.78;
+    font-family:"Segoe UI","Microsoft YaHei",-apple-system,BlinkMacSystemFont,sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px 90px}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  header.hero{padding:54px 0 30px;border-bottom:1px solid var(--line);margin-bottom:32px}
+  .kicker{color:var(--blue);font-size:13px;letter-spacing:.2em;text-transform:uppercase;font-weight:600}
+  h1{font-size:clamp(25px,4.1vw,38px);margin:12px 0 10px;font-weight:700;line-height:1.28}
+  .lede{color:var(--dim);font-size:16.5px;max-width:840px;margin:0}
+  .navlinks{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+  .navlinks a{background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    padding:8px 14px;font-size:13.5px;color:var(--dim)}
+  .navlinks a:hover{border-color:var(--blue);color:var(--fg);text-decoration:none}
+
+  section{margin:0 0 54px}
+  h2{font-size:22px;margin:0 0 6px;display:flex;align-items:center;gap:10px}
+  h2 .num{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+    border-radius:8px;background:var(--blue);color:#04121f;font-size:15px;font-weight:700;flex:none}
+  .sub{color:var(--dim);margin:0 0 20px;font-size:15px}
+
+  /* 论文卡片 */
+  .papers{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:820px){.papers{grid-template-columns:1fr}}
+  .paper{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px}
+  .paper .who{font-size:12.5px;color:var(--blue);letter-spacing:.08em;margin-bottom:6px}
+  .paper h3{margin:0 0 10px;font-size:17px;line-height:1.5}
+  .paper .claim{font-size:14.8px;color:#dfe6ee;margin:0 0 12px}
+  .paper .mini{font-size:13.4px;color:var(--dim)}
+  .paper .mini b{color:var(--fg)}
+
+  .quote{background:#12161c;border-left:3px solid var(--jade);border-radius:0 10px 10px 0;
+    padding:14px 18px;margin:12px 0;font-size:15px}
+  .quote .src{display:block;margin-top:9px;font-size:12.5px;color:var(--dim)}
+  .bad{background:#1c1416;border-left:3px solid var(--red)}
+  .bad .lbl{display:inline-block;font-size:11.5px;letter-spacing:.08em;
+    background:#2e1a1d;color:var(--red);padding:2px 9px;border-radius:20px;margin-bottom:7px}
+  .good{background:#141a16;border-left:3px solid var(--jade)}
+  .good .lbl{display:inline-block;font-size:11.5px;letter-spacing:.08em;
+    background:#1b2b21;color:var(--jade);padding:2px 9px;border-radius:20px;margin-bottom:7px}
+  .mid{background:#1a1614;border-left:3px solid var(--gold)}
+  .mid .lbl{display:inline-block;font-size:11.5px;letter-spacing:.08em;
+    background:#2b2416;color:var(--gold);padding:2px 9px;border-radius:20px;margin-bottom:7px}
+  .box{border-radius:0 10px 10px 0;padding:14px 18px;margin:12px 0;font-size:15px}
+  .box p{margin:0 0 8px}
+  .box p:last-child{margin-bottom:0}
+
+  /* 时间线 */
+  .tl{position:relative;padding-left:26px}
+  .tl::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--line)}
+  .ev{position:relative;margin-bottom:12px;display:flex;gap:14px;align-items:baseline}
+  .ev::before{content:"";position:absolute;left:-24px;top:13px;width:11px;height:11px;border-radius:50%;
+    background:var(--bg);border:2.5px solid var(--line)}
+  .ev[data-k="flash"]::before{border-color:var(--red)}
+  .ev[data-k="after"]::before{border-color:var(--gold)}
+  .evtime{flex:none;min-width:96px;color:var(--blue);font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}
+  .evtext{font-size:14.8px}
+
+  /* 三层结论 */
+  .levels{display:grid;gap:14px}
+  .lvl{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 24px;
+    display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start}
+  @media(max-width:700px){.lvl{grid-template-columns:1fr}}
+  .lvl .badge{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:15px;flex:none;text-align:center;line-height:1.15}
+  .lvl[data-v="ok"] .badge{background:#16261d;color:var(--jade);border:1px solid #25402f}
+  .lvl[data-v="part"] .badge{background:#2b2416;color:var(--gold);border:1px solid #40342a}
+  .lvl[data-v="most"] .badge{background:#1f2a3a;color:var(--blue);border:1px solid #2b3d55}
+  .lvl h3{margin:0 0 8px;font-size:17px}
+  .lvl .body{font-size:14.8px;color:var(--dim)}
+  .lvl .body b{color:var(--fg)}
+
+  .ask{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:820px){.ask{grid-template-columns:1fr}}
+  .askcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .askcard .n{color:var(--blue);font-weight:700;font-size:13px;letter-spacing:.1em}
+  .askcard h4{margin:6px 0 8px;font-size:16px}
+  .askcard p{margin:0;color:var(--dim);font-size:14.3px}
+
+  .note{background:#12181f;border:1px solid var(--line);border-radius:12px;
+    padding:16px 20px;font-size:14.6px;color:var(--dim)}
+  .note b{color:var(--fg)}
+  .srcbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 22px}
+  .srcbox ol{margin:0;padding-left:20px}
+  .srcbox li{color:var(--dim);font-size:14.2px;margin-bottom:10px}
+  .srcbox li b{color:var(--fg)}
+  code{background:#0c0e12;padding:2px 6px;border-radius:5px;font-size:13.4px;
+    font-family:"Cascadia Code",Consolas,monospace}
+  .verdict{display:inline-block;font-size:12px;padding:3px 10px;border-radius:20px;margin-left:8px;vertical-align:middle}
+  .v-ok{background:#16261d;color:var(--jade);border:1px solid #25402f}
+  .v-part{background:#2b2416;color:var(--gold);border:1px solid #40342a}
+  .v-no{background:#2e1a1d;color:var(--red);border:1px solid #402a2e}
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:99;display:flex;gap:16px;align-items:center;justify-content:space-between;padding:9px 18px;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid #2b3444;font-size:13.5px;font-family:'Segoe UI','Microsoft YaHei',sans-serif"><a href="/" style="color:#8b98a8;text-decoration:none">← wzk 的技术笔记</a><a href="/zhihu/labs/" style="color:#58a6ff;text-decoration:none">全部交互页面</a></div>
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">Controversy · 争议解剖</div>
+  <h1>《无职转生》的争议，与"成长叙事"到底成不成立</h1>
+  <p class="lede">你收藏的两篇知乎回答，一篇解释"为什么被喷"，一篇质疑"成长叙事是否经得起推敲"。这一页把它们的论点摆出来，逐条对照可核查的证据，该给支持就给支持，该指出问题就指出问题。</p>
+  <div class="navlinks">
+    <a href="mushoku-author-model.html">← 配套：作者直觉模型</a>
+    <a href="index.html">返回目录</a>
+  </div>
+</header>
+
+<!-- ── 1 两篇论点 ─────────────────────────────────── -->
+<section>
+  <h2><span class="num">1</span>先把两篇的论点摊开</h2>
+  <p class="sub">两篇回答方向完全不同，但都在回答同一个问题的两面。</p>
+  <div class="papers">
+    <div class="paper">
+      <div class="who">知乎 · 逆行川 · 赞同 247</div>
+      <h3>《关于〈无职转生〉被喷，最大的原因是什么？》</h3>
+      <p class="claim">被喷的根源不是作品本身，而是读者的<b>自我接纳程度</b>：人有一个"完美的自恋假我"时，会彻底否认自己身上见不得光的部分；当鲁迪身上出现这种可能性，就会本能不适，要把这部分自我投射出去。</p>
+      <p class="mini">它的落点是一句关于作者的判断：<b>"这个故事是作者本人的自我接纳，他想把这种自我接纳传达出去。"</b><br><br>
+      它还给出一个反直觉的观察：<b>"完全没有共同点其实不会觉得被冒犯，反而是那些潜意识能代入但不愿意承认的群体最容易本能不适。"</b></p>
+    </div>
+    <div class="paper">
+      <div class="who">知乎 · 话痨 · 赞同 770</div>
+      <h3>《〈无职转生〉粉丝口中的成长叙事真的经得起推敲吗？》</h3>
+      <p class="claim">经得起。理由是用《周礼》读：鲁迪前世的问题不是"宅"，而是<b>无职、无家、无伦、无位</b>；周礼里人必须有所属，为子有子职，为父有父职。</p>
+      <p class="mini">核心澄清：<b>"无职转生"的经学义不是"失业者转生"，而是"无职分者重新获得职分"。</b>所以全书是《周礼·天官》式的人格再编制过程；家庭的混乱属于"礼崩而求其次"，真正的问题不是保罗有没有失礼，而是失礼之后家庭有没有重新完成秩序化。<br><br>
+      结尾把三位妻子对应成司徒 / 司空 / 司马，说鲁迪家"已经具备内治＋教化＋武备"。</p>
+    </div>
+  </div>
+  <div class="note" style="margin-top:16px">
+    <b>关于第二篇的读法：</b>把三位妻子比附成《周礼》六官，形式上明显是戏仿，不是真的在主张作者按周礼写书。但它提出的那个澄清——<b>"无职"应训为"无职分"而非"失业"</b>——是一个真问题，后面会单独检验。
+  </div>
+</section>
+
+<!-- ── 2 事实经过 ─────────────────────────────────── -->
+<section>
+  <h2><span class="num">2</span>争议的事实经过</h2>
+  <p class="sub">先把发生了什么固定下来，再谈解释。以下时间点出自红网 2021-02-12 的评论文章。</p>
+  <div class="tl">
+    <div class="ev"><div class="evtime">2021.1.31</div><div class="evtext">动画第 4 集播出，在中国引发争议。这一集的内容是：母亲塞妮丝怀孕期间，父亲保罗与女仆莉莉娅出轨并使对方怀孕，事情暴露后，鲁迪出面劝母亲原谅，最终一家六口"和谐美满"。</div></div>
+    <div class="ev" data-k="flash"><div class="evtime">随后</div><div class="evtext">B 站 UP 主 LexBurner 发表言论——"成功人士看这种动画片，应该是抱着体恤底层人民的心情"——争议彻底出圈，更多网友加入舆论场。</div></div>
+    <div class="ev" data-k="flash"><div class="evtime">2021.2.7</div><div class="evtext">B 站称因技术原因暂时下架《无职转生》。</div></div>
+    <div class="ev" data-k="after"><div class="evtime">2021.2.8</div><div class="evtext">LexBurner 账号被封。随后"B站被部分品牌方拉黑"登上微博热搜，平台发公告称"我们不会不尊重任何用户"。</div></div>
+  </div>
+
+  <div class="box mid" style="margin-top:20px">
+    <span class="lbl">红网评论指出的结构性问题</span>
+    <p>"在前期宣发中，平台片面强调其热血、异世界的特质，动画区各大博主、原作粉丝强烈推荐——'一月霸权预订''异世界鼻祖'……<b>然而，盲目追求流量的宣传方式，却对这些争议性问题避而不谈，没有打上男性向后宫番标签，没有年龄预警，反而高调宣发、全年龄推广</b>，为之后的舆论争端埋下伏笔。"</p>
+    <p style="color:var(--dim);font-size:13.6px;margin-top:10px">出处：红网《〈无职转生〉引争议：宣发与讨论都需理性》，晏欣嫄，2021-02-12</p>
+  </div>
+
+  <div class="note" style="margin-top:16px">
+    这一段很重要，因为它把争议从"作品三观"挪到了"<b>发行与预期管理</b>"。同一部作品在小众圈层内传播和在全年龄平台首页推广，是两件不同的事。红网文章还提到一个关键细节：<b>"男主转生后的儿童形象，会让人误以为这是一部老少咸宜的动画，其实不然。"</b>
+  </div>
+</section>
+
+<!-- ── 3 检验第一篇 ───────────────────────────────── -->
+<section>
+  <h2><span class="num">3</span>检验第一篇：自我接纳论站得住吗</h2>
+
+  <div class="box good">
+    <span class="lbl">✓ 得到证据支持的部分</span>
+    <p><b>1. "作者保留了这些怪癖是有意的，不是失手。"</b></p>
+    <p>这个判断能对上作者的方法论。他在 2020 年的对谈里说，自己专注于写"失败在哪"和"失败了如何挽回"；在 2026 年的对谈里说，尺度是靠每话读者反馈校准的，<b>"やりすぎたって思うことはあんまりなかった"</b>（没觉得写过头）。也就是说，那些内容不是他没意识到，而是在他的坐标系里被判定为可接受。</p>
+    <p style="margin-top:12px"><b>2. "鲁迪的行为层与欲望层是分开的。"</b></p>
+    <p>这个观察有硬证据。维基百科在描述鲁迪行事准则时，把出处标成作者本人 2013-02-17 的活动报告：<b>「調子に乗らない」「人のせいにしない」「努力する」</b>——不得意忘形、不推责于人、要努力。作者确实给这个角色设了一条明确的行为底线。</p>
+    <p style="margin-top:12px"><b>3. "这部作品不是爽文。"</b></p>
+    <p>职业评论者飯田一史在講談社的文章里明确说：なろう系常被认为"必须持续给爽点、不接受鬱展开"，<b>但这部作品不符合这个特征</b>；主角从中段开始就有大量消沉描写，且前世记忆会反复闪回。这支持了"作者不是在讨好读者"的判断。</p>
+  </div>
+
+  <div class="box bad">
+    <span class="lbl">✗ 证据不足的部分</span>
+    <p><b>1. 对 LexBurner 动机的推测。</b></p>
+    <p>原文说"lex 看到鲁迪会如此失态地愤怒，因为当时 lex 觉得自己已经是个成功的现充了，鲁迪的一些特质让他想到了不想承认的曾经的自己"。这是对一个具体的人的心理归因，没有任何材料支撑。它可以作为一种可能性提出，但不该作为论据使用。</p>
+    <p style="margin-top:12px"><b>2. 对未明子（另一位被点名的 UP 主）的同类归因。</b></p>
+    <p>同一个问题，且与作品本身无关。</p>
+  </div>
+
+  <div class="box mid">
+    <span class="lbl">⚠ 最需要警惕的一点：这个论点有变成不可反驳的风险</span>
+    <p>原文的推理结构是：<b>批评这部作品 → 说明你自我接纳程度低 → 说明你在投射自己不愿承认的部分。</b></p>
+    <p>问题在于，这个结构把"批评"本身变成了"批评者有病的证据"。也就是说，<b>任何反对意见都会被自动消化为对论点的支持</b>——这正是不可反驳命题的标志。要让它成为一个有效论点，必须补上一个它没有给出的条件：<b>哪些批评是成立的？</b></p>
+    <p>作者提供了这个条件。红网文章指出的是宣发错位和年龄分级缺失——这些批评跟读者的自我接纳程度毫无关系，而且相当站得住。</p>
+  </div>
+
+  <div class="box good">
+    <span class="lbl">修正后的版本</span>
+    <p>把第一篇的论点收紧到这个程度，它就站得住了：</p>
+    <p><b>"作品对主角的缺陷处理方式，会让一部分读者产生强烈不适；这种不适的强度常常超过缺陷本身的严重程度，其中可能包含自我投射的成分。但这不能用来取消所有批评——针对宣发、分级与传播方式的批评是独立成立的。"</b></p>
+  </div>
+</section>
+
+<!-- ── 4 检验第二篇 ───────────────────────────────── -->
+<section>
+  <h2><span class="num">4</span>检验第二篇："无职＝无职分"这个读法成立吗</h2>
+
+  <div class="box good">
+    <span class="lbl">✓ 真问题：前世的病根不只是"没工作"</span>
+    <p>这个澄清是对的，而且比表面读法更接近作品。看原作对前世的设定：</p>
+    <p style="margin-top:10px">高中时代的霸凌导致他<b>家里蹲到 34 岁</b>；父母葬礼<b>都不出席</b>；被兄弟<b>赶出家门</b>；随后为了救三个快被卡车撞到的高中生而死亡。</p>
+    <p style="margin-top:10px">对照第二篇那句话——<b>无职、无家、无伦、无位</b>——四项全中。他不是缺一份工作，他是<b>在社会关系里没有任何位置</b>：不做儿子该做的事，不做兄弟该做的事，也不做任何人的任何人。</p>
+    <p style="margin-top:12px">而转生后的整条主线，确实可以读成"重新获得位置"的过程：儿子 → 学生 → 洛琪希的弟子 → 艾莉丝的家庭教师 → 冒险者 → 丈夫 → 父亲。这个序列是按<b>职分</b>排列的，不是按<b>实力</b>排列的。</p>
+  </div>
+
+  <div class="box bad">
+    <span class="lbl">✗ 过度拟合的部分</span>
+    <p><b>1. 把三位妻子对应成司徒 / 司空 / 司马。</b>这是为了凑齐"内治＋教化＋武备"而做的比附，原作里没有任何证据支持这种对应关系，而且这个框架一用就会开始扭曲文本（例如为什么是三个人？为什么是这个顺序？）。</p>
+    <p style="margin-top:12px"><b>2. "作者真正关心的是失序之后如何重新定分"。</b>方向可能对，但把动机归给"周礼式的秩序恢复"，是把一套中国古代经学框架套在一个 2012 年日本 Web 小说作者身上。<b>没有任何证据显示作者有此意图。</b></p>
+    <p style="margin-top:12px"><b>3. "合乎周礼"这个总判断。</b>它在形式上就是戏仿，不应当作可检验的命题。</p>
+  </div>
+
+  <div class="box mid">
+    <span class="lbl">保留它的价值</span>
+    <p>把经学外壳剥掉之后，第二篇留下了一个有用的分析工具：<b>读这部作品时，按"职分"而不是按"等级"去追踪主角的变化。</b></p>
+    <p>这个工具能解释一件用"实力成长"解释不了的事：为什么全书最高潮的部分之一，是鲁迪在父亲死后处理家庭、以及他年老时的收尾——那些段落里他的战斗力没有增长，增长的是他承担的位置。</p>
+  </div>
+</section>
+
+<!-- ── 5 三层答案 ─────────────────────────────────── -->
+<section>
+  <h2><span class="num">5</span>那么"成长叙事"到底成不成立</h2>
+  <p class="sub">这个问题没法用一个"是"或"否"回答，因为"成长"有三个不同的层次，各层的答案不一样。</p>
+
+  <div class="levels">
+    <div class="lvl" data-v="ok">
+      <div class="badge">能力<br>层</div>
+      <div>
+        <h3>成立，但代价被明码标价<span class="verdict v-ok">站得住</span></h3>
+        <div class="body">
+          鲁迪确实在变强，但每一次跃升都绑定着一次损失，而且这个绑定是作者刻意设计的。他自己的标准是："<b>これを失ったらつらいだろうなっていうものを失わせないと、読者にダメージを与えられない</b>"——不把会心疼的东西拿走，就无法给读者造成损伤。<br><br>
+          10 岁生日翌日的转移事件就是最典型的执行：先让他一路顺风到"天才少年"，再一次性砸碎。所以这条线上，"成长"不是说爽点，而是<b>用损失换来的</b>。
+        </div>
+      </div>
+    </div>
+
+    <div class="lvl" data-v="part">
+      <div class="badge">人格<br>层</div>
+      <div>
+        <h3>成立，但被叙述者过滤过<span class="verdict v-part">要打折</span></h3>
+        <div class="body">
+          这是第二篇质疑真正的落点。全书是鲁迪的第一人称自述，而他的叙述身份在设定层面就被标注为<b>不可信</b>：日文维基的原话是「物語の語り手だが物の見方が主観的で、<b>語り手としては信用できない</b>とされている」。<br><br>
+          这意味着读者读到的"他成长了"，严格说是"<b>他认为自己成长了</b>"。两者大部分时候重合，但在关键处会分开——尤其是他给自己找理由的那些段落。<br><br>
+          所以对"成长叙事经得起推敲吗"最诚实的回答是：<b>它经得起推敲，但推敲的方式不是检验它是否成立，而是检验叙述者在哪些地方做了美化。</b>一个不可靠叙述者讲述的重生故事，这个设定本身就是作品最精巧的部分。
+        </div>
+      </div>
+    </div>
+
+    <div class="lvl" data-v="most">
+      <div class="badge">作者<br>层</div>
+      <div>
+        <h3>最站得住的一层：这是作者的自我修复<span class="verdict v-most">证据最硬</span></h3>
+        <div class="body">
+          把时间线并排：<b>2007 年前后</b>作者大学毕业，正式写作，投出版社奖项全部落选，<b>放弃当小说家</b>；数年后因为读到《Re:Monster》知道「小説家になろう」，判断"<b>在这里投稿大概不会被嘲笑</b>"，重新开始写；<b>2012 年 11 月</b>《無職転生》开始连载；<b>2014 年 1 月</b>书籍出版。<br><br>
+          而作品的前提是：一个 34 岁、什么都半途而废、人生已经报废的人，获得了第二次机会，副标题叫「<b>本気だす</b>」（拿出真本事）。<br><br>
+          这两条线不是隐喻关系，是<b>形状相同</b>：在某个年纪判定自己没戏了，之后又重开了一局。<br><br>
+          这也是为什么 013 那句"这是作者本人的自我接纳"虽然没法直接证明，却有最合理的动机基础——<b>他写的是一个他亲历过的处境。</b>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 6 怎么自己判断 ─────────────────────────────── -->
+<section>
+  <h2><span class="num">6</span>三个可以自己用的提问</h2>
+  <div class="ask">
+    <div class="askcard">
+      <div class="n">Q1</div>
+      <h4>这个批评是在评作品，还是在评发行？</h4>
+      <p>红网文章指出的宣发错位、缺少年龄预警、全年龄推广，这些是发行问题，跟作品三观是两码事。把它们分开，两边都能谈清楚。</p>
+    </div>
+    <div class="askcard">
+      <div class="n">Q2</div>
+      <h4>这段自述里，他在给自己找理由吗？</h4>
+      <p>叙述者被官方设定标注为不可信。凡是鲁迪用一大段心理活动解释"我为什么不得不这么做"的地方，都值得停下来多看一遍。</p>
+    </div>
+    <div class="askcard">
+      <div class="n">Q3</div>
+      <h4>这个变化是"变强"还是"多了一个位置"？</h4>
+      <p>用职分而不是等级去追踪。后期的高潮段落里，他的战斗力常常没有变化，变化的是他承担了谁的父亲、谁的丈夫、谁的师父。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── 7 来源 ─────────────────────────────────────── -->
+<section>
+  <h2><span class="num">7</span>来源</h2>
+  <div class="srcbox">
+    <ol>
+      <li>
+        <b>知乎《关于〈无职转生〉被喷，最大的原因是什么？》</b>（逆行川，赞同 247）<br>
+        <a href="https://www.zhihu.com/question/468001887/answer/2072903772003746620" target="_blank" rel="noopener">原文</a>　本地：<code><a href="/blog/zhihu/works/mushoku-tensei-backlash">关于《无职转生》被喷，最大的原因是什么？</a></code>
+      </li>
+      <li>
+        <b>知乎《〈无职转生〉粉丝口中的成长叙事真的经得起推敲吗？》</b>（话痨，赞同 770）<br>
+        <a href="https://www.zhihu.com/question/2065837839472972378/answer/2079996843140948223" target="_blank" rel="noopener">原文</a>　本地：<code><a href="/blog/zhihu/works/mushoku-tensei-growth-narrative">《无职转生》粉丝口中的成长叙事真的经得起推敲吗？</a></code>
+      </li>
+      <li>
+        <b>红网《〈无职转生〉引争议：宣发与讨论都需理性》</b>（晏欣嫄，2021-02-12）<br>
+        <a href="https://moment.rednet.cn/pc/content/2021/02/12/8996407.html" target="_blank" rel="noopener">moment.rednet.cn</a><br>
+        争议时间线与宣发错位分析。
+      </li>
+      <li>
+        <b>現代ビジネス《「今度こそはきちんと生き抜く」…超人気作『無職転生』の"圧倒的切実さ"の正体》</b>（飯田一史，講談社，2021-01-31）<br>
+        <a href="https://gendai.media/articles/-/79231" target="_blank" rel="noopener">gendai.media</a><br>
+        "这部作品不符合なろう系必须持续给爽点的通行判断"出自此篇。
+      </li>
+      <li>
+        <b>Real Sound《蝸牛くも × 理不尽な孫の手 対談》</b>（2026-03-10）· <b>コミックナタリー 作者对谈</b>（2020-12）<br>
+        作者关于"每话反馈校准尺度"、"最低也要写自己会震惊的东西"的原话。详见配套页《作者直觉模型》的来源节。
+      </li>
+      <li>
+        <b>日文维基百科「無職転生」条目</b>（经 Weblio 镜像读取）<br>
+        鲁迪前世设定、"不可靠叙述者"的标注与出处。
+      </li>
+    </ol>
+    <div class="note" style="margin-top:16px">
+      <b>本页的判断哪些是我的：</b>第 3、4 节的"支持 / 不足 / 过度拟合"分级，第 5 节的三层拆分，以及第 6 节的三个提问，都是我基于上列材料做的分析，不是原作者的观点，也不是我的转述对象的主张。
+    </div>
+  </div>
+</section>
+
+</div>
+</body>
+</html>

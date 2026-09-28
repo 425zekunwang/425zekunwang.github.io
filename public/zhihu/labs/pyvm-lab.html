@@ -1,0 +1,2647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python 虚拟机模拟器 · 字节码 / 语法分析 / 垃圾回收</title>
+<style>
+  :root{
+    --bg:#0b0e13; --panel:#141922; --panel2:#1b212c; --line:#28303e;
+    --fg:#e8ecf2; --dim:#8792a4; --cyan:#3fb6c8; --jade:#46c08a;
+    --red:#e05a5a; --amber:#d9a441; --blue:#5b9bd5; --purple:#a97bd6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);line-height:1.72;
+    font-family:"Segoe UI","Microsoft YaHei",-apple-system,sans-serif}
+  .wrap{max-width:1160px;margin:0 auto;padding:30px 18px 80px}
+  button{font-family:inherit}
+  .hide{display:none !important}
+  h1{font-size:clamp(24px,3.8vw,34px);margin:0 0 8px}
+  .lede{color:var(--dim);font-size:16px;margin:0 0 22px;max-width:880px}
+  .lede b{color:var(--fg)}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+  .tab{background:var(--panel);border:1px solid var(--line);color:var(--dim);
+    padding:10px 18px;border-radius:10px;cursor:pointer;font-size:14.5px;transition:.14s}
+  .tab:hover{color:var(--fg);border-color:#38424f}
+  .tab.on{background:var(--cyan);color:#04212a;border-color:var(--cyan);font-weight:700}
+  .lab{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:20px;align-items:start}
+  @media(max-width:940px){.lab{grid-template-columns:1fr}}
+  .canvas-box{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  canvas{display:block;width:100%;touch-action:none}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .panel h3{margin:0 0 12px;font-size:12.5px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase}
+  .btn{background:var(--panel2);color:var(--fg);border:1px solid var(--line);
+    border-radius:9px;padding:9px 14px;font-size:13.8px;cursor:pointer;transition:.14s}
+  .btn:hover{background:#222a36;border-color:#3a4553}
+  .btn.primary{background:var(--cyan);color:#04212a;border-color:var(--cyan);font-weight:700}
+  .btn.small{padding:6px 11px;font-size:12.6px}
+  .btn.on{background:var(--cyan);color:#04212a;border-color:var(--cyan);font-weight:700}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .readout{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.4px}
+  .readout:last-of-type{border-bottom:0}
+  .readout .k{color:var(--dim)}
+  .readout .v{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+  .v.ok{color:var(--jade)} .v.bad{color:var(--red)} .v.warn{color:var(--amber)}
+  .task{background:linear-gradient(135deg,#08181c,#131820);border:1px solid #173038;
+    border-radius:13px;padding:18px 22px;margin-top:20px}
+  .task .k{font-size:11.5px;letter-spacing:.16em;color:var(--cyan);font-weight:700;text-transform:uppercase}
+  .task h3{margin:8px 0 8px;font-size:18px}
+  .task p{margin:0 0 10px;color:var(--dim);font-size:14.6px}
+  .task p:last-child{margin-bottom:0}
+  .verdict{margin-top:12px;font-weight:700;font-size:14.6px;min-height:22px}
+  .verdict.ok{color:var(--jade)} .verdict.no{color:var(--dim)}
+  .note{background:#0e151c;border:1px solid var(--line);border-radius:11px;
+    padding:15px 19px;font-size:14.4px;color:var(--dim);margin-top:18px}
+  .note b{color:var(--fg)}
+  code{background:#080b0f;padding:2px 6px;border-radius:5px;font-size:13.2px;
+    font-family:"Cascadia Code",Consolas,monospace}
+  .evlog{background:#070a0e;border:1px solid var(--line);border-radius:10px;
+    padding:12px 14px;height:190px;overflow-y:auto;font-size:12.6px;line-height:1.62;
+    font-family:"Cascadia Code",Consolas,monospace}
+  .evlog div{color:var(--fg);margin-bottom:3px;word-break:break-word}
+  .evlog .n{color:#4a5462;margin-right:6px}
+  .evlog .op{color:var(--cyan);margin-right:6px}
+  .evlog .k-jump .op{color:var(--amber)} .evlog .k-jump{color:#cbb98a}
+  .evlog .k-call .op{color:var(--purple)} .evlog .k-call{color:#c0aede}
+  .evlog .k-print{color:var(--jade)}
+  .evlog .k-err{color:var(--red);font-weight:700}
+  .evlog .k-sys{color:var(--dim)}
+  select{background:var(--panel2);color:var(--fg);border:1px solid var(--line);
+    border-radius:9px;padding:8px 10px;font-size:13.4px;width:100%;font-family:inherit}
+  textarea{width:100%;height:118px;background:#0d1219;color:var(--fg);border:1px solid var(--line);
+    border-radius:10px;padding:10px 12px;font-size:13.2px;line-height:1.6;resize:vertical;
+    font-family:"Cascadia Code",Consolas,monospace}
+  .ctl2{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .ctl2 span{color:var(--dim);font-size:13px;min-width:30px}
+  .objlist{display:flex;flex-wrap:wrap;gap:6px;min-height:26px}
+  .ochip{background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+    padding:4px 9px;font-size:12.4px;font-family:"Cascadia Code",Consolas,monospace;cursor:pointer}
+  .ochip.sel{border-color:var(--cyan);color:var(--cyan)}
+  .ochip.dead{color:#4a5462;text-decoration:line-through}
+  .quiz{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+  .quiz button{text-align:left}
+  .hintline{font-size:12.8px;color:var(--dim);margin-top:8px}
+  input[type=number],input[type=text]{background:#0d1219;color:var(--fg);border:1px solid var(--line);
+    border-radius:8px;padding:7px 10px;font-size:13.4px;font-family:inherit;width:110px}
+  .foot{color:var(--dim);font-size:13px;margin-top:40px;border-top:1px solid var(--line);padding-top:18px}
+  .foot b{color:var(--fg)}
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:99;display:flex;gap:16px;align-items:center;justify-content:space-between;padding:9px 18px;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid #2b3444;font-size:13.5px;font-family:'Segoe UI','Microsoft YaHei',sans-serif"><a href="/" style="color:#8b98a8;text-decoration:none">← wzk 的技术笔记</a><a href="/zhihu/labs/" style="color:#58a6ff;text-decoration:none">全部交互页面</a></div>
+<div class="wrap">
+
+<h1>Python 虚拟机模拟器</h1>
+<p class="lede">
+  刘晓刚《自己动手写 Python 虚拟机》把 CPython 拆成三件事：<b>把源码变成树</b>、<b>把树变成字节码</b>、<b>把字节码喂给一个栈式循环</b>。
+  下面把这三件事各做成一个能动手的模型：你可以单步执行自己设计的字节码、看操作数栈一格一格长起来；
+  可以手写词法/语法分析器、把语法树真的画出来；也可以亲手制造一个<b>引用计数永远回收不掉</b>的循环引用，再用标记-清除收拾它。
+</p>
+
+<div class="tabs">
+  <button class="tab on" data-m="0">① 字节码执行器</button>
+  <button class="tab" data-m="1">② 词法与语法分析</button>
+  <button class="tab" data-m="2">③ 垃圾回收</button>
+</div>
+
+<!-- ══════════════ 模块一 · 字节码执行器 ══════════════ -->
+<div id="mod0">
+  <div class="lab">
+    <div>
+      <div class="canvas-box"><canvas id="cv1" height="330"></canvas></div>
+      <div class="evlog" id="log1" style="margin-top:14px"></div>
+    </div>
+    <div class="panel">
+      <h3>示例程序</h3>
+      <select id="progSel"></select>
+      <div class="hintline" id="progHint">—</div>
+      <h3 style="margin-top:16px">控制</h3>
+      <div class="row">
+        <button class="btn primary" id="b1step">单步 Step</button>
+        <button class="btn" id="b1run">连续执行</button>
+        <button class="btn" id="b1reset">重置</button>
+      </div>
+      <h3 style="margin-top:16px">读数</h3>
+      <div class="readout"><span class="k">当前帧</span><span class="v" id="oFrame">—</span></div>
+      <div class="readout"><span class="k">指令指针 ip</span><span class="v" id="oIp">—</span></div>
+      <div class="readout"><span class="k">当前指令</span><span class="v" id="oIns">—</span></div>
+      <div class="readout"><span class="k">已执行步数</span><span class="v" id="oSteps">0</span></div>
+      <div class="readout"><span class="k">栈深 当前 / 单步最大</span><span class="v" id="oDepth">0 / 0</span></div>
+      <div class="readout"><span class="k">帧深度 当前 / 最大</span><span class="v" id="oFr">1 / 1</span></div>
+      <div class="readout"><span class="k">JUMP 回跳次数</span><span class="v" id="oBack">0</span></div>
+      <div class="readout"><span class="k">CALL_FUNCTION 次数</span><span class="v" id="oCall">0</span></div>
+      <div class="readout"><span class="k">程序输出</span><span class="v" id="oOut">—</span></div>
+    </div>
+  </div>
+  <div class="task">
+    <div class="k">任务 <span id="t1n">1</span> / 3</div>
+    <h3 id="t1title"></h3>
+    <p id="t1desc"></p>
+    <div id="t1extra"></div>
+    <div class="verdict no" id="t1verdict"></div>
+    <div class="row"><button class="btn" id="b1skip">换一个任务</button></div>
+    <div class="note" id="t1note"></div>
+  </div>
+</div>
+
+<!-- ══════════════ 模块二 · 词法与语法分析 ══════════════ -->
+<div id="mod1" class="hide">
+  <div class="lab">
+    <div>
+      <div class="canvas-box"><canvas id="cv2" height="330"></canvas></div>
+      <div class="evlog" id="log2" style="margin-top:14px;height:150px"></div>
+    </div>
+    <div class="panel">
+      <h3>源码（可直接编辑）</h3>
+      <textarea id="src2" spellcheck="false"></textarea>
+      <div class="row" id="presets"></div>
+      <h3 style="margin-top:16px">读数</h3>
+      <div class="readout"><span class="k">token 总数</span><span class="v" id="oTok">0</span></div>
+      <div class="readout"><span class="k">NUMBER / NAME</span><span class="v" id="oTok2">0 / 0</span></div>
+      <div class="readout"><span class="k">语法树节点数</span><span class="v" id="oNodes">0</span></div>
+      <div class="readout"><span class="k">语法树深度</span><span class="v" id="oTree">0</span></div>
+      <div class="readout"><span class="k">出现的运算符</span><span class="v" id="oOps">—</span></div>
+      <div class="readout"><span class="k">根运算符</span><span class="v" id="oRoot">—</span></div>
+      <div class="readout"><span class="k">选中节点</span><span class="v" id="oSel">—</span></div>
+      <div class="hintline">画布上方是 token 流，下方是语法树。<b>点语法树节点</b>会高亮它对应的 token；<b>点 token</b> 会反过来点亮相关的树节点。</div>
+    </div>
+  </div>
+  <div class="task">
+    <div class="k">任务 <span id="t2n">1</span> / 3</div>
+    <h3 id="t2title"></h3>
+    <p id="t2desc"></p>
+    <div id="t2extra"></div>
+    <div class="verdict no" id="t2verdict"></div>
+    <div class="row"><button class="btn" id="b2skip">换一个任务</button></div>
+    <div class="note" id="t2note"></div>
+  </div>
+</div>
+
+<!-- ══════════════ 模块三 · 垃圾回收 ══════════════ -->
+<div id="mod2" class="hide">
+  <div class="lab">
+    <div>
+      <div class="canvas-box"><canvas id="cv3" height="330"></canvas></div>
+      <div class="evlog" id="log3" style="margin-top:14px;height:150px"></div>
+    </div>
+    <div class="panel">
+      <h3>对象 / 根</h3>
+      <div class="objlist" id="objList"></div>
+      <h3 style="margin-top:16px">引用操作</h3>
+      <div class="ctl2"><span>从</span><select id="selA"></select></div>
+      <div class="ctl2"><span>到</span><select id="selB"></select></div>
+      <div class="row">
+        <button class="btn" id="b3link">连接 引用+1</button>
+        <button class="btn" id="b3unlink">断开 引用-1</button>
+      </div>
+      <h3 style="margin-top:16px">操作</h3>
+      <div class="row">
+        <button class="btn" id="b3new">创建对象</button>
+        <button class="btn" id="b3cycle">创建循环引用</button>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="b3rc">执行引用计数回收</button>
+        <button class="btn primary" id="b3ms">执行标记-清除</button>
+      </div>
+      <div class="row"><button class="btn" id="b3reset">重置场景</button></div>
+      <h3 style="margin-top:16px">读数</h3>
+      <div class="readout"><span class="k">存活对象总数</span><span class="v" id="oAlive">0</span></div>
+      <div class="readout"><span class="k">已回收</span><span class="v" id="oFreed">0</span></div>
+      <div class="readout"><span class="k">被循环引用困住</span><span class="v" id="oTrapped">0</span></div>
+      <div class="readout"><span class="k">引用计数法回收数</span><span class="v" id="oRc">0</span></div>
+      <div class="readout"><span class="k">标记-清除回收数</span><span class="v" id="oMs">0</span></div>
+    </div>
+  </div>
+  <div class="task">
+    <div class="k">任务 <span id="t3n">1</span> / 3</div>
+    <h3 id="t3title"></h3>
+    <p id="t3desc"></p>
+    <div id="t3extra"></div>
+    <div class="verdict no" id="t3verdict"></div>
+    <div class="row"><button class="btn" id="b3skip">换一个任务</button></div>
+    <div class="note" id="t3note"></div>
+  </div>
+</div>
+
+<div class="foot">
+  配合 <b>刘晓刚《自己动手写 Python 虚拟机》</b> 阅读：模块一对应字节码与运行时栈（第 3～6 章），
+  模块二对应词法分析与语法分析（第 2 章），模块三对应对象模型与垃圾回收（第 7～8 章）。
+  本页所有字节码都是<b>自己设计的简化指令集</b>：命名照抄 CPython，语义一致，但编码方式（一条指令一个操作数）不等于 CPython 真实的定长字节码。
+</div>
+
+</div>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   0 · 通用工具
+   ══════════════════════════════════════════════════════════════ */
+const $ = s => document.querySelector(s);
+const C = {
+  bg:"#0b0e13", panel:"#141922", panel2:"#1b212c", line:"#28303e",
+  fg:"#e8ecf2", dim:"#8792a4", cyan:"#3fb6c8", jade:"#46c08a",
+  red:"#e05a5a", amber:"#d9a441", blue:"#5b9bd5", purple:"#a97bd6"
+};
+const MONO = '11px "Cascadia Code",Consolas,"Courier New",monospace';
+const MONOB = 'bold 12px "Cascadia Code",Consolas,"Courier New",monospace';
+const SANS = '13px "Segoe UI","Microsoft YaHei",-apple-system,sans-serif';
+const SANSB = 'bold 13px "Segoe UI","Microsoft YaHei",-apple-system,sans-serif';
+
+function roundRect(g, x, y, w, h, r){
+  g.beginPath();
+  g.moveTo(x + r, y);
+  g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r);
+  g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r);
+  g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y);
+  g.closePath();
+}
+function fit(cv){
+  if (!cv.clientWidth) return null;
+  const h = Number(cv.getAttribute("height")) || 330;
+  const dpr = window.devicePixelRatio || 1;
+  const W = Math.round(cv.clientWidth * dpr), H = Math.round(h * dpr);
+  if (cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; }
+  const g = cv.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, cv.clientWidth, h);
+  return { g: g, w: cv.clientWidth, h: h };
+}
+function put(g, s, x, y, o){
+  o = o || {};
+  g.font = o.f || SANS; g.fillStyle = o.c || C.fg;
+  g.textAlign = o.a || "left"; g.textBaseline = o.b || "alphabetic";
+  g.fillText(s, x, y);
+}
+function clip(g, s, w){
+  if (g.measureText(s).width <= w) return s;
+  let t = s;
+  while (t.length > 1 && g.measureText(t + "…").width > w) t = t.slice(0, -1);
+  return t + "…";
+}
+function arrow(g, x1, y1, x2, y2, col, curve){
+  g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1.4;
+  g.beginPath();
+  if (curve){
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    const dx = x2 - x1, dy = y2 - y1, len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const cx = mx + (-dy / len) * curve, cy = my + (dx / len) * curve;
+    g.moveTo(x1, y1); g.quadraticCurveTo(cx, cy, x2, y2);
+    g.stroke();
+    const ang = Math.atan2(y2 - cy, x2 - cx);
+    head(g, x2, y2, ang);
+  } else {
+    g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    head(g, x2, y2, Math.atan2(y2 - y1, x2 - x1));
+  }
+}
+function head(g, x, y, ang){
+  const L = 7.5;
+  g.beginPath();
+  g.moveTo(x, y);
+  g.lineTo(x - L * Math.cos(ang - 0.42), y - L * Math.sin(ang - 0.42));
+  g.lineTo(x - L * Math.cos(ang + 0.42), y - L * Math.sin(ang + 0.42));
+  g.closePath(); g.fill();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   1 · 简化版 Python 对象模型
+   ══════════════════════════════════════════════════════════════ */
+function mkDict(pairs){ const d = { __cls:"dict", m:new Map() }; (pairs || []).forEach(p => d.m.set(p[0], p[1])); return d; }
+function mkTuple(items){ return { __cls:"tuple", items:items.slice() }; }
+function mkIter(seq){ return { __cls:"iter", seq:seq, i:0 }; }
+function isNum(v){ return typeof v === "number"; }
+function truth(v){
+  if (v === null || v === undefined) return false;
+  if (v === true) return true;
+  if (v === false) return false;
+  if (v === 0) return false;
+  if (typeof v === "string") return v.length > 0;
+  if (Array.isArray(v)) return v.length > 0;
+  if (v && v.__cls === "dict") return v.m.size > 0;
+  if (v && v.__cls === "tuple") return v.items.length > 0;
+  return true;
+}
+function repr(v){
+  if (v === null || v === undefined) return "None";
+  if (v === true) return "True";
+  if (v === false) return "False";
+  if (typeof v === "number") return String(v);
+  if (typeof v === "string") return "'" + v + "'";
+  if (Array.isArray(v)) return "[" + v.map(repr).join(", ") + "]";
+  if (v.__cls === "dict"){
+    const parts = [];
+    v.m.forEach((val, k) => parts.push(repr(k) + ": " + repr(val)));
+    return "{" + parts.join(", ") + "}";
+  }
+  if (v.__cls === "tuple") return "(" + v.items.map(repr).join(", ") + (v.items.length === 1 ? "," : "") + ")";
+  if (v.__cls === "iter") return "<list_iterator>";
+  if (v.__cls === "func") return "<function " + v.code.name + ">";
+  if (v.__cls === "builtin") return "<builtin " + v.name + ">";
+  if (v.__cls === "class") return "<class " + v.name + ">";
+  if (v.__cls === "inst") return "<" + v.cls.name + " object>";
+  if (v.__cls === "bound") return "<bound method " + v.cls.name + "." + v.code.name + ">";
+  return String(v);
+}
+function kindOf(v){
+  if (v === null || v === undefined) return "None";
+  if (typeof v === "number") return Number.isInteger(v) ? "int" : "float";
+  if (typeof v === "string") return "str";
+  if (Array.isArray(v)) return "list";
+  if (v.__cls === "dict") return "dict";
+  if (v.__cls === "tuple") return "tuple";
+  if (v.__cls === "iter") return "iterator";
+  if (v.__cls === "func") return "function";
+  if (v.__cls === "builtin") return "builtin";
+  if (v.__cls === "class") return "type";
+  if (v.__cls === "inst") return "instance";
+  if (v.__cls === "bound") return "method";
+  return typeof v;
+}
+function num(v){
+  if (typeof v === "number") return v;
+  if (typeof v === "string"){ const n = Number(v); if (!isNaN(n)) return n; }
+  throw new Error("这里需要数字，拿到的是 " + repr(v));
+}
+function pyEq(a, b){
+  if (a === b) return true;
+  if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((x, i) => pyEq(x, b[i]));
+  if (a && b && a.__cls === "tuple" && b.__cls === "tuple")
+    return a.items.length === b.items.length && a.items.every((x, i) => pyEq(x, b.items[i]));
+  return false;
+}
+function binop(op, a, b){
+  switch (op){
+    case "BINARY_ADD":
+      if (typeof a === "string" && typeof b === "string") return a + b;
+      if (Array.isArray(a) && Array.isArray(b)) return a.concat(b);
+      if (a && b && a.__cls === "tuple" && b.__cls === "tuple") return mkTuple(a.items.concat(b.items));
+      return num(a) + num(b);
+    case "BINARY_SUBTRACT": return num(a) - num(b);
+    case "BINARY_MULTIPLY":
+      if (typeof a === "string" && isNum(b)) return a.repeat(Math.max(0, b));
+      if (isNum(a) && Array.isArray(b)){ const r = []; for (let i = 0; i < a; i++) r.push.apply(r, b); return r; }
+      return num(a) * num(b);
+    case "BINARY_TRUE_DIVIDE": return num(a) / num(b);
+    case "BINARY_FLOOR_DIVIDE": return Math.floor(num(a) / num(b));
+    case "BINARY_MODULO": { const x = num(a), y = num(b); return ((x % y) + y) % y; }
+  }
+  throw new Error("未知的二元运算 " + op);
+}
+function cmpOp(op, a, b){
+  switch (op){
+    case "==": return pyEq(a, b);
+    case "!=": return !pyEq(a, b);
+    case "<": return a < b;
+    case ">": return a > b;
+    case "<=": return a <= b;
+    case ">=": return a >= b;
+  }
+  throw new Error("未知的比较运算 " + op);
+}
+
+/* ── 内建函数 ── */
+function makeBuiltins(vm){
+  const B = {};
+  const add = (name, fn) => { B[name] = { __cls:"builtin", name:name, fn:fn }; };
+  add("print", function(args){ vm.out.push(args.map(repr).join(" ")); return null; });
+  add("range", function(args){
+    const r = [];
+    if (args.length === 1){ for (let i = 0; i < args[0]; i++) r.push(i); }
+    else if (args.length === 2){ for (let i = args[0]; i < args[1]; i++) r.push(i); }
+    else { const st = args[2] || 1; for (let i = args[0]; st > 0 ? i < args[1] : i > args[1]; i += st) r.push(i); }
+    return r;
+  });
+  add("len", function(args){
+    const v = args[0];
+    if (Array.isArray(v)) return v.length;
+    if (typeof v === "string") return v.length;
+    if (v && v.__cls === "dict") return v.m.size;
+    if (v && v.__cls === "tuple") return v.items.length;
+    throw new Error("len() 不认识 " + kindOf(v));
+  });
+  add("sum", function(args){ return args[0].reduce((a, b) => a + b, 0); });
+  add("abs", function(args){ return Math.abs(num(args[0])); });
+  add("int", function(args){ return Math.trunc(num(args[0])); });
+  add("str", function(args){ const v = args[0]; return (v === null || v === undefined) ? "None" : (typeof v === "string" ? v : repr(v)); });
+  add("max", function(args){ return Math.max.apply(null, args); });
+  add("min", function(args){ return Math.min.apply(null, args); });
+  return B;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   2 · 汇编器：把人类可读的指令表变成 code object
+   ══════════════════════════════════════════════════════════════ */
+function asm(spec){
+  const rows = spec.rows;
+  const consts = [], names = [], varnames = spec.varnames || [];
+  const labels = {};
+  rows.forEach((r, i) => { if (r[3]) labels[r[3]] = i; });
+  const internConst = v => {
+    if (v === null || typeof v === "number" || typeof v === "string"){
+      for (let i = 0; i < consts.length; i++) if (consts[i] === v && typeof consts[i] === typeof v) return i;
+    }
+    consts.push(v);
+    return consts.length - 1;
+  };
+  const internName = v => {
+    const i = names.indexOf(v);
+    if (i >= 0) return i;
+    names.push(v);
+    return names.length - 1;
+  };
+  const code = rows.map((r, i) => {
+    const op = r[0];
+    let arg = (r[1] === undefined) ? null : r[1];
+    if (op === "LOAD_CONST") arg = internConst(arg);
+    else if (op === "LOAD_FAST" || op === "STORE_FAST"){
+      const k = varnames.indexOf(arg);
+      if (k < 0){ varnames.push(arg); arg = varnames.length - 1; }
+      else arg = k;
+    }
+    else if (op === "LOAD_NAME" || op === "STORE_NAME" || op === "LOAD_ATTR" ||
+             op === "STORE_ATTR" || op === "LOAD_METHOD") arg = internName(arg);
+    else if (typeof arg === "string" && arg.charAt(0) === "@"){
+      const t = labels[arg.slice(1)];
+      if (t === undefined) throw new Error("未定义的标签 " + arg + " in " + spec.name);
+      arg = (op === "JUMP_FORWARD" || op === "FOR_ITER") ? (t - (i + 1)) : t;
+    }
+    return { op:op, arg:arg, src:r[2] || "", addr:i };
+  });
+  return { name:spec.name, argcount:spec.argcount || 0, varnames:varnames, consts:consts, names:names, code:code };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   3 · 九个示例程序（手工汇编）
+   ══════════════════════════════════════════════════════════════ */
+
+/* ① 表达式：a = 1 + 2 * 3 —— 栈最深时 3 格 */
+function pExpr(){
+  return asm({ name:"<module>", src:"a = 1 + 2 * 3", rows:[
+    ["LOAD_CONST", 1, "1"],
+    ["LOAD_CONST", 2, "2"],
+    ["LOAD_CONST", 3, "3"],
+    ["BINARY_MULTIPLY", null, "2 * 3"],
+    ["BINARY_ADD", null, "1 + (...)"],
+    ["STORE_NAME", "a", "a ="],
+    ["LOAD_NAME", "a", "a"],
+    ["PRINT_EXPR", null, "输出 a"],
+    ["LOAD_CONST", null, "None"],
+    ["RETURN_VALUE", null, "结束"]
+  ]});
+}
+
+/* ② while 循环：1..10 求和 = 55 */
+function pWhile(){
+  return asm({ name:"<module>", src:"sum = 0\ni = 1\nwhile i <= 10:\n    sum = sum + i\n    i = i + 1\nsum", rows:[
+    ["LOAD_CONST", 0, "sum = 0"],
+    ["STORE_NAME", "sum", ""],
+    ["LOAD_CONST", 1, "i = 1"],
+    ["STORE_NAME", "i", ""],
+    ["LOAD_NAME", "i", "i <= 10", "loop"],
+    ["LOAD_CONST", 10, ""],
+    ["COMPARE_OP", "<=", ""],
+    ["POP_JUMP_IF_FALSE", "@end", "假就跳出"],
+    ["LOAD_NAME", "sum", "sum = sum + i"],
+    ["LOAD_NAME", "i", ""],
+    ["BINARY_ADD", null, ""],
+    ["STORE_NAME", "sum", ""],
+    ["LOAD_NAME", "i", "i = i + 1"],
+    ["LOAD_CONST", 1, ""],
+    ["BINARY_ADD", null, ""],
+    ["STORE_NAME", "i", ""],
+    ["JUMP_ABSOLUTE", "@loop", "跳回循环头"],
+    ["LOAD_NAME", "sum", "sum", "end"],
+    ["PRINT_EXPR", null, "输出 sum"],
+    ["LOAD_CONST", null, "None"],
+    ["RETURN_VALUE", null, "结束"]
+  ]});
+}
+
+/* ③ 函数 + if/else：grade(75) = 'pass' */
+function pIf(){
+  const grade = asm({ name:"grade", argcount:1, varnames:["s", "r"],
+    src:"def grade(s):\n    if s >= 60:\n        r = 'pass'\n    else:\n        r = 'fail'\n    return r", rows:[
+    ["LOAD_FAST", "s", "if s >= 60:"],
+    ["LOAD_CONST", 60, ""],
+    ["COMPARE_OP", ">=", ""],
+    ["POP_JUMP_IF_FALSE", "@else", "假就跳到 else"],
+    ["LOAD_CONST", "pass", "r = 'pass'"],
+    ["STORE_FAST", "r", ""],
+    ["JUMP_FORWARD", "@end", "跳过 else 分支"],
+    ["LOAD_CONST", "fail", "else: r = 'fail'", "else"],
+    ["STORE_FAST", "r", ""],
+    ["LOAD_FAST", "r", "return r", "end"],
+    ["RETURN_VALUE", null, ""]
+  ]});
+  return asm({ name:"<module>", src:"def grade(s): ...\ng = grade(75)\ng", rows:[
+    ["LOAD_CONST", grade, "def grade"],
+    ["MAKE_FUNCTION", null, "造出函数对象"],
+    ["STORE_NAME", "grade", ""],
+    ["LOAD_NAME", "grade", "grade(75)"],
+    ["LOAD_CONST", 75, ""],
+    ["CALL_FUNCTION", 1, ""],
+    ["STORE_NAME", "g", "g ="],
+    ["LOAD_NAME", "g", "g"],
+    ["PRINT_EXPR", null, "输出 g"],
+    ["LOAD_CONST", null, "None"],
+    ["RETURN_VALUE", null, "结束"]
+  ]});
+}
+
+/* ④ 列表：xs = [1, 2, 3]；xs[0] + xs[2] = 4 */
+function pList(){
+  return asm({ name:"<module>", src:"xs = [1, 2, 3]\nxs[0] + xs[2]", rows:[
+    ["BUILD_LIST", 0, "先造空列表"],
+    ["LOAD_CONST", 1, "1"],
+    ["LIST_APPEND", 1, "塞进列表"],
+    ["LOAD_CONST", 2, "2"],
+    ["LIST_APPEND", 1, ""],
+    ["LOAD_CONST", 3, "3"],
+    ["LIST_APPEND", 1, ""],
+    ["STORE_NAME", "xs", "xs ="],
+    ["LOAD_NAME", "xs", "xs[0] + xs[2]"],
+    ["LOAD_CONST", 0, ""],
+    ["BINARY_SUBSCR", null, "xs[0]"],
+    ["LOAD_NAME", "xs", ""],
+    ["LOAD_CONST", 2, ""],
+    ["BINARY_SUBSCR", null, "xs[2]"],
+    ["BINARY_ADD", null, "相加"],
+    ["PRINT_EXPR", null, "输出"],
+    ["LOAD_CONST", null, "None"],
+    ["RETURN_VALUE", null, "结束"]
+  ]});
+}
+
+/* ⑤ 函数定义与调用：add(3, 4) = 7 —— 会看到帧切换 */
+function pCall(){
+  const add = asm({ name:"add", argcount:2, varnames:["a", "b", "c"],
+    src:"def add(a, b):\n    c = a + b\n    return c", rows:[
+    ["LOAD_FAST", "a", "c = a + b"],
+    ["LOAD_FAST", "b", ""],
+    ["BINARY_ADD", null, ""],
+    ["STORE_FAST", "c", ""],
+    ["LOAD_FAST", "c", "return c"],
+    ["RETURN_VALUE", null, ""]
+  ]});
+  return asm({ name:"<module>", src:"def add(a, b): ...\nr = add(3, 4)\nr", rows:[
+    ["LOAD_CONST", add, "def add"],
+    ["MAKE_FUNCTION", null, "code 包成函数对象"],
+    ["STORE_NAME", "add", ""],
+    ["LOAD_NAME", "add", "add(3, 4)"],
+    ["LOAD_CONST", 3, "参数 1"],
+    ["LOAD_CONST", 4, "参数 2"],
+    ["CALL_FUNCTION", 2, "调用"],
+    ["STORE_NAME", "r", "r ="],
+    ["LOAD_NAME", "r", "r"],
+    ["PRINT_EXPR", null, "输出 r"],
+    ["LOAD_CONST", null, "None"],
+    ["RETURN_VALUE", null, "结束"]
+  ]});
+}
+
+/* ⑥ 字典：d = {}; d['k'] = 1; d['n'] = d['k'] + 2; d['n'] = 3 */
+function pDict(){
+  return asm({ name:"<module>", src:"d = {}\nd['k'] = 1\nd['n'] = d['k'] + 2\nd['n']", rows:[
+    ["BUILD_MAP", 0, "d = {}"],
+    ["STORE_NAME", "d", ""],
+    ["LOAD_CONST", 1, "d['k'] = 1"],
+    ["LOAD_NAME", "d", ""],
+    ["LOAD_CONST", "k", ""],
+    ["STORE_SUBSCR", null, "写进下标"],
+    ["LOAD_NAME", "d", "d['k'] + 2"],
+    ["LOAD_CONST", "k", ""],
+    ["BINARY_SUBSCR", null, "取出来"],
+    ["LOAD_CONST", 2, ""],
+    ["BINARY_ADD", null, ""],
+    ["LOAD_NAME", "d", "d['n'] = ..."],
+    ["LOAD_CONST", "n", ""],
+    ["STORE_SUBSCR", null, ""],
+    ["LOAD_NAME", "d", "d['n']"],
+    ["LOAD_CONST", "n", ""],
+    ["BINARY_SUBSCR", null, ""],
+    ["PRINT_EXPR", null, "输出"],
+    ["LOAD_CONST", null, "None"],
+    ["RETURN_VALUE", null, "结束"]
+  ]});
+}
+
+/* ⑦ for 循环：GET_ITER / FOR_ITER，1+2+3+4 = 10 */
+function pFor(){
+  return asm({ name:"<module>", src:"xs = [1, 2, 3, 4]\ntotal = 0\nfor x in xs:\n    total = total + x\ntotal", rows:[
+    ["BUILD_LIST", 0, "xs = ["],
+    ["LOAD_CONST", 1, "1"],
+    ["LIST_APPEND", 1, ""],
+    ["LOAD_CONST", 2, "2"],
+    ["LIST_APPEND", 1, ""],
+    ["LOAD_CONST", 3, "3"],
+    ["LIST_APPEND", 1, ""],
+    ["LOAD_CONST", 4, "4"],
+    ["LIST_APPEND", 1, ""],
+    ["STORE_NAME", "xs", "]"],
+    ["LOAD_CONST", 0, "total = 0"],
+    ["STORE_NAME", "total", ""],
+    ["LOAD_NAME", "xs", "for x in xs:"],
+    ["GET_ITER", null, "取迭代器"],
+    ["FOR_ITER", "@end", "没下一个就跳出", "loop"],
+    ["STORE_NAME", "x", "x ="],
+    ["LOAD_NAME", "total", "total = total + x"],
+    ["LOAD_NAME", "x", ""],
+    ["BINARY_ADD", null, ""],
+    ["STORE_NAME", "total", ""],
+    ["JUMP_ABSOLUTE", "@loop", "跳回 FOR_ITER"],
+    ["LOAD_NAME", "total", "total", "end"],
+    ["PRINT_EXPR", null, "输出 total"],
+    ["LOAD_CONST", null, "None"],
+    ["RETURN_VALUE", null, "结束"]
+  ]});
+}
+
+/* ⑧ 对象、属性、方法：c.inc() 两次，c.n = 12 */
+function pObj(){
+  const init = asm({ name:"__init__", argcount:2, varnames:["self", "n"],
+    src:"def __init__(self, n):\n    self.n = n", rows:[
+    ["LOAD_FAST", "n", "self.n = n"],
+    ["LOAD_FAST", "self", ""],
+    ["STORE_ATTR", "n", "存进实例字典"],
+    ["LOAD_CONST", null, "None"],
+    ["RETURN_VALUE", null, ""]
+  ]});
+  const inc = asm({ name:"inc", argcount:1, varnames:["self"],
+    src:"def inc(self):\n    self.n = self.n + 1\n    return self.n", rows:[
+    ["LOAD_FAST", "self", "self.n + 1"],
+    ["LOAD_ATTR", "n", "读属性"],
+    ["LOAD_CONST", 1, ""],
+    ["BINARY_ADD", null, ""],
+    ["LOAD_FAST", "self", "self.n = ..."],
+    ["STORE_ATTR", "n", "写属性"],
+    ["LOAD_FAST", "self", "return self.n"],
+    ["LOAD_ATTR", "n", ""],
+    ["RETURN_VALUE", null, ""]
+  ]});
+  const cls = { __cls:"class", name:"Counter", methods:new Map([["__init__", init], ["inc", inc]]) };
+  return asm({ name:"<module>", src:"class Counter: ...\nc = Counter(10)\nc.inc()\nc.inc()\nc.n", rows:[
+    ["LOAD_CONST", cls, "class Counter"],
+    ["STORE_NAME", "Counter", ""],
+    ["LOAD_NAME", "Counter", "c = Counter(10)"],
+    ["LOAD_CONST", 10, ""],
+    ["CALL_FUNCTION", 1, "调用类型 = 造实例"],
+    ["STORE_NAME", "c", ""],
+    ["LOAD_NAME", "c", "c.inc()"],
+    ["LOAD_METHOD", "inc", "取绑定方法"],
+    ["CALL_FUNCTION", 0, ""],
+    ["POP_TOP", null, "丢掉返回值"],
+    ["LOAD_NAME", "c", "c.inc()"],
+    ["LOAD_METHOD", "inc", ""],
+    ["CALL_FUNCTION", 0, ""],
+    ["POP_TOP", null, ""],
+    ["LOAD_NAME", "c", "c.n"],
+    ["LOAD_ATTR", "n", "读属性"],
+    ["PRINT_EXPR", null, "输出"],
+    ["LOAD_CONST", null, "None"],
+    ["RETURN_VALUE", null, "结束"]
+  ]});
+}
+
+/* ⑨ 算术 / 单目 / 元组：diff=12, q=3, r=2, d=3.4, neg=-17, flag=False, pair=(17,17), 输出 20 */
+function pMath(){
+  return asm({ name:"<module>", src:"a = 17\nb = 5\ndiff = a - b\nq = a // b\nr = a % b\nd = a / b\nneg = -a\nflag = not r\npair = (a, a)\npair[1] + q", rows:[
+    ["LOAD_CONST", 17, "a = 17"],
+    ["STORE_NAME", "a", ""],
+    ["LOAD_CONST", 5, "b = 5"],
+    ["STORE_NAME", "b", ""],
+    ["LOAD_NAME", "a", "diff = a - b"],
+    ["LOAD_NAME", "b", ""],
+    ["BINARY_SUBTRACT", null, ""],
+    ["STORE_NAME", "diff", ""],
+    ["LOAD_NAME", "a", "q = a // b"],
+    ["LOAD_NAME", "b", ""],
+    ["BINARY_FLOOR_DIVIDE", null, "整除"],
+    ["STORE_NAME", "q", ""],
+    ["LOAD_NAME", "a", "r = a % b"],
+    ["LOAD_NAME", "b", ""],
+    ["BINARY_MODULO", null, "取余"],
+    ["STORE_NAME", "r", ""],
+    ["LOAD_NAME", "a", "d = a / b"],
+    ["LOAD_NAME", "b", ""],
+    ["BINARY_TRUE_DIVIDE", null, "真除"],
+    ["STORE_NAME", "d", ""],
+    ["LOAD_NAME", "a", "neg = -a"],
+    ["UNARY_NEGATIVE", null, "取负"],
+    ["STORE_NAME", "neg", ""],
+    ["LOAD_NAME", "r", "flag = not r"],
+    ["UNARY_NOT", null, "逻辑非"],
+    ["STORE_NAME", "flag", ""],
+    ["LOAD_NAME", "a", "pair = (a, a)"],
+    ["DUP_TOP", null, "复制栈顶"],
+    ["BUILD_TUPLE", 2, "打包成元组"],
+    ["STORE_NAME", "pair", ""],
+    ["LOAD_NAME", "pair", "pair[1] + q"],
+    ["LOAD_CONST", 1, ""],
+    ["BINARY_SUBSCR", null, "取下标"],
+    ["LOAD_NAME", "q", ""],
+    ["BINARY_ADD", null, ""],
+    ["PRINT_EXPR", null, "输出"],
+    ["LOAD_CONST", null, "None"],
+    ["RETURN_VALUE", null, "结束"]
+  ]});
+}
+
+const PROGRAMS = [
+  { key:"expr",  label:"① 表达式  a = 1 + 2 * 3",        hint:"表达式求值与优先级：先乘后加，栈最深 3 格。", mk:pExpr },
+  { key:"while", label:"② while 循环  1..10 求和",        hint:"跳转与栈平衡：JUMP_ABSOLUTE 让 ip 往回跳。", mk:pWhile },
+  { key:"if",    label:"③ 函数 if/else  grade(75)",       hint:"比较与跳转：POP_JUMP_IF_FALSE 挑分支，JUMP_FORWARD 跳过 else。", mk:pIf },
+  { key:"list",  label:"④ 列表  xs = [1,2,3]; xs[0]+xs[2]", hint:"容器与下标：BUILD_LIST / LIST_APPEND / BINARY_SUBSCR。", mk:pList },
+  { key:"call",  label:"⑤ 函数定义与调用  add(3, 4)",      hint:"MAKE_FUNCTION / CALL_FUNCTION / RETURN_VALUE，能看到帧切换。", mk:pCall },
+  { key:"dict",  label:"⑥ 字典  d['k'] = 1; d['n'] = d['k']+2", hint:"哈希表：STORE_SUBSCR / BINARY_SUBSCR 的下标读写。", mk:pDict },
+  { key:"for",   label:"⑦ for 循环  GET_ITER / FOR_ITER", hint:"迭代器协议：迭代器一直留在栈上，FOR_ITER 负责取值与跳出。", mk:pFor },
+  { key:"obj",   label:"⑧ 对象  c = Counter(10); c.inc()", hint:"属性与方法：LOAD_ATTR / STORE_ATTR / LOAD_METHOD。", mk:pObj },
+  { key:"math",  label:"⑨ 算术与单目  a // b, a % b, -a, not r", hint:"整除、取余、真除、取负、逻辑非、BUILD_TUPLE、DUP_TOP。", mk:pMath }
+];
+/* ══════════════════════════════════════════════════════════════
+   4 · 栈式字节码虚拟机
+   ══════════════════════════════════════════════════════════════ */
+function mkVM(code){
+  const vm = {
+    code:code, frames:[], globals:{}, out:[], log:[],
+    steps:0, done:false, err:null, last:null,
+    maxDepth:0, stepMax:0, maxFrames:1, stepMaxFrames:1,
+    backJumps:0, opCount:{}
+  };
+  vm.builtins = makeBuiltins(vm);
+  vm.root = { name:"<module>", code:code, ip:0, stack:[], locals:{}, retVal:null };
+  vm.frames.push(vm.root);
+  vm.view = function(){ return vm.frames[vm.frames.length - 1] || vm.root; };
+  vm.lookupName = function(name, f){
+    if (Object.prototype.hasOwnProperty.call(f.locals, name)) return f.locals[name];
+    if (Object.prototype.hasOwnProperty.call(vm.globals, name)) return vm.globals[name];
+    if (Object.prototype.hasOwnProperty.call(vm.builtins, name)) return vm.builtins[name];
+    throw new Error("名字 " + name + " 没有定义");
+  };
+  vm.getAttr = function(obj, name){
+    if (obj && obj.__cls === "inst"){
+      if (obj.dict.has(name)) return obj.dict.get(name);
+      const m = obj.cls.methods.get(name);
+      if (m) return { __cls:"bound", self:obj, cls:obj.cls, code:m };
+      throw new Error("实例 " + repr(obj) + " 没有属性 " + name);
+    }
+    if (obj && obj.__cls === "class"){
+      const m = obj.methods.get(name);
+      if (m) return { __cls:"func", code:m };
+      throw new Error("类型 " + obj.name + " 没有方法 " + name);
+    }
+    if (Array.isArray(obj)){
+      if (name === "append") return { __cls:"builtin", name:"append", fn:function(a){ obj.push(a[0]); return null; } };
+      if (name === "pop") return { __cls:"builtin", name:"pop", fn:function(){ return obj.pop(); } };
+      if (name === "count") return { __cls:"builtin", name:"count", fn:function(a){ return obj.filter(function(x){ return pyEq(x, a[0]); }).length; } };
+    }
+    throw new Error(repr(obj) + " 没有属性 " + name);
+  };
+  vm.newFrame = function(c, loc, nm, force){
+    const fr = { name:nm, code:c, ip:0, stack:[], locals:loc || {}, forceResult:force };
+    vm.frames.push(fr);
+    return fr;
+  };
+  vm.invoke = function(callee, args, caller){
+    if (callee && callee.__cls === "func"){
+      const loc = {};
+      for (let i = 0; i < callee.code.argcount; i++) loc[callee.code.varnames[i]] = args[i];
+      vm.newFrame(callee.code, loc, callee.code.name);
+      return "函数对象 <function " + callee.code.name + ">，新帧的局部变量 " +
+        callee.code.varnames.slice(0, callee.code.argcount).map(function(v, i){ return v + " = " + repr(args[i]); }).join("、") +
+        "；" + caller.name + " 帧被挂起，指令指针切到 " + callee.code.name + " 的第 0 条";
+    }
+    if (callee && callee.__cls === "bound"){
+      const loc = { self:callee.self };
+      for (let i = 0; i < callee.code.argcount - 1; i++) loc[callee.code.varnames[i + 1]] = args[i];
+      vm.newFrame(callee.code, loc, callee.cls.name + "." + callee.code.name);
+      return "绑定方法 " + repr(callee) + "，新帧里 self 已经指向实例（不用你手动传）";
+    }
+    if (callee && callee.__cls === "builtin"){
+      const r = callee.fn(args);
+      caller.stack.push(r === undefined ? null : r);
+      return "调用内建函数 " + callee.name + "(" + args.map(repr).join(", ") + ") = " + repr(r === undefined ? null : r) + "，结果直接压回栈顶";
+    }
+    if (callee && callee.__cls === "class"){
+      const inst = { __cls:"inst", cls:callee, dict:new Map() };
+      const init = callee.methods.get("__init__");
+      if (init){
+        const loc = { self:inst };
+        for (let i = 0; i < init.argcount - 1; i++) loc[init.varnames[i + 1]] = args[i];
+        vm.newFrame(init, loc, callee.name + ".__init__", inst);
+        return "CALL 一个类型对象 = 造实例：先分配空实例 <" + callee.name + " object>，再调 __init__ 初始化它";
+      }
+      caller.stack.push(inst);
+      return "CALL 类型对象 " + callee.name + "，造出 " + repr(inst);
+    }
+    throw new Error(repr(callee) + " 不能被调用（它不是一个函数）");
+  };
+  vm.exec = function(ins, f){
+    const S = f.stack, code = f.code, from = f.ip, self = this;
+    const pop = function(){ return S.pop(); };
+    switch (ins.op){
+      case "LOAD_CONST": {
+        const v = code.consts[ins.arg];
+        S.push(v);
+        return { k:"push", text:"把常量 " + repr(v) + "（co_consts[" + ins.arg + "]）压入栈顶，栈深 " + S.length };
+      }
+      case "LOAD_NAME": {
+        const nm = code.names[ins.arg];
+        const v = this.lookupName(nm, f);
+        S.push(v);
+        return { k:"push", text:"按名字 " + nm + " 查（局部 → 全局 → 内建），找到 " + repr(v) + "，压栈" };
+      }
+      case "STORE_NAME": {
+        const nm = code.names[ins.arg], v = pop();
+        this.globals[nm] = v;
+        return { k:"store", text:"弹出栈顶 " + repr(v) + "，写进全局名字表：" + nm + " = " + repr(v) };
+      }
+      case "LOAD_FAST": {
+        const nm = code.varnames[ins.arg];
+        if (!Object.prototype.hasOwnProperty.call(f.locals, nm))
+          throw new Error("局部变量 " + nm + " 还没赋值就被读了（UnboundLocalError）");
+        const v = f.locals[nm];
+        S.push(v);
+        return { k:"push", text:"从当前帧局部变量表取 " + nm + " = " + repr(v) + " 压栈（LOAD_FAST 按数组下标取，比 LOAD_NAME 快）" };
+      }
+      case "STORE_FAST": {
+        const nm = code.varnames[ins.arg], v = pop();
+        f.locals[nm] = v;
+        return { k:"store", text:"弹出 " + repr(v) + "，存进当前帧的局部变量 " + nm };
+      }
+      case "COMPARE_OP": {
+        const b = pop(), a = pop();
+        const r = cmpOp(ins.arg, a, b);
+        S.push(r);
+        return { k:"bin", text:"弹出 " + repr(b) + " 和 " + repr(a) + "，比较 " + repr(a) + " " + ins.arg + " " + repr(b) + " → " + repr(r) + "，结果压栈" };
+      }
+      case "POP_JUMP_IF_FALSE": {
+        const v = pop();
+        if (!truth(v)){
+          f.ip = ins.arg;
+          return { k:"jump", jumped:true, target:ins.arg, text:"弹出条件 " + repr(v) + " 是假 → 指令指针从 " + from + " 直接改成 " + ins.arg + "（跳出这一段）" };
+        }
+        return { k:"cond", text:"弹出条件 " + repr(v) + " 是真 → 不跳转，继续执行第 " + (from + 1) + " 条" };
+      }
+      case "JUMP_FORWARD": {
+        const t = from + 1 + ins.arg;
+        f.ip = t;
+        return { k:"jump", jumped:true, target:t, text:"无条件往前跳 " + ins.arg + " 条 → 指令指针 " + from + " → " + t + "（跳过 else 分支）" };
+      }
+      case "JUMP_ABSOLUTE": {
+        f.ip = ins.arg;
+        return { k:"jump", jumped:true, target:ins.arg, text:"无条件跳转 → 指令指针从 " + from + " 改回 " + ins.arg + (ins.arg <= from ? "，这是一次往回跳，循环就是靠它实现的" : "") };
+      }
+      case "GET_ITER": {
+        const v = pop();
+        const it = (v && v.__cls === "iter") ? v : mkIter(v);
+        S.push(it);
+        return { k:"push", text:"弹出 " + repr(v) + "，取出它的迭代器 " + repr(it) + " 压回栈顶（迭代器会一直待在栈上，直到循环结束）" };
+      }
+      case "FOR_ITER": {
+        const it = S[S.length - 1];
+        if (it.i < it.seq.length){
+          const v = it.seq[it.i++];
+          S.push(v);
+          return { k:"push", text:"迭代器还有值 → 取出第 " + it.i + " 个元素 " + repr(v) + " 压栈，并记住下一次的位置" };
+        }
+        pop();
+        const t = from + 1 + ins.arg;
+        f.ip = t;
+        return { k:"jump", jumped:true, target:t, text:"迭代器取完了 → 弹出迭代器，指令指针往前跳到 " + t + "，循环结束（栈深回到进入循环前）" };
+      }
+      case "BUILD_LIST": {
+        const items = S.splice(S.length - ins.arg, ins.arg);
+        S.push(items);
+        return { k:"push", text:"弹出栈顶 " + ins.arg + " 个元素，打包成列表 " + repr(items) + " 压栈" };
+      }
+      case "LIST_APPEND": {
+        const v = pop();
+        const list = S[S.length - ins.arg];
+        if (!Array.isArray(list)) throw new Error("LIST_APPEND 没找到目标列表");
+        list.push(v);
+        return { k:"store", text:"弹出 " + repr(v) + " 追加到栈里那个列表的尾部 → " + repr(list) };
+      }
+      case "BUILD_TUPLE": {
+        const items = S.splice(S.length - ins.arg, ins.arg);
+        const t = mkTuple(items);
+        S.push(t);
+        return { k:"push", text:"弹出栈顶 " + ins.arg + " 个元素，打包成元组 " + repr(t) + " 压栈（元组不可变）" };
+      }
+      case "BUILD_MAP": {
+        const kv = S.splice(S.length - ins.arg * 2, ins.arg * 2);
+        const d = mkDict();
+        for (let i = 0; i < kv.length; i += 2) d.m.set(kv[i], kv[i + 1]);
+        S.push(d);
+        return { k:"push", text:"造一个空字典 " + repr(d) + "（哈希表）压栈，等待后面的 STORE_SUBSCR 往里塞键值" };
+      }
+      case "BINARY_SUBSCR": {
+        const key = pop(), obj = pop();
+        let v;
+        if (Array.isArray(obj) || typeof obj === "string"){
+          let i = num(key);
+          if (i < 0) i += obj.length;
+          v = obj[i];
+        } else if (obj && obj.__cls === "tuple") {
+          let i = num(key);
+          if (i < 0) i += obj.items.length;
+          v = obj.items[i];
+        } else if (obj && obj.__cls === "dict"){
+          v = obj.m.has(key) ? obj.m.get(key) : null;
+        } else throw new Error(kindOf(obj) + " 不支持下标读取");
+        S.push(v);
+        return { k:"bin", text:"弹出下标 " + repr(key) + " 和容器 " + repr(obj) + "，取出 " + repr(v) + " 压栈" };
+      }
+      case "STORE_SUBSCR": {
+        const key = pop(), obj = pop(), val = pop();
+        if (Array.isArray(obj)) obj[num(key)] = val;
+        else if (obj && obj.__cls === "dict") obj.m.set(key, val);
+        else throw new Error(kindOf(obj) + " 不支持下标赋值");
+        return { k:"store", text:"弹出下标 " + repr(key) + "、容器和值 " + repr(val) + "，写进去：" + repr(obj) };
+      }
+      case "CALL_FUNCTION": {
+        const args = S.splice(S.length - ins.arg, ins.arg);
+        const callee = pop();
+        const onStack = "CALL_FUNCTION 执行前栈上是：函数对象 " + repr(callee) +
+          (args.length ? " + " + args.length + " 个参数 " + repr(args) : "（没有参数）");
+        const t = this.invoke(callee, args, f);
+        return { k:"call", text:onStack + " → " + t };
+      }
+      case "RETURN_VALUE": {
+        const ret = (f.forceResult !== undefined) ? f.forceResult : pop();
+        this.frames.pop();
+        if (!this.frames.length){
+          this.done = true;
+          return { k:"call", text:"最后一帧返回 " + repr(ret) + "，整个程序结束" };
+        }
+        const caller = this.frames[this.frames.length - 1];
+        caller.stack.push(ret);
+        return { k:"call", text:f.name + " 帧执行 return：" + (f.forceResult !== undefined ? "把刚造好的实例 " : "弹出返回值 ") +
+          repr(ret) + " 交给调用者 —— 销毁这一帧，回到 " + caller.name + " 帧并压栈" };
+      }
+      case "LOAD_ATTR": {
+        const nm = code.names[ins.arg], obj = pop();
+        const v = this.getAttr(obj, nm);
+        S.push(v);
+        return { k:"push", text:"弹出对象 " + repr(obj) + "，查它的属性 " + nm + " → " + repr(v) + " 压栈（先找实例字典，再找类型的方法表）" };
+      }
+      case "STORE_ATTR": {
+        const nm = code.names[ins.arg];
+        const obj = pop(), val = pop();
+        if (obj && obj.__cls === "inst") obj.dict.set(nm, val);
+        else throw new Error(kindOf(obj) + " 不能设置属性");
+        return { k:"store", text:"弹出对象和值 " + repr(val) + "，写进实例字典：" + repr(obj) + "." + nm + " = " + repr(val) };
+      }
+      case "LOAD_METHOD": {
+        const nm = code.names[ins.arg], obj = pop();
+        const v = this.getAttr(obj, nm);
+        S.push(v);
+        return { k:"push", text:"弹出对象 " + repr(obj) + "，取出方法 " + nm + " 并绑定 self → 压入 " + repr(v) + "（本模拟器把它简化成一个已绑定的方法对象）" };
+      }
+      case "POP_TOP": {
+        const v = pop();
+        return { k:"pop", text:"弹出栈顶 " + repr(v) + " 直接丢掉（表达式语句的返回值没人要）" };
+      }
+      case "DUP_TOP": {
+        const v = S[S.length - 1];
+        S.push(v);
+        return { k:"push", text:"复制栈顶的 " + repr(v) + " 再压一份，现在栈上有两个（后面要拿它两次）" };
+      }
+      case "UNARY_NEGATIVE": {
+        const v = pop(), r = -num(v);
+        S.push(r);
+        return { k:"bin", text:"弹出 " + repr(v) + " 取负 → " + repr(r) + " 压栈" };
+      }
+      case "UNARY_NOT": {
+        const v = pop(), r = !truth(v);
+        S.push(r);
+        return { k:"bin", text:"弹出 " + repr(v) + " 做逻辑非（按真值规则判断）→ " + repr(r) + " 压栈" };
+      }
+      case "MAKE_FUNCTION": {
+        const c = pop();
+        const fn = { __cls:"func", code:c };
+        S.push(fn);
+        return { k:"push", text:"把栈顶的 code object 包成一个函数对象 " + repr(fn) + " 压栈（函数在 Python 里也是一等公民）" };
+      }
+      case "PRINT_EXPR": {
+        const v = pop();
+        this.out.push(repr(v));
+        return { k:"print", text:"弹出栈顶 " + repr(v) + " 并打印（REPL 里的表达式语句就是这么显示值的）" };
+      }
+      default: {
+        if (ins.op.slice(0, 7) === "BINARY_"){
+          const b = pop(), a = pop();
+          const r = binop(ins.op, a, b);
+          S.push(r);
+          const sym = { BINARY_ADD:"+", BINARY_SUBTRACT:"-", BINARY_MULTIPLY:"*",
+            BINARY_TRUE_DIVIDE:"/", BINARY_FLOOR_DIVIDE:"//", BINARY_MODULO:"%" }[ins.op];
+          return { k:"bin", text:"弹出 " + repr(b) + " 和 " + repr(a) + "，算 " + repr(a) + " " + sym + " " + repr(b) + " = " + repr(r) + "，结果压回栈顶" };
+        }
+        throw new Error("还没实现的指令 " + ins.op);
+      }
+    }
+  };
+  vm.once = function(mode){
+    if (vm.done) return false;
+    const f = vm.view();
+    const ins = f.code.code[f.ip];
+    if (!ins){ vm.done = true; return false; }
+    const from = f.ip, fname = f.name;
+    vm.steps++;
+    vm.opCount[ins.op] = (vm.opCount[ins.op] || 0) + 1;
+    let res;
+    try { res = vm.exec(ins, f); }
+    catch (e){
+      vm.err = (e && e.message) ? e.message : String(e);
+      vm.done = true;
+      vm.log.push({ n:vm.steps, op:ins.op, k:"err", text:"运行错误：" + vm.err });
+      return false;
+    }
+    if (!res.jumped) f.ip++;
+    else if (res.target <= from) vm.backJumps++;
+    const top = vm.frames[vm.frames.length - 1];
+    const depth = top ? top.stack.length : 0;
+    if (depth > vm.maxDepth) vm.maxDepth = depth;
+    if (mode === "step" && depth > vm.stepMax) vm.stepMax = depth;
+    if (vm.frames.length > vm.maxFrames) vm.maxFrames = vm.frames.length;
+    if (mode === "step" && vm.frames.length > vm.stepMaxFrames) vm.stepMaxFrames = vm.frames.length;
+    vm.last = { op:ins.op, arg:ins.arg, addr:ins.addr, frame:fname, text:res.text, depth:depth,
+      nextIp:(top ? top.ip : -1), nextFrame:(top ? top.name : "-") };
+    vm.log.push({ n:vm.steps, op:ins.op, k:res.k, text:res.text, addr:ins.addr, frame:fname });
+    return true;
+  };
+  vm.run = function(limit){
+    let n = 0;
+    while (!vm.done && n < (limit || 4000)){ vm.once("run"); n++; }
+    return n;
+  };
+  return vm;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   5 · 模块一：界面、绘制、任务
+   ══════════════════════════════════════════════════════════════ */
+const M1 = {
+  pid:0, vm:null,
+  reset(pid, keepLog){
+    if (pid !== undefined && pid !== null) this.pid = pid;
+    this.vm = mkVM(PROGRAMS[this.pid].mk());
+    if (!keepLog){ $("#log1").innerHTML = ""; }
+    this.push({ k:"sys", op:"", text:"加载程序 " + PROGRAMS[this.pid].label + " —— " + PROGRAMS[this.pid].hint });
+    this.render();
+  },
+  push(entry){
+    this.vm.log.push(entry);
+    if (this.vm.log.length > 900) this.vm.log.splice(0, 200);
+  },
+  step(){
+    if (this.vm.done){ this.push({ k:"sys", op:"", text:"程序已经结束了，点「重置」可以重来。" }); this.render(); return; }
+    this.vm.once("step");
+    this.render();
+  },
+  runAll(){
+    if (this.vm.done){ this.push({ k:"sys", op:"", text:"程序已经结束了，点「重置」可以重来。" }); this.render(); return; }
+    const n = this.vm.run(4000);
+    this.push({ k:"sys", op:"", text:"连续执行了 " + n + " 步" + (this.vm.done ? "，程序结束。" : "（到上限了）") });
+    this.render();
+  },
+  render(){
+    const vm = this.vm, top = vm.frames[vm.frames.length - 1] || vm.root;
+    $("#oFrame").textContent = top.name + (vm.frames.length > 1 ? "  (帧栈 " + vm.frames.map(function(f){ return f.name; }).join(" → ") + ")" : "");
+    $("#oIp").textContent = vm.done ? "—" : String(top.ip);
+    $("#oIns").textContent = vm.done ? "程序结束" : (String(top.ip).padStart(2, "0") + "  " + top.code.code[top.ip].op + (top.code.code[top.ip].arg === null ? "" : " " + top.code.code[top.ip].arg));
+    $("#oSteps").textContent = String(vm.steps);
+    $("#oDepth").textContent = (vm.frames.length ? vm.frames[vm.frames.length - 1].stack.length : 0) + " / " + vm.stepMax;
+    $("#oFr").textContent = vm.frames.length + " / " + vm.maxFrames;
+    $("#oBack").textContent = String(vm.backJumps);
+    $("#oCall").textContent = String(vm.opCount.CALL_FUNCTION || 0);
+    $("#oOut").textContent = vm.out.length ? vm.out.slice(-2).join("  |  ") : "—";
+    $("#progHint").textContent = PROGRAMS[this.pid].hint;
+    this.logRender();
+    m1Draw();
+    T1.check();
+  },
+  logRender(){
+    const box = $("#log1"), vm = this.vm, L = vm.log;
+    const start = Math.max(0, L.length - 400);
+    let h = "";
+    for (let i = start; i < L.length; i++){
+      const e = L[i];
+      const num = e.n ? String(e.n) : "·";
+      const op = e.op ? e.op : "";
+      h += '<div class="k-' + (e.k || "sys") + '"><span class="n">' + num + '</span><span class="op">' + op + "</span>" +
+           (e.frame ? "[" + e.frame + "] " : "") + e.text + "</div>";
+    }
+    box.innerHTML = h;
+    box.scrollTop = box.scrollHeight;
+  }
+};
+
+/* ── 模块一画布 ── */
+function m1Draw(){
+  const r = fit($("#cv1")); if (!r) return;
+  const g = r.g, W = r.w, H = r.h, vm = M1.vm;
+  const top = vm.frames[vm.frames.length - 1] || vm.root;
+  const ipNow = vm.done ? -1 : top.ip;
+
+  /* 头部：帧栈 */
+  put(g, "帧栈", 14, 21, { f:MONO, c:C.dim });
+  let fx = 50;
+  for (let i = 0; i < vm.frames.length; i++){
+    const f = vm.frames[i];
+    g.font = MONOB;
+    const w = g.measureText(f.name).width + 18;
+    const cur = (i === vm.frames.length - 1);
+    g.fillStyle = cur ? C.cyan : C.panel2;
+    roundRect(g, fx, 9, w, 18, 6); g.fill();
+    put(g, f.name, fx + w / 2, 22, { f:MONOB, c:cur ? "#04212a" : C.dim, a:"center" });
+    fx += w + 4;
+    if (i < vm.frames.length - 1) put(g, "→", fx - 1, 22, { f:MONO, c:C.dim });
+    fx += 12;
+  }
+  g.font = MONO;
+  put(g, clip(g, PROGRAMS[M1.pid].label, W * 0.36), W - 14, 21, { f:MONO, c:C.dim, a:"right" });
+  g.strokeStyle = C.line; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(10, 34); g.lineTo(W - 10, 34); g.stroke();
+
+  /* 三栏 */
+  const colA = 14, wA = Math.max(300, Math.min(372, W * 0.46));
+  const colB = colA + wA + 16, wB = 176;
+  const colC = colB + wB + 16, wC = W - colC - 14;
+  const topY = 54;
+
+  put(g, "字节码 · " + top.code.name, colA, topY - 6, { f:MONO, c:C.dim });
+  put(g, "操作数栈（栈顶在上）", colB, topY - 6, { f:MONO, c:C.dim });
+  put(g, "名字表 / 局部变量", colC, topY - 6, { f:MONO, c:C.dim });
+
+  /* ── 指令列表 ── */
+  const rows = top.code.code, rowH = 13.4, y0 = topY + 10;
+  const maxRows = Math.floor((H - y0 - 12) / rowH);
+  let start = 0;
+  if (rows.length > maxRows){
+    start = Math.max(0, Math.min(ipNow - Math.floor(maxRows / 2), rows.length - maxRows));
+  }
+  if (start > 0) put(g, "▲ 上面还有 " + start + " 条", colA + 6, y0 - 1, { f:MONO, c:"#4a5462" });
+  for (let k = 0; k < Math.min(maxRows, rows.length - start); k++){
+    const i = start + k, ins = rows[i], y = y0 + 11 + k * rowH;
+    const cur = (i === ipNow);
+    if (cur){
+      g.fillStyle = "#12303a";
+      roundRect(g, colA - 4, y - 11, wA + 8, rowH - 1, 4); g.fill();
+      g.fillStyle = C.cyan; g.fillRect(colA - 4, y - 11, 3, rowH - 1);
+    }
+    put(g, String(i).padStart(2, "0"), colA + 2, y, { f:MONO, c:cur ? C.cyan : "#5c6675" });
+    put(g, ins.op, colA + 22, y, { f:cur ? MONOB : MONO, c:cur ? C.fg : "#c3cbd8" });
+    if (ins.arg !== null) put(g, String(ins.arg), colA + 148, y, { f:MONO, c:C.amber });
+    if (ins.src){
+      g.font = MONO;
+      put(g, clip(g, ins.src, wA - 184), colA + 182, y, { f:MONO, c:C.dim });
+    }
+  }
+  const end = start + Math.min(maxRows, rows.length - start);
+  if (end < rows.length) put(g, "▼ 下面还有 " + (rows.length - end) + " 条", colA + 6, H - 6, { f:MONO, c:"#4a5462" });
+
+  /* ── 操作数栈 ── */
+  const cellH = 25, cellY = topY + 10, maxCells = Math.floor((H - cellY - 16) / cellH);
+  const st = top.stack;
+  if (!st.length){
+    g.strokeStyle = C.line; g.setLineDash([3, 3]);
+    roundRect(g, colB, cellY, wB, cellH, 6); g.stroke(); g.setLineDash([]);
+    put(g, "（空）", colB + wB / 2, cellY + 17, { f:MONO, c:"#4a5462", a:"center" });
+  }
+  const show = Math.min(st.length, maxCells);
+  for (let k = 0; k < show; k++){
+    const v = st[st.length - 1 - k], y = cellY + k * cellH;
+    const isTop = (k === 0);
+    g.fillStyle = isTop ? "#16323a" : C.panel2;
+    roundRect(g, colB + 8, y, wB - 16, cellH - 3, 6); g.fill();
+    g.strokeStyle = isTop ? C.cyan : C.line; g.lineWidth = 1;
+    roundRect(g, colB + 8, y, wB - 16, cellH - 3, 6); g.stroke();
+    if (isTop) put(g, "栈顶", colB + 13, y - 1, { f:MONO, c:C.cyan });
+    g.font = MONOB;
+    const kv = clip(g, repr(v), wB - 70);
+    put(g, kv, colB + 16, y + 16, { f:MONOB, c:isTop ? C.fg : "#cfd7e2" });
+    put(g, kindOf(v), colB + wB - 14, y + 16, { f:MONO, c:C.dim, a:"right" });
+  }
+  if (st.length > show) put(g, "… 还有 " + (st.length - show) + " 格在下面", colB + 10, cellY + show * cellH + 12, { f:MONO, c:"#4a5462" });
+  if (st.length) put(g, "栈深 " + st.length, colB + wB / 2, H - 6, { f:MONO, c:C.dim, a:"center" });
+
+  /* ── 名字表 ── */
+  let ny = cellY + 2;
+  const lineH = 14.6;
+  const names = Object.keys(vm.globals);
+  g.font = MONO;
+  if (!names.length) put(g, "（还没有变量）", colC, ny + 10, { f:MONO, c:"#4a5462" });
+  for (let i = 0; i < names.length && ny < H - 40; i++){
+    const nm = names[i];
+    put(g, nm + " =", colC, ny + 10, { f:MONO, c:C.blue });
+    g.font = MONOB;
+    put(g, clip(g, repr(vm.globals[nm]), wC - 6), colC, ny + 24, { f:MONOB, c:C.fg });
+    ny += lineH * 2;
+  }
+  const locs = Object.keys(top.locals);
+  if (locs.length && ny < H - 30){
+    put(g, "── " + top.name + " 帧的局部变量 ──", colC, ny + 10, { f:MONO, c:C.purple });
+    ny += lineH + 2;
+    for (let i = 0; i < locs.length && ny < H - 30; i++){
+      const nm = locs[i];
+      g.font = MONO;
+      const lw = g.measureText(nm + " = ").width;
+      put(g, nm + " =", colC, ny + 10, { f:MONO, c:C.purple });
+      put(g, clip(g, repr(top.locals[nm]), Math.max(30, wC - lw - 4)), colC + lw, ny + 10, { f:MONOB, c:C.fg });
+      ny += lineH;
+    }
+  }
+  if (vm.out.length){
+    put(g, "── 输出 ──", colC, ny + 12, { f:MONO, c:C.jade });
+    ny += lineH + 2;
+    const oo = vm.out.slice(-3);
+    for (let i = 0; i < oo.length; i++){
+      put(g, clip(g, "» " + oo[i], wC), colC, ny + 10, { f:MONO, c:C.jade });
+      ny += lineH;
+    }
+  }
+  if (vm.err){
+    put(g, clip(g, "错误：" + vm.err, W - 24), 14, H - 8, { f:MONO, c:C.red });
+  }
+}
+
+/* ── 模块一任务 ── */
+const T1 = {
+  idx:0, done:[false, false, false], ans0:null, pick:null,
+  tasks:[
+    {
+      title:"单步走完 a = 1 + 2 * 3，数出栈最深时有几格",
+      desc:"先在上面的下拉框选 <b>① 表达式</b>，然后<b>只按「单步 Step」</b>一步一步走。" +
+           "盯着画布中间那一列：每压入一个常量就多一格。走到算 2 * 3 的那一刻，三个常量会同时待在栈上。",
+      setup(){ M1.reset(0); },
+      test(){ return M1.pid === 0 && M1.vm.stepMax >= 3 && T1.ans0 === 3; },
+      hint:"选程序 ①，用「单步 Step」一直按到栈里有三格，再填数字提交。",
+      note:"<b>答案是 3 格。</b>过程是：LOAD_CONST 1 → 栈 [1]；LOAD_CONST 2 → [1, 2]；LOAD_CONST 3 → [1, 2, 3]（最深）；" +
+        "BINARY_MULTIPLY 弹出两个、压回一个 → [1, 6]；BINARY_ADD → [7]；STORE_NAME 把 7 存进名字表，栈清空。<br><br>" +
+        "<b>为什么 CPython 用栈式而不是寄存器式？</b>因为指令里根本不用写操作数——操作数永远是「栈顶那几个」。好处是：" +
+        "① 每条指令短而规整（CPython 3.6 之后是 2 字节一条），解码极快；② 编译器不用做寄存器分配，`a = 1 + 2 * 3` 这样编译下来天然正确；" +
+        "③ 表达式求值的中间结果有地方放，不用操心哪个寄存器被占用。<br><br>" +
+        "代价是每条指令都要把数据搬进搬出栈顶。CPython 3.11 之后做的「特化自适应解释器」和寄存器式指令，就是在保留栈式语义的前提下把这部分搬运省掉。" +
+        "你在这儿看到的 <code>LOAD_CONST / BINARY_ADD / STORE_NAME</code>，就是那台机器最核心的三拍。",
+      extra(){
+        return '<div class="row"><input type="number" id="q1" min="0" max="9" placeholder="填格数" value="' +
+          (T1.ans0 === null ? "" : T1.ans0) + '"><button class="btn small" id="q1b">提交答案</button></div>';
+      },
+      bind(){
+        const b = $("#q1b"); if (!b) return;
+        b.onclick = function(){
+          const v = parseInt($("#q1").value, 10);
+          T1.ans0 = isNaN(v) ? null : v;
+          T1.check();
+        };
+      }
+    },
+    {
+      title:"让 JUMP 指令往回跳 3 次以上",
+      desc:"选 <b>② while 循环</b>，点「连续执行」（或自己单步）。看右侧读数里的 <b>JUMP 回跳次数</b>：" +
+           "每跑完一轮循环体，就有一条 <code>JUMP_ABSOLUTE</code> 把指令指针拉回循环头。目标：回跳 ≥ 3 次。",
+      setup(){ M1.reset(1); },
+      test(){ return M1.pid === 1 && M1.vm.backJumps >= 3 && (M1.vm.opCount.JUMP_ABSOLUTE || 0) >= 3; },
+      hint:"选程序 ②，点「连续执行」，或者自己单步走几轮。",
+      note:"<b>循环在字节码这一层就是「往回跳」。</b>这段 while 有两个跳转：" +
+        "<code>POP_JUMP_IF_FALSE</code> 是条件跳，条件为假时<b>往前</b>跳到循环后面（结束循环）；" +
+        "<code>JUMP_ABSOLUTE</code> 是无条件跳，把 ip 从第 16 条<b>改回</b>第 4 条（再来一轮）。" +
+        "所谓「循环」，只是同一段指令被反复执行而已——CPU 那边也一样，只有跳转能让程序不一条道走到黑。<br><br>" +
+        "还有一件事值得盯：<b>栈平衡</b>。进入循环体时栈深是 0，出循环体（第 16 条执行完）时栈深也必须是 0。" +
+        "每条指令都是「弹几个、压几个」配平好的：<code>COMPARE_OP</code> 弹 2 压 1，<code>POP_JUMP_IF_FALSE</code> 弹 1，" +
+        "<code>STORE_NAME</code> 弹 1。如果哪一轮多留了一个值在栈上，下一轮的条件就会读到错的东西，循环会越跑越歪。" +
+        "编译器保证栈平衡，虚拟机才敢让 ip 随便往回跳。",
+      extra(){ return ""; },
+      bind(){}
+    },
+    {
+      title:"跟踪一次函数调用：CALL_FUNCTION 时栈上有什么",
+      desc:"选 <b>⑤ 函数定义与调用</b>。先单步走到 CALL_FUNCTION 那条指令（第 6 条），看清它执行前栈上有几格；" +
+           "执行之后你会看到<b>帧栈多了一层 add</b>，画布左边换成了 add 的指令表。再单步一次，然后回答下面的问题。",
+      setup(){ M1.reset(4); },
+      test(){ return M1.pid === 4 && (M1.vm.opCount.CALL_FUNCTION || 0) >= 1 && M1.vm.stepMaxFrames >= 2 && T1.pick === "B"; },
+      hint:"选程序 ⑤，单步到 CALL_FUNCTION 执行完（帧栈变成 <module> → add），再选一个答案。",
+      note:"<b>答案是 B：栈上是「函数对象 + 两个参数」，一共 3 格。</b>顺序是：先压函数对象 add，再依次压实参 3、4。" +
+        "<code>CALL_FUNCTION 2</code> 里的 2 就是参数个数，虚拟机靠它知道该从栈顶取几个当参数。<br><br>" +
+        "<b>帧是怎么建起来的：</b>执行 CALL_FUNCTION 时，" +
+        "① 弹出函数对象和 argc 个参数；② 为它<b>新建一个帧</b>（Frame），把形参 a、b 填进这个帧的局部变量表；" +
+        "③ 把新帧压到帧栈顶部，ip 归零——从此以后所有 LOAD_FAST / STORE_FAST 都只认这个新帧；" +
+        "④ 老帧原封不动地挂在下面，等 <code>RETURN_VALUE</code> 把返回值交还给它，它就接着往下跑。<br><br>" +
+        "为什么局部变量要单独一张表？因为它们<b>按位置访问</b>（LOAD_FAST 的操作数就是数组下标），比按名字查字典快得多。" +
+        "递归能正常工作，也正是因为每一层调用都有自己的帧——这跟你在这个页面看到的帧栈是同一件事。" +
+        "顺便注意 add 里的 <code>LOAD_FAST</code>：函数内部读局部变量用 FAST，读全局变量才用 LOAD_NAME。",
+      extra(){
+        return '<div class="quiz" id="qz3">' +
+          '<button class="btn" data-a="A">A · 只有函数对象 add 一个元素</button>' +
+          '<button class="btn" data-a="B">B · 函数对象 add + 参数 3 和 4，一共 3 个元素</button>' +
+          '<button class="btn" data-a="C">C · 只有参数 3 和 4 两个元素</button></div>';
+      },
+      bind(){
+        document.querySelectorAll("#qz3 button").forEach(function(b){
+          b.classList.toggle("on", T1.pick === b.dataset.a);
+          b.onclick = function(){
+            T1.pick = b.dataset.a;
+            document.querySelectorAll("#qz3 button").forEach(function(x){ x.classList.toggle("on", x === b); });
+            T1.check();
+          };
+        });
+      }
+    }
+  ],
+  render(){
+    const t = this.tasks[this.idx];
+    $("#t1n").textContent = this.idx + 1;
+    $("#t1title").textContent = t.title;
+    $("#t1desc").innerHTML = t.desc;
+    $("#t1extra").innerHTML = t.extra();
+    t.bind();
+    if (this.done[this.idx]){
+      $("#t1verdict").className = "verdict ok";
+      $("#t1verdict").textContent = "✓ 已达成 —— " + (this.idx === 0 ? "栈最深 3 格，答案正确。" : this.idx === 1 ? "JUMP 已经回跳 3 次以上。" : "你已经看到新帧建立，答案正确。");
+      $("#t1note").innerHTML = t.note;
+    } else {
+      $("#t1verdict").className = "verdict no";
+      $("#t1verdict").textContent = "还没达成 —— " + t.hint;
+      $("#t1note").innerHTML = "完成判定后，这里会解释背后的机制。";
+    }
+  },
+  check(){
+    const t = this.tasks[this.idx];
+    if (!this.done[this.idx] && t.test()){
+      this.done[this.idx] = true;
+      this.render();
+    } else if (this.done[this.idx]){
+      $("#t1verdict").className = "verdict ok";
+      $("#t1verdict").textContent = "✓ 已达成。";
+      $("#t1note").innerHTML = t.note;
+    } else {
+      $("#t1verdict").className = "verdict no";
+      $("#t1verdict").textContent = "还没达成 —— " + t.hint;
+    }
+  },
+  next(){
+    this.idx = (this.idx + 1) % this.tasks.length;
+    this.tasks[this.idx].setup();
+    this.render();
+    this.check();
+  }
+};
+/* ══════════════════════════════════════════════════════════════
+   6 · 模块二：手写词法分析器
+   ══════════════════════════════════════════════════════════════ */
+const KW = ["if","elif","else","while","for","in","def","return","pass","and","or","not",
+  "True","False","None","break","continue","class","import","from","global","lambda","is"];
+const TWO = ["**","//","==","!=","<=",">=","+=","-=","*=","/=","->"];
+const ONE = "+-*/%<>=()[]{},:.;";
+
+function tokenize(src){
+  const T = [], indents = [0];
+  let i = 0, line = 1, atLineStart = true, depth = 0;
+  const push = function(t, v){ T.push({ t:t, v:v, line:line, i:T.length }); };
+  while (i < src.length){
+    if (atLineStart && depth === 0){
+      let j = i, ind = 0;
+      while (j < src.length && (src[j] === " " || src[j] === "\t")){ ind += (src[j] === "\t" ? 4 : 1); j++; }
+      if (j >= src.length || src[j] === "\n" || src[j] === "#"){ i = j; atLineStart = false; continue; }
+      if (ind > indents[indents.length - 1]){ indents.push(ind); push("INDENT", ""); }
+      else if (ind < indents[indents.length - 1]){
+        while (ind < indents[indents.length - 1]){ indents.pop(); push("DEDENT", ""); }
+      }
+      i = j; atLineStart = false; continue;
+    }
+    const ch = src[i];
+    if (ch === "\n"){
+      if (depth === 0 && T.length && T[T.length - 1].t !== "NEWLINE") push("NEWLINE", "");
+      i++; line++; atLineStart = true; continue;
+    }
+    if (ch === " " || ch === "\t" || ch === "\r"){ i++; continue; }
+    if (ch === "#"){ while (i < src.length && src[i] !== "\n") i++; continue; }
+    if (ch >= "0" && ch <= "9"){
+      const s = i;
+      while (i < src.length && src[i] >= "0" && src[i] <= "9") i++;
+      if (src[i] === "." && src[i + 1] >= "0" && src[i + 1] <= "9"){
+        i++;
+        while (i < src.length && src[i] >= "0" && src[i] <= "9") i++;
+      }
+      push("NUMBER", src.slice(s, i)); continue;
+    }
+    if (ch === '"' || ch === "'"){
+      const q = ch;
+      i++;
+      const s = i;
+      while (i < src.length && src[i] !== q && src[i] !== "\n") i++;
+      const val = src.slice(s, i);
+      if (src[i] === q) i++;
+      push("STRING", val); continue;
+    }
+    if (/[A-Za-z_\u4e00-\u9fa5]/.test(ch)){
+      const s = i;
+      while (i < src.length && /[A-Za-z0-9_\u4e00-\u9fa5]/.test(src[i])) i++;
+      const w = src.slice(s, i);
+      push(KW.indexOf(w) >= 0 ? "KEYWORD" : "NAME", w); continue;
+    }
+    const two = src.substr(i, 2);
+    if (TWO.indexOf(two) >= 0){
+      push("OP", two); i += 2;
+      if (two === "->"){ /* 不是括号 */ }
+      continue;
+    }
+    if (ONE.indexOf(ch) >= 0){
+      if (ch === "(" || ch === "[" || ch === "{") depth++;
+      else if (ch === ")" || ch === "]" || ch === "}") depth = Math.max(0, depth - 1);
+      push("OP", ch); i++; continue;
+    }
+    push("ERR", ch); i++;
+  }
+  while (indents.length > 1){ indents.pop(); push("DEDENT", ""); }
+  if (T.length && T[T.length - 1].t !== "NEWLINE") push("NEWLINE", "");
+  push("EOF", "");
+  return T;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   7 · 模块二：递归下降语法分析器
+   ══════════════════════════════════════════════════════════════ */
+function parsePy(T){
+  let p = 0;
+  const peek = function(){ return T[p]; };
+  const isT = function(t, v){ return T[p] && T[p].t === t && (v === undefined || T[p].v === v); };
+  const isOp = function(v){ return T[p] && T[p].t === "OP" && T[p].v === v; };
+  const isKw = function(v){ return T[p] && T[p].t === "KEYWORD" && T[p].v === v; };
+  function fail(msg){
+    const tk = T[Math.min(p, T.length - 1)] || { line:0, t:"EOF", v:"" };
+    throw new Error((msg || "语法错误") + "（第 " + tk.line + " 行，读到 " +
+      (tk.t === "EOF" ? "源码结尾" : (tk.v || tk.t)) + "）");
+  }
+  function N(type, o, t0){
+    const n = { type:type, t0:t0, t1:Math.max(t0, p - 1) };
+    for (const k in o) n[k] = o[k];
+    return n;
+  }
+  function nl(){
+    if (isT("NEWLINE")) p++;
+    else if (!isT("EOF") && !isT("DEDENT")) fail("这一行还没结束");
+  }
+  function file(){
+    const body = [];
+    while (!isT("EOF")){
+      if (isT("NEWLINE")){ p++; continue; }
+      body.push(stmt());
+    }
+    return { type:"Module", body:body, t0:0, t1:T.length - 1 };
+  }
+  function block(){
+    if (isT("NEWLINE")){
+      p++;
+      if (!isT("INDENT")) fail("这里需要一个缩进块");
+      p++;
+      const body = [];
+      while (!isT("DEDENT") && !isT("EOF")){
+        if (isT("NEWLINE")){ p++; continue; }
+        body.push(stmt());
+      }
+      if (isT("DEDENT")) p++;
+      return body;
+    }
+    return [stmt()];
+  }
+  function colon(what){
+    if (!isOp(":")) fail(what + " 后面要跟冒号");
+    p++;
+  }
+  function stmt(){
+    if (isT("KEYWORD")){
+      const v = T[p].v;
+      if (v === "if" || v === "elif") return ifStmt();
+      if (v === "while") return whileStmt();
+      if (v === "for") return forStmt();
+      if (v === "def") return defStmt();
+      if (v === "return"){
+        const t0 = p++;
+        let val = null;
+        if (!isT("NEWLINE") && !isT("EOF") && !isT("DEDENT")) val = expr();
+        nl();
+        return N("Return", { value:val }, t0);
+      }
+      if (v === "pass"){ const t0 = p++; nl(); return N("Pass", {}, t0); }
+    }
+    return simple();
+  }
+  function simple(){
+    const t0 = p;
+    const e = expr();
+    if (isOp("=")){
+      p++;
+      const v = expr();
+      nl();
+      return N("Assign", { target:e, value:v }, t0);
+    }
+    if (T[p] && T[p].t === "OP" && /^[+\-*\/%]=$/.test(T[p].v)){
+      const op = T[p].v.charAt(0);
+      p++;
+      const v = expr();
+      nl();
+      return N("AugAssign", { target:e, op:op, value:v }, t0);
+    }
+    nl();
+    return N("Expr", { value:e }, t0);
+  }
+  function ifStmt(){
+    const t0 = p, kw = T[p].v;
+    p++;
+    const test = expr();
+    colon("if");
+    const body = block();
+    let orelse = [];
+    if (isKw("elif")) orelse = [ifStmt()];
+    else if (isKw("else")){
+      p++; colon("else");
+      orelse = block();
+    }
+    return N("If", { kw:kw, test:test, body:body, orelse:orelse }, t0);
+  }
+  function whileStmt(){
+    const t0 = p;
+    p++;
+    const test = expr();
+    colon("while");
+    const body = block();
+    return N("While", { test:test, body:body }, t0);
+  }
+  function forStmt(){
+    const t0 = p;
+    p++;
+    const target = postfix();
+    if (!isKw("in")) fail("for 的循环变量后面要跟 in");
+    p++;
+    const iter = expr();
+    colon("for");
+    const body = block();
+    return N("For", { target:target, iter:iter, body:body }, t0);
+  }
+  function defStmt(){
+    const t0 = p;
+    p++;
+    if (!isT("NAME")) fail("def 后面要跟函数名");
+    const name = T[p].v;
+    p++;
+    if (!isOp("(")) fail("函数名后面要跟左括号");
+    p++;
+    const params = [];
+    if (!isOp(")")){
+      if (!isT("NAME")) fail("参数表里应该是参数名");
+      params.push(T[p].v); p++;
+      while (isOp(",")){
+        p++;
+        if (isOp(")")) break;
+        if (!isT("NAME")) fail("参数表里应该是参数名");
+        params.push(T[p].v); p++;
+      }
+    }
+    if (!isOp(")")) fail("参数表缺右括号");
+    p++;
+    colon("函数定义");
+    const body = block();
+    return N("FunctionDef", { name:name, params:params, body:body }, t0);
+  }
+  function expr(){ return orExpr(); }
+  function orExpr(){
+    const t0 = p;
+    let l = andExpr();
+    while (isKw("or")){ p++; const r = andExpr(); l = N("BoolOp", { op:"or", left:l, right:r }, t0); }
+    return l;
+  }
+  function andExpr(){
+    const t0 = p;
+    let l = notExpr();
+    while (isKw("and")){ p++; const r = notExpr(); l = N("BoolOp", { op:"and", left:l, right:r }, t0); }
+    return l;
+  }
+  function notExpr(){
+    if (isKw("not")){
+      const t0 = p;
+      p++;
+      const v = notExpr();
+      return N("UnaryOp", { op:"not", operand:v }, t0);
+    }
+    return compExpr();
+  }
+  function compExpr(){
+    const t0 = p;
+    const l = arith();
+    const ops = [], comps = [];
+    while (T[p] && ((T[p].t === "OP" && ["==","!=","<",">","<=",">="].indexOf(T[p].v) >= 0) ||
+                    (T[p].t === "KEYWORD" && T[p].v === "in"))){
+      ops.push(T[p].v); p++;
+      comps.push(arith());
+    }
+    if (!ops.length) return l;
+    return N("Compare", { left:l, ops:ops, comparators:comps }, t0);
+  }
+  function arith(){
+    const t0 = p;
+    let l = term();
+    while (isOp("+") || isOp("-")){
+      const o = T[p].v; p++;
+      const r = term();
+      l = N("BinOp", { op:o, left:l, right:r }, t0);
+    }
+    return l;
+  }
+  function term(){
+    const t0 = p;
+    let l = factor();
+    while (isOp("*") || isOp("/") || isOp("//") || isOp("%")){
+      const o = T[p].v; p++;
+      const r = factor();
+      l = N("BinOp", { op:o, left:l, right:r }, t0);
+    }
+    return l;
+  }
+  function factor(){
+    if (isOp("-") || isOp("+")){
+      const t0 = p, o = T[p].v;
+      p++;
+      const v = factor();
+      return N("UnaryOp", { op:o, operand:v }, t0);
+    }
+    return power();
+  }
+  function power(){
+    const t0 = p;
+    const l = postfix();
+    if (isOp("**")){
+      p++;
+      const r = factor();
+      return N("BinOp", { op:"**", left:l, right:r }, t0);
+    }
+    return l;
+  }
+  function postfix(){
+    const t0 = p;
+    let e = atom();
+    for (;;){
+      if (isOp(".")){
+        p++;
+        if (!isT("NAME")) fail("点号后面要跟属性名");
+        const nm = T[p].v; p++;
+        e = N("Attribute", { value:e, attr:nm }, t0);
+      } else if (isOp("[")){
+        p++;
+        const idx = expr();
+        if (!isOp("]")) fail("下标缺右方括号");
+        p++;
+        e = N("Subscript", { value:e, index:idx }, t0);
+      } else if (isOp("(")){
+        p++;
+        const args = [];
+        if (!isOp(")")){
+          args.push(expr());
+          while (isOp(",")){
+            p++;
+            if (isOp(")")) break;
+            args.push(expr());
+          }
+        }
+        if (!isOp(")")) fail("函数调用缺右括号");
+        p++;
+        e = N("Call", { func:e, args:args }, t0);
+      } else break;
+    }
+    return e;
+  }
+  function atom(){
+    const tk = T[p];
+    if (!tk) fail("表达式不完整");
+    const t0 = p;
+    if (tk.t === "NUMBER"){ p++; return N("Num", { raw:tk.v, value:Number(tk.v) }, t0); }
+    if (tk.t === "STRING"){ p++; return N("Str", { value:tk.v }, t0); }
+    if (tk.t === "NAME"){ p++; return N("Name", { id:tk.v }, t0); }
+    if (tk.t === "KEYWORD" && ["True","False","None"].indexOf(tk.v) >= 0){ p++; return N("Const", { value:tk.v }, t0); }
+    if (isOp("(")){
+      p++;
+      if (isOp(")")){ p++; return N("Tuple", { elts:[] }, t0); }
+      const first = expr();
+      if (isOp(",")){
+        const elts = [first];
+        while (isOp(",")){
+          p++;
+          if (isOp(")")) break;
+          elts.push(expr());
+        }
+        if (!isOp(")")) fail("元组缺右括号");
+        p++;
+        return N("Tuple", { elts:elts }, t0);
+      }
+      if (!isOp(")")) fail("括号没有闭合");
+      p++;
+      return N("Paren", { value:first }, t0);
+    }
+    if (isOp("[")){
+      p++;
+      const elts = [];
+      if (!isOp("]")){
+        elts.push(expr());
+        while (isOp(",")){
+          p++;
+          if (isOp("]")) break;
+          elts.push(expr());
+        }
+      }
+      if (!isOp("]")) fail("列表缺右方括号");
+      p++;
+      return N("List", { elts:elts }, t0);
+    }
+    if (isOp("{")){
+      p++;
+      const keys = [], vals = [];
+      if (!isOp("}")){
+        keys.push(expr());
+        if (!isOp(":")) fail("字典的键后面要跟冒号");
+        p++;
+        vals.push(expr());
+        while (isOp(",")){
+          p++;
+          if (isOp("}")) break;
+          keys.push(expr());
+          if (!isOp(":")) fail("字典的键后面要跟冒号");
+          p++;
+          vals.push(expr());
+        }
+      }
+      if (!isOp("}")) fail("字典缺右花括号");
+      p++;
+      return N("Dict", { keys:keys, values:vals }, t0);
+    }
+    fail("这里应该是一个表达式");
+  }
+  const mod = file();
+  if (!isT("EOF")) fail("解析完还有多余的内容");
+  return mod;
+}
+
+/* ── AST 工具 ── */
+function kidsOf(n){
+  switch (n.type){
+    case "Module": return n.body || [];
+    case "Assign": case "AugAssign": return [n.target, n.value];
+    case "Expr": return [n.value];
+    case "If": return [n.test].concat(n.body, n.orelse);
+    case "While": return [n.test].concat(n.body);
+    case "For": return [n.target, n.iter].concat(n.body);
+    case "FunctionDef": return n.body;
+    case "Return": return n.value ? [n.value] : [];
+    case "BinOp": case "BoolOp": return [n.left, n.right];
+    case "UnaryOp": return [n.operand];
+    case "Compare": return [n.left].concat(n.comparators);
+    case "Call": return [n.func].concat(n.args);
+    case "Subscript": return [n.value, n.index];
+    case "Attribute": return [n.value];
+    case "Paren": return [n.value];
+    case "List": case "Tuple": return n.elts || [];
+    case "Dict": return n.keys.concat(n.values);
+    default: return [];
+  }
+}
+function depthOf(n){
+  const k = kidsOf(n);
+  if (!k.length) return 1;
+  return 1 + Math.max.apply(null, k.map(depthOf));
+}
+function countNodes(n){
+  return 1 + kidsOf(n).reduce(function(a, c){ return a + countNodes(c); }, 0);
+}
+function firstOpNode(n){
+  if (n.type === "BinOp" || n.type === "Compare" || n.type === "BoolOp") return n;
+  const k = kidsOf(n);
+  for (let i = 0; i < k.length; i++){
+    const r = firstOpNode(k[i]);
+    if (r) return r;
+  }
+  return null;
+}
+function collectOps(n, out){
+  if (n.type === "BinOp") out.push(n.op);
+  else if (n.type === "Compare") out = out.concat(n.ops);
+  else if (n.type === "BoolOp") out.push(n.op);
+  kidsOf(n).forEach(function(c){ collectOps(c, out); });
+  return out;
+}
+function nodeLabel(n){
+  switch (n.type){
+    case "Module": return "Module";
+    case "Assign": return "Assign  =";
+    case "AugAssign": return "AugAssign  " + n.op + "=";
+    case "Expr": return "Expr";
+    case "If": return "If";
+    case "While": return "While";
+    case "For": return "For";
+    case "FunctionDef": return "def " + n.name + "( )";
+    case "Return": return "Return";
+    case "Pass": return "Pass";
+    case "BinOp": return "BinOp  " + n.op;
+    case "BoolOp": return "BoolOp  " + n.op;
+    case "UnaryOp": return "UnaryOp  " + n.op;
+    case "Compare": return "Compare  " + n.ops.join(" ");
+    case "Call": return "Call( )";
+    case "Subscript": return "Subscript  [ ]";
+    case "Attribute": return "Attribute  ." + n.attr;
+    case "Name": return "Name  " + n.id;
+    case "Num": return "Num  " + n.raw;
+    case "Str": return "Str  '" + n.value + "'";
+    case "Const": return "Const  " + n.value;
+    case "List": return "List  [ ]";
+    case "Tuple": return "Tuple  ( )";
+    case "Dict": return "Dict  { }";
+    case "Paren": return "Paren  ( )";
+    default: return n.type;
+  }
+}
+function nodeColor(n){
+  if (n.type === "BinOp" || n.type === "BoolOp" || n.type === "UnaryOp" || n.type === "Compare") return C.amber;
+  if (n.type === "Num") return C.jade;
+  if (n.type === "Str" || n.type === "Const") return C.jade;
+  if (n.type === "Name") return C.blue;
+  if (n.type === "Module" || n.type === "FunctionDef" || n.type === "If" || n.type === "While" || n.type === "For") return C.purple;
+  return C.cyan;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   8 · 模块二：界面与画布
+   ══════════════════════════════════════════════════════════════ */
+const TOKC = { NUMBER:C.amber, STRING:C.jade, NAME:C.blue, KEYWORD:C.purple, OP:C.cyan,
+  NEWLINE:"#4a5462", INDENT:"#4a5462", DEDENT:"#4a5462", EOF:"#4a5462", ERR:C.red };
+const M2 = {
+  toks:[], ast:null, err:null, selNode:null, selTok:-1, rootOp:null,
+  clickedNum:false, clickedName:false, edited:false,
+  tokRects:[], nodeRects:[], log:[],
+  presets:[
+    { k:"表达式", s:"a = 1 + 2 * 3" },
+    { k:"赋值", s:"x = 10\ny = x + 5" },
+    { k:"if 语句", s:"if x > 5:\n    y = x\nelse:\n    y = 0" },
+    { k:"函数定义", s:"def add(a, b):\n    return a + b" },
+    { k:"for 循环", s:"total = 0\nfor i in range(3):\n    total = total + i" },
+    { k:"嵌套括号", s:"r = (1 + 2) * (3 + 4) - 5" }
+  ],
+  setSrc(s, isEdit){
+    $("#src2").value = s;
+    if (isEdit) this.edited = true;
+    this.reparse();
+  },
+  push(k, text){
+    this.log.push({ k:k, text:text });
+    if (this.log.length > 60) this.log.shift();
+    let h = "";
+    for (let i = 0; i < this.log.length; i++){
+      const e = this.log[i];
+      h += '<div class="k-' + e.k + '"><span class="n">·</span>' + e.text + "</div>";
+    }
+    const box = $("#log2");
+    box.innerHTML = h;
+    box.scrollTop = box.scrollHeight;
+  },
+  reparse(){
+    const src = $("#src2").value;
+    this.selNode = null; this.selTok = -1;
+    this.toks = tokenize(src);
+    this.err = null; this.ast = null; this.rootOp = null;
+    try {
+      this.ast = parsePy(this.toks);
+      this.rootOp = firstOpNode(this.ast);
+    } catch (e){
+      this.err = (e && e.message) ? e.message : String(e);
+      this.push("err", "解析失败：" + this.err);
+    }
+    const nums = this.toks.filter(function(t){ return t.t === "NUMBER"; }).length;
+    const nms = this.toks.filter(function(t){ return t.t === "NAME"; }).length;
+    $("#oTok").textContent = String(this.toks.length - 1);
+    $("#oTok2").textContent = nums + " / " + nms;
+    $("#oNodes").textContent = this.ast ? String(countNodes(this.ast)) : "0";
+    $("#oTree").textContent = this.ast ? String(depthOf(this.ast)) : "0";
+    const ops = this.ast ? collectOps(this.ast, []).filter(function(v, i, a){ return a.indexOf(v) === i; }) : [];
+    $("#oOps").textContent = ops.length ? ops.join("  ") : "—";
+    $("#oRoot").textContent = this.rootOp ? (this.rootOp.type + " " + (this.rootOp.op || this.rootOp.ops.join(" "))) : "—";
+    $("#oSel").textContent = this.selNode ? nodeLabel(this.selNode) : "—";
+    this.push("sys", "词法：识别出 " + (this.toks.length - 1) + " 个 token（NUMBER " + nums + " 个，NAME " + nms + " 个）" +
+      (this.ast ? "；语法：语法树 " + countNodes(this.ast) + " 个节点，深度 " + depthOf(this.ast) + " 层" : "；语法：未生成语法树"));
+    m2Draw();
+    T2.check();
+  },
+  render(){ this.reparse(); },
+  onClick(px, py){
+    for (let i = 0; i < this.nodeRects.length; i++){
+      const r = this.nodeRects[i];
+      if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h){
+        this.selNode = r.n; this.selTok = -1;
+        $("#oSel").textContent = nodeLabel(r.n);
+        this.push("sys", "选中语法树节点 " + nodeLabel(r.n) + "（对应 token " + r.n.t0 + " ～ " + r.n.t1 + "），画布上方这些 token 已被点亮");
+        m2Draw(); T2.check();
+        return;
+      }
+    }
+    for (let i = 0; i < this.tokRects.length; i++){
+      const r = this.tokRects[i];
+      if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h){
+        this.selTok = r.i; this.selNode = null;
+        const tok = this.toks[r.i];
+        if (tok.t === "NUMBER") this.clickedNum = true;
+        if (tok.t === "NAME") this.clickedName = true;
+        $("#oSel").textContent = "token " + tok.t + (tok.v ? " " + tok.v : "");
+        this.push("sys", "点中 token #" + r.i + "：" + tok.t + (tok.v ? " = " + tok.v : "") +
+          "（第 " + tok.line + " 行）—— 树上有对应 token 的节点已加亮边框");
+        m2Draw(); T2.check();
+        return;
+      }
+    }
+  }
+};
+
+function m2Draw(){
+  const r = fit($("#cv2")); if (!r) return;
+  const g = r.g, W = r.w, H = r.h;
+  g.fillStyle = C.panel; g.fillRect(0, 0, W, H);
+  M2.tokRects = []; M2.nodeRects = [];
+
+  /* token 流 */
+  put(g, "① 词法分析 · token 流（点一下看看它属于哪个节点）", 14, 20, { f:MONO, c:C.dim });
+  const selRange = M2.selNode ? [M2.selNode.t0, M2.selNode.t1] : null;
+  let x = 14, y = 28, done = 0;
+  for (let i = 0; i < M2.toks.length; i++){
+    const t = M2.toks[i];
+    const disp = t.t === "NEWLINE" ? "↵" : t.t === "INDENT" ? "⇥" : t.t === "DEDENT" ? "⇤" :
+      t.t === "EOF" ? "⏹" : t.v;
+    const lab = t.t + (disp ? " " + disp : "");
+    g.font = MONO;
+    const w = g.measureText(lab).width + 12;
+    if (x + w > W - 14){ x = 14; y += 23; }
+    if (y + 18 > 148){ put(g, "… 还有 " + (M2.toks.length - i) + " 个 token 没画下", 14, y + 14, { f:MONO, c:"#4a5462" }); break; }
+    const isSel = (i === M2.selTok);
+    const inNode = selRange && i >= selRange[0] && i <= selRange[1];
+    g.fillStyle = isSel ? "#16323a" : C.panel2;
+    roundRect(g, x, y, w, 18, 5); g.fill();
+    g.strokeStyle = isSel ? C.cyan : (inNode ? C.amber : C.line); g.lineWidth = inNode || isSel ? 1.6 : 1;
+    roundRect(g, x, y, w, 18, 5); g.stroke();
+    put(g, lab, x + 6, y + 13, { f:isSel ? MONOB : MONO, c:TOKC[t.t] || C.fg });
+    M2.tokRects.push({ x:x, y:y, w:w, h:18, i:i });
+    x += w + 5;
+    done++;
+  }
+  g.strokeStyle = C.line; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(12, 154); g.lineTo(W - 12, 154); g.stroke();
+  put(g, "② 语法分析 · 语法树（点节点高亮 token，点 token 反查节点）", 14, 172, { f:MONO, c:C.dim });
+
+  const areaY = 182, areaH = H - areaY - 10;
+  if (!M2.ast){
+    put(g, "解析失败：" + (M2.err || "未知错误"), 16, areaY + 24, { f:MONO, c:C.red });
+    return;
+  }
+  g.font = MONOB;
+  const maxD = depthOf(M2.ast);
+  layoutTree(g, M2.ast, 0);
+  const levelH = Math.max(24, Math.min(38, areaH / Math.max(1, maxD)));
+  const totalW = M2.ast._bw, totalH = 12 + maxD * levelH;
+  const s = Math.min(1, (W - 26) / Math.max(1, totalW), areaH / Math.max(1, totalH));
+  const ox = (W - totalW * s) / 2, oy = areaY + Math.max(0, (areaH - totalH * s) / 2);
+  placeTree(M2.ast, 0, 12, levelH);
+  g.save(); g.translate(ox, oy); g.scale(s, s);
+  /* 连线 */
+  (function edges(n){
+    const k = kidsOf(n);
+    g.strokeStyle = "#2f3b4a"; g.lineWidth = 1.2;
+    for (let i = 0; i < k.length; i++){
+      const c = k[i];
+      g.beginPath();
+      g.moveTo(n._x, n._y + 19);
+      g.bezierCurveTo(n._x, n._y + 19 + levelH * 0.45, c._x, c._y - levelH * 0.45, c._x, c._y);
+      g.stroke();
+      edges(c);
+    }
+  })(M2.ast);
+  /* 节点 */
+  (function boxes(n){
+    const w = n._tw, h = 20, bx = n._x - w / 2, by = n._y;
+    const isSel = (M2.selNode === n);
+    const hitTok = (M2.selTok >= 0 && M2.selTok >= n.t0 && M2.selTok <= n.t1);
+    g.fillStyle = isSel ? "#16323a" : C.panel2;
+    roundRect(g, bx, by, w, h, 6); g.fill();
+    g.strokeStyle = isSel ? C.cyan : (hitTok ? C.amber : "#33404f");
+    g.lineWidth = isSel || hitTok ? 1.8 : 1;
+    roundRect(g, bx, by, w, h, 6); g.stroke();
+    g.font = MONOB;
+    put(g, nodeLabel(n), n._x, by + 14, { f:MONOB, c:nodeColor(n), a:"center" });
+    M2.nodeRects.push({ x:ox + bx * s, y:oy + by * s, w:w * s, h:h * s, n:n });
+    kidsOf(n).forEach(boxes);
+  })(M2.ast);
+  g.restore();
+  if (s < 1) put(g, "（树太大，已自动缩放 " + Math.round(s * 100) + "%）", W - 14, H - 6, { f:MONO, c:"#4a5462", a:"right" });
+}
+function layoutTree(g, n, d){
+  const k = kidsOf(n);
+  n._d = d;
+  g.font = MONOB;
+  n._tw = g.measureText(nodeLabel(n)).width + 16;
+  if (!k.length) n._bw = n._tw;
+  else {
+    k.forEach(function(c){ layoutTree(g, c, d + 1); });
+    let sum = 0;
+    k.forEach(function(c){ sum += c._bw; });
+    sum += (k.length - 1) * 10;
+    n._bw = Math.max(n._tw, sum);
+  }
+  return n._bw;
+}
+function placeTree(n, x, y, levelH){
+  const k = kidsOf(n);
+  n._x = x + n._bw / 2;
+  n._y = y;
+  if (!k.length) return;
+  let sum = 0;
+  k.forEach(function(c){ sum += c._bw; });
+  sum += (k.length - 1) * 10;
+  let cx = x + (n._bw - sum) / 2;
+  k.forEach(function(c){
+    placeTree(c, cx, y + levelH, levelH);
+    cx += c._bw + 10;
+  });
+}
+
+/* ── 模块二任务 ── */
+const T2 = {
+  idx:0, done:[false, false, false],
+  tasks:[
+    {
+      title:"在 token 流里各点出一个数字字面量和一个标识符",
+      desc:"词法分析器把源码切成一串 token，每个 token 都有<b>类型</b>和<b>值</b>：" +
+           "数字字面量的类型是 <code>NUMBER</code>，标识符（变量名、函数名）是 <code>NAME</code>，" +
+           "if / def / for 这类是 <code>KEYWORD</code>。请在画布上半部分<b>点一个 NUMBER，再点一个 NAME</b>。",
+      setup(){ M2.clickedNum = false; M2.clickedName = false; M2.setSrc("a = 1 + 2 * 3"); },
+      test(){ return M2.clickedNum && M2.clickedName; },
+      hint:"在画布上方的 token 流里，先点一个橙色 NUMBER，再点一个蓝色 NAME。",
+      note:"<b>词法分析只做一件事：把字符流切成 token 流。</b>它不关心语法对不对，只关心「这一串字符是什么类型」。" +
+        "规则很短：数字开头 → NUMBER；字母或下划线开头 → 继续吃到不是字母数字为止，再去关键字表里查一下，查到就是 KEYWORD，查不到才是 NAME。" +
+        "注意 <code>1 + 2</code> 里的 <code>+</code> 是 OP（运算符），<code>a</code> 是 NAME，<code>1</code> 是 NUMBER——" +
+        "同一个字符序列在不同位置含义不同，靠的就是这些小规则。<br><br>" +
+        "真实 CPython 的词法器（<code>tokenizer.c</code>）还多干了几件这里也做了的事：" +
+        "① 处理缩进，把它变成 INDENT / DEDENT 两个伪 token（Python 的块结构不靠花括号，就靠这两个 token）；" +
+        "② 在行尾补一个 NEWLINE；③ 把注释和空白直接丢掉。<b>缩进进入 token 流之后，语法分析器才能像读花括号一样读缩进块。</b>",
+      extra(){ return ""; },
+      bind(){}
+    },
+    {
+      title:"构造一段代码，让语法树的深度 ≥ 4 层",
+      desc:"右边读数里有<b>语法树深度</b>（根到最深叶子的节点数）。现在这段代码太浅了。" +
+           "试着在文本框里改一改：加一个运算符、加一层括号、或者把表达式塞进 if 的条件里。" +
+           "注意：<b>深度是按语法结构算的，不是按字符数算的。</b>",
+      setup(){ M2.edited = false; M2.setSrc("x = 1"); },
+      test(){ return M2.edited && M2.ast && depthOf(M2.ast) >= 4; },
+      hint:"在源码框里把 x = 1 改成比如 x = 1 + 2 * 3（Assign → BinOp+ → BinOp* → Num，正好 4 层）。",
+      note:"<b>深度来自「嵌套」，不来自「长度」。</b><code>x = 1</code> 只有 3 层（Module → Assign → Num）；" +
+        "改成 <code>x = 1 + 2 * 3</code> 之后是 Module → Assign → BinOp(+) → BinOp(*) → Num，一共 5 层——" +
+        "每多一个运算符就多一个 BinOp 节点，而优先级高的运算符会被<b>嵌在更深的位置</b>。<br><br>" +
+        "这也是递归下降分析器的形状：它从最低优先级的规则开始往下钻，" +
+        "<code>or → and → not → 比较 → 加减 → 乘除 → 一元 → 幂 → 后缀 → 原子</code>，" +
+        "每钻一层就对应树上的一层。所以<b>看树的深浅，就能反推出解析器调用栈的深浅</b>。" +
+        "顺便说一句：Python 的真实解析器在 3.9 之后换成了 PEG 解析器，但产出的树形状和这里是一样的。",
+      extra(){ return ""; },
+      bind(){}
+    },
+    {
+      title:"找出解析器最先拆开（在树根上）的那个运算符",
+      desc:"写一个至少含<b>两个不同运算符</b>的表达式，比如 <code>x = 1 + 2 * 3</code>，" +
+           "然后<b>在语法树上点一下那个「最外层、最后才算」的运算符节点</b>。提示：它离根最近。",
+      setup(){ M2.setSrc("x = 1 + 2 * 3"); M2.edited = true; },
+      test(){
+        if (!M2.edited || !M2.ast || !M2.rootOp || !M2.selNode) return false;
+        const ops = collectOps(M2.ast, []).filter(function(v, i, a){ return a.indexOf(v) === i; });
+        return ops.length >= 2 && M2.selNode === M2.rootOp;
+      },
+      hint:"在树上点最靠近根的那个 BinOp 节点（对 x = 1 + 2 * 3 来说就是根部的 BinOp +）。",
+      note:"<b>树根上的运算符，就是优先级最低的那个。</b>对 <code>1 + 2 * 3</code>：" +
+        "加法在根，乘法是它的右孩子——意思是「先算乘法，再算加法」。" +
+        "递归下降解析器确实是从 <code>+/-</code> 这一层开始拆的：它先按 + 把表达式切成左右两半，" +
+        "左半边是 <code>1</code>，右半边是 <code>2 * 3</code>；然后递归下去处理右半边，才遇到乘法。" +
+        "所以「解析器最先处理的运算符」= 「优先级最低的运算符」= 「树根上的运算符」——三句话是同一件事。<br><br>" +
+        "优先级在代码里就体现为函数的调用顺序：<code>arith()</code> 调 <code>term()</code>，" +
+        "<code>term()</code> 调 <code>factor()</code>。越靠外层的函数管优先级越低的运算符，" +
+        "它把高优先级的部分当作「一个整体」交给下一层去解析。<b>要加一个新运算符，只要在这一串函数里插一层就行，别的都不用动。</b>",
+      extra(){ return ""; },
+      bind(){}
+    }
+  ],
+  render(){
+    const t = this.tasks[this.idx];
+    $("#t2n").textContent = this.idx + 1;
+    $("#t2title").textContent = t.title;
+    $("#t2desc").innerHTML = t.desc;
+    $("#t2extra").innerHTML = t.extra();
+    t.bind();
+    if (this.done[this.idx]){
+      $("#t2verdict").className = "verdict ok";
+      $("#t2verdict").textContent = "✓ 已达成。";
+      $("#t2note").innerHTML = t.note;
+    } else {
+      $("#t2verdict").className = "verdict no";
+      $("#t2verdict").textContent = "还没达成 —— " + t.hint;
+      $("#t2note").innerHTML = "完成判定后，这里会解释背后的机制。";
+    }
+  },
+  check(){
+    const t = this.tasks[this.idx];
+    if (!this.done[this.idx] && t.test()){
+      this.done[this.idx] = true;
+      this.render();
+    } else if (!this.done[this.idx]){
+      $("#t2verdict").className = "verdict no";
+      $("#t2verdict").textContent = "还没达成 —— " + t.hint;
+    }
+  },
+  next(){
+    this.idx = (this.idx + 1) % this.tasks.length;
+    this.tasks[this.idx].setup();
+    this.render();
+    this.check();
+  }
+};
+/* ══════════════════════════════════════════════════════════════
+   9 · 模块三：垃圾回收
+   ══════════════════════════════════════════════════════════════ */
+const ROOTS = ["a", "b", "c", "d", "e", "f"];
+const GC = {
+  objs:[], nextId:1, sel:null, rcFreed:0, msFreed:0, lastMs:null, log:[],
+  reset(){
+    this.objs = []; this.nextId = 1; this.sel = null;
+    this.rcFreed = 0; this.msFreed = 0; this.lastMs = null; this.log = [];
+    gcPush("sys", "场景已重置：堆是空的，根集合里有 6 个变量 a～f（都还没指向任何对象）。");
+    gcRender();
+  },
+  push(k, text){
+    gcPush(k, text);
+    gcRender();
+  }
+};
+function gcObj(id){
+  for (let i = 0; i < GC.objs.length; i++) if (GC.objs[i].id === id) return GC.objs[i];
+  return null;
+}
+function gcAlive(){ return GC.objs.filter(function(o){ return o.alive; }); }
+function rcOf(o){
+  let n = o.root ? 1 : 0;
+  GC.objs.forEach(function(p){
+    if (!p.alive) return;
+    p.refs.forEach(function(r){ if (r === o.id) n++; });
+  });
+  return n;
+}
+function reachableSet(){
+  const seen = {};
+  const walk = function(x){
+    if (!x || !x.alive || seen[x.id]) return;
+    seen[x.id] = true;
+    x.refs.forEach(function(r){ walk(gcObj(r)); });
+  };
+  GC.objs.forEach(function(o){ if (o.alive && o.root) walk(o); });
+  return seen;
+}
+function cycleNodes(objs){
+  const inSet = {}, color = {}, onCycle = {}, path = [];
+  objs.forEach(function(o){ inSet[o.id] = o; });
+  const dfs = function(o){
+    color[o.id] = 1; path.push(o.id);
+    o.refs.forEach(function(r){
+      const t = inSet[r];
+      if (!t) return;
+      if (color[r] === 1){
+        const k = path.indexOf(r);
+        for (let i = k; i < path.length; i++) onCycle[path[i]] = true;
+      } else if (!color[r]) dfs(t);
+    });
+    path.pop(); color[o.id] = 2;
+  };
+  objs.forEach(function(o){ if (!color[o.id]) dfs(o); });
+  return onCycle;
+}
+function gcTrapped(){
+  const reach = reachableSet();
+  const un = GC.objs.filter(function(o){ return o.alive && !reach[o.id]; });
+  const cyc = cycleNodes(un);
+  return { unreach:un, cyclic:un.filter(function(o){ return cyc[o.id]; }) };
+}
+function gcFreeRoot(nm){
+  GC.objs.forEach(function(o){ if (o.alive && o.root === nm) o.root = null; });
+}
+function gcCreate(){
+  const free = ROOTS.filter(function(nm){
+    return !GC.objs.some(function(o){ return o.alive && o.root === nm; });
+  });
+  const id = GC.nextId++;
+  const label = String.fromCharCode(65 + ((id - 1) % 26)) + (id > 26 ? String(Math.floor((id - 1) / 26)) : "");
+  const o = { id:id, label:label, refs:[], root:(free[0] || null), alive:true, by:"" };
+  GC.objs.push(o);
+  GC.sel = o.id;
+  gcPush("sys", "创建对象 " + label + (o.root ? "，并用根变量 " + o.root + " 指向它（引用计数 = 1）" : "（没有空闲的根变量了，引用计数 = 0）"));
+  return o;
+}
+function gcLink(fromKey, toId){
+  const to = gcObj(toId);
+  if (!to || !to.alive){ gcPush("err", "目标对象不存在或已被回收"); return; }
+  if (fromKey.charAt(0) === "r"){
+    const nm = fromKey.slice(2);
+    gcFreeRoot(nm);
+    to.root = nm;
+    gcPush("hit", "根变量 " + nm + " 改为指向对象 " + to.label + " → " + to.label + " 的引用计数 +1（现在是 " + rcOf(to) + "）");
+  } else {
+    const from = gcObj(parseInt(fromKey.slice(2), 10));
+    if (!from || !from.alive){ gcPush("err", "源对象不存在或已被回收"); return; }
+    if (from.refs.indexOf(to.id) >= 0){ gcPush("sys", from.label + " 已经指向 " + to.label + " 了"); return; }
+    from.refs.push(to.id);
+    gcPush("hit", from.label + " → " + to.label + " 建立引用：" + to.label + " 的引用计数 +1（现在是 " + rcOf(to) + "）");
+  }
+  GC.sel = to.id;
+}
+function gcUnlink(fromKey, toId){
+  const to = gcObj(toId);
+  if (!to){ gcPush("err", "目标对象不存在"); return; }
+  if (fromKey.charAt(0) === "r"){
+    const nm = fromKey.slice(2);
+    if (to.root === nm){
+      to.root = null;
+      gcPush("hit", "断开根变量 " + nm + " 对 " + to.label + " 的引用 → " + to.label + " 的引用计数 -1（现在是 " + rcOf(to) + "）");
+    } else gcPush("sys", "根变量 " + nm + " 本来就没指向 " + to.label);
+  } else {
+    const from = gcObj(parseInt(fromKey.slice(2), 10));
+    if (!from || !from.alive){ gcPush("err", "源对象不存在或已被回收"); return; }
+    const k = from.refs.indexOf(to.id);
+    if (k < 0){ gcPush("sys", from.label + " 本来就没指向 " + to.label); return; }
+    from.refs.splice(k, 1);
+    gcPush("hit", from.label + " 断开对 " + to.label + " 的引用：" + to.label + " 的引用计数 -1（现在是 " + rcOf(to) + "）");
+  }
+  GC.sel = to.id;
+}
+function gcRcSweep(){
+  let total = 0;
+  for (;;){
+    const dead = GC.objs.filter(function(o){ return o.alive && rcOf(o) === 0; });
+    if (!dead.length) break;
+    dead.forEach(function(o){
+      o.alive = false; o.by = "引用计数"; GC.rcFreed++; total++;
+      gcPush("hit", "对象 " + o.label + " 的引用计数 = 0 → 立刻释放；它指向的对象引用计数跟着 -1");
+    });
+  }
+  if (!total) gcPush("err", "引用计数法这一轮一个都没回收掉：所有存活对象的计数都 ≥ 1。如果它们互相引用，计数永远掉不到 0。");
+  gcRender();
+  return total;
+}
+function gcMsSweep(){
+  const reach = reachableSet();
+  const doomed = GC.objs.filter(function(o){ return o.alive && !reach[o.id]; });
+  GC.lastMs = { before:doomed.map(function(o){ return o.id; }) };
+  gcPush("sys", "① 标记：从根集合出发遍历对象图，能走到的对象共 " + Object.keys(reach).length + " 个，打上标记");
+  doomed.forEach(function(o){
+    o.alive = false; o.by = "标记-清除"; GC.msFreed++;
+    gcPush("hit", "② 清除：对象 " + o.label + " 没有被标记 → 回收（哪怕它身上还挂着别的对象的引用）");
+  });
+  if (!doomed.length) gcPush("sys", "没有不可达对象，标记-清除这次什么也没做。");
+  GC.lastMs.still = GC.lastMs.before.filter(function(id){ const o = gcObj(id); return o && o.alive; });
+  gcRender();
+}
+function gcPush(k, text){
+  GC.log.push({ k:k, text:text });
+  if (GC.log.length > 60) GC.log.shift();
+  let h = "";
+  for (let i = 0; i < GC.log.length; i++){
+    const e = GC.log[i];
+    h += '<div class="k-' + e.k + '"><span class="n">·</span>' + e.text + "</div>";
+  }
+  const box = $("#log3");
+  box.innerHTML = h;
+  box.scrollTop = box.scrollHeight;
+}
+function gcRender(){
+  const alive = gcAlive(), trapped = gcTrapped();
+  $("#oAlive").textContent = String(alive.length);
+  $("#oFreed").textContent = String(GC.objs.length - alive.length);
+  $("#oTrapped").textContent = String(trapped.cyclic.length);
+  $("#oRc").textContent = String(GC.rcFreed);
+  $("#oMs").textContent = String(GC.msFreed);
+  /* 对象列表 */
+  let h = "";
+  if (!GC.objs.length) h = '<span class="hintline">堆还是空的，点「创建对象」。</span>';
+  GC.objs.forEach(function(o){
+    const cls = !o.alive ? "dead" : (GC.sel === o.id ? "sel" : "");
+    h += '<span class="ochip ' + cls + '" data-id="' + o.id + '">' + o.label +
+      (o.alive ? " rc=" + rcOf(o) : " 已回收") + "</span>";
+  });
+  $("#objList").innerHTML = h;
+  document.querySelectorAll("#objList .ochip").forEach(function(c){
+    c.onclick = function(){
+      const o = gcObj(parseInt(c.dataset.id, 10));
+      GC.sel = o ? o.id : null;
+      gcRender();
+      if (o) gcPush("sys", "选中对象 " + o.label + "：引用计数 = " + rcOf(o) + (o.alive ? "" : "（已回收）") +
+        "，出边 " + o.refs.length + " 条" + (o.root ? "，被根变量 " + o.root + " 引用" : "，没有任何根引用它"));
+    };
+  });
+  /* 下拉框 */
+  let sa = "", sb = "";
+  ROOTS.forEach(function(nm){
+    const bound = GC.objs.some(function(o){ return o.alive && o.root === nm; });
+    sa += '<option value="r:' + nm + '">根变量 ' + nm + (bound ? "" : "（空）") + "</option>";
+  });
+  alive.forEach(function(o){
+    const t = o.label + "（rc=" + rcOf(o) + "）";
+    sa += '<option value="o:' + o.id + '">对象 ' + t + "</option>";
+  });
+  alive.forEach(function(o){
+    sb += '<option value="o:' + o.id + '">对象 ' + o.label + "（rc=" + rcOf(o) + "）</option>";
+  });
+  const keepA = $("#selA").value, keepB = $("#selB").value;
+  $("#selA").innerHTML = sa;
+  $("#selB").innerHTML = sb.length ? sb : '<option value="">（没有存活对象）</option>';
+  if (keepA && $("#selA").querySelector('option[value="' + keepA + '"]')) $("#selA").value = keepA;
+  if (keepB && $("#selB").querySelector('option[value="' + keepB + '"]')) $("#selB").value = keepB;
+  gcDraw();
+  T3.check();
+}
+function gcDraw(){
+  const r = fit($("#cv3")); if (!r) return;
+  const g = r.g, W = r.w, H = r.h;
+  g.fillStyle = C.panel; g.fillRect(0, 0, W, H);
+  const alive = gcAlive(), dead = GC.objs.filter(function(o){ return !o.alive; });
+  const reach = reachableSet();
+  /* 根集合 */
+  put(g, "根集合（栈上的变量，GC 从这里出发找活对象）", 14, 20, { f:MONO, c:C.dim });
+  const slotW = 46, gap = Math.min(26, (W - 40 - ROOTS.length * slotW) / Math.max(1, ROOTS.length - 1));
+  const totalW = ROOTS.length * slotW + (ROOTS.length - 1) * gap;
+  const x0 = (W - totalW) / 2;
+  const rootPos = {};
+  ROOTS.forEach(function(nm, i){
+    const x = x0 + i * (slotW + gap), y = 32;
+    const o = GC.objs.filter(function(z){ return z.alive && z.root === nm; })[0];
+    g.fillStyle = o ? "#16323a" : C.panel2;
+    roundRect(g, x, y, slotW, 20, 6); g.fill();
+    g.strokeStyle = o ? C.jade : C.line; g.lineWidth = 1;
+    roundRect(g, x, y, slotW, 20, 6); g.stroke();
+    put(g, nm + (o ? " →" : ""), x + slotW / 2, y + 14, { f:MONO, c:o ? C.jade : "#4a5462", a:"center" });
+    if (o) rootPos[nm] = { x:x + slotW / 2, y:y + 22, target:o.id };
+  });
+  /* 对象位置 */
+  const R = 24;
+  const cx0 = W / 2, cy0 = 205;
+  const rx = Math.min((W - 200) / 2, 300), ry = Math.min(62, 62);
+  const n = alive.length;
+  alive.forEach(function(o, i){
+    const ang = -Math.PI / 2 + (n === 1 ? 0 : i * 2 * Math.PI / n);
+    o.x = n === 1 ? cx0 : cx0 + rx * Math.cos(ang);
+    o.y = n === 1 ? cy0 : cy0 + ry * Math.sin(ang);
+    o.r = R;
+  });
+  /* 根 → 对象 */
+  Object.keys(rootPos).forEach(function(nm){
+    const rp = rootPos[nm], o = gcObj(rp.target);
+    if (!o) return;
+    const dx = o.x - rp.x, dy = o.y - rp.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
+    arrow(g, rp.x, rp.y, o.x - dx / d * (R + 3), o.y - dy / d * (R + 3), C.jade, 0);
+  });
+  /* 对象 → 对象 */
+  alive.forEach(function(a){
+    a.refs.forEach(function(tid){
+      const b = gcObj(tid);
+      if (!b || !b.alive) return;
+      const col = (reach[a.id] && reach[b.id]) ? "#3f6b5c" : C.red;
+      if (a.id === b.id){
+        g.strokeStyle = col; g.lineWidth = 1.4;
+        g.beginPath(); g.arc(a.x, a.y - R - 8, 13, Math.PI * 0.15, Math.PI * 1.05, true); g.stroke();
+        head(g, a.x - 11, a.y - R - 4, Math.PI * 0.6);
+        put(g, "自引用", a.x, a.y - R - 26, { f:MONO, c:col, a:"center" });
+        return;
+      }
+      const dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
+      const ux = dx / d, uy = dy / d;
+      const curve = (a.id < b.id) ? 16 : -16;
+      arrow(g, a.x + ux * (R + 3), a.y + uy * (R + 3), b.x - ux * (R + 4), b.y - uy * (R + 4), col, curve);
+    });
+  });
+  /* 对象本体 */
+  alive.forEach(function(o){
+    const isRooted = !!o.root, ok = !!reach[o.id], selected = (GC.sel === o.id);
+    const col = ok ? C.jade : C.red;
+    g.fillStyle = ok ? "#12241f" : "#2a1416";
+    g.beginPath(); g.arc(o.x, o.y, R, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = selected ? C.cyan : col; g.lineWidth = selected ? 2.4 : 1.6;
+    g.beginPath(); g.arc(o.x, o.y, R, 0, Math.PI * 2); g.stroke();
+    put(g, o.label, o.x, o.y - 1, { f:MONOB, c:C.fg, a:"center" });
+    put(g, "rc=" + rcOf(o), o.x, o.y + 13, { f:MONO, c:col, a:"center" });
+    if (isRooted) put(g, "根" + o.root, o.x, o.y + R + 12, { f:MONO, c:C.jade, a:"center" });
+    else if (!ok) put(g, "不可达", o.x, o.y + R + 12, { f:MONO, c:C.red, a:"center" });
+  });
+  /* 回收站 */
+  if (dead.length){
+    put(g, "已回收：", 14, H - 9, { f:MONO, c:"#4a5462" });
+    let dx2 = 74;
+    dead.forEach(function(o){
+      g.fillStyle = "#171c24";
+      g.beginPath(); g.arc(dx2 + 11, H - 14, 11, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = "#39424f"; g.lineWidth = 1; g.setLineDash([3, 2]);
+      g.beginPath(); g.arc(dx2 + 11, H - 14, 11, 0, Math.PI * 2); g.stroke();
+      g.setLineDash([]);
+      put(g, o.label, dx2 + 11, H - 10, { f:MONO, c:"#5c6675", a:"center" });
+      dx2 += 28;
+    });
+    put(g, "（" + dead.map(function(o){ return o.label + " " + o.by; }).join("，") + "）", dx2 + 4, H - 9, { f:MONO, c:"#4a5462" });
+  }
+  /* 图例 */
+  put(g, "绿 = 从根可达", W - 14, 20, { f:MONO, c:C.jade, a:"right" });
+  put(g, "红 = 不可达（引用计数永远不为 0）", W - 14, 34, { f:MONO, c:C.red, a:"right" });
+  const tr = gcTrapped();
+  if (tr.cyclic.length) put(g, "被循环引用困住的对象：" + tr.cyclic.map(function(o){ return o.label; }).join("、"), W - 14, 48, { f:MONO, c:C.amber, a:"right" });
+}
+
+/* ── 模块三任务 ── */
+const T3 = {
+  idx:0, done:[false, false, false],
+  tasks:[
+    {
+      title:"制造一个引用计数回收不掉的循环引用",
+      desc:"两个对象互相引用，而<b>外面没有任何根变量指向它们</b>——这时它们各自的引用计数都是 1，" +
+           "引用计数法永远等不到 0。最快的做法：先点两次「创建对象」，再用下面的下拉框连两条边，最后把两个根变量断开。" +
+           "或者直接点「创建循环引用」按钮。判定条件：存在 2 个以上互相引用、且外部引用为 0 的对象。",
+      setup(){ GC.reset(); },
+      test(){ return gcTrapped().cyclic.length >= 2; },
+      hint:"点「创建对象」两次，用「从 / 到」下拉框连成 A→B、B→A，再把根变量 a、b 断开。",
+      note:"<b>引用计数法的死穴就是环。</b>对象 A 被 B 引用、B 被 A 引用，两者的计数都停在 1，" +
+        "谁也不会先降到 0，于是谁也不会先被释放——它们明明已经不可能再被程序访问到了，" +
+        "却一直占着内存。这就是「循环引用造成的泄漏」。<br><br>" +
+        "引用计数法本身其实很好：<b>它是实时的、增量的</b>，一个对象刚死就立刻被回收，不用等 GC 跑一轮，" +
+        "而且回收时延可以摊平到每次赋值上。CPython 到今天还是以引用计数为主——你在画布上看到的 <code>rc=n</code> " +
+        "就是 <code>ob_refcnt</code> 字段。<br><br>" +
+        "但正因为环的问题，CPython 必须<b>再叠一层</b>标记-清除（准确说是分代收集）来兜底：" +
+        "第 0 代每分配 700 个容器对象就跑一次。所以真实 CPython 的回收是「引用计数（主力）+ 分代标记清除（补漏）」的组合。" +
+        "点右边的「执行引用计数回收」试试——它一个都回收不掉。",
+      extra(){ return ""; },
+      bind(){}
+    },
+    {
+      title:"用标记-清除把这两个对象回收掉",
+      desc:"先做出上面那个循环引用（画布上应该是两个红圈、读数里「被循环引用困住」≥ 2），" +
+           "然后点「执行标记-清除」。判定条件：这轮标记-清除把刚才困住的对象全部回收了。",
+      setup(){ GC.reset(); },
+      test(){ return GC.lastMs && GC.lastMs.before.length >= 2 && GC.lastMs.still.length === 0 && GC.msFreed >= 2; },
+      hint:"先造出循环引用（至少 2 个互相引用的不可达对象），再点「执行标记-清除」。",
+      note:"<b>标记-清除不数引用，它问的是「够不够得着」。</b>算法分两步：" +
+        "① <b>标记</b>：从根集合（栈上的变量、全局变量）出发，沿着引用箭头把能走到的对象全部打上标记；" +
+        "② <b>清除</b>：把整个堆扫一遍，凡是没被标记的对象一律回收——不管它身上挂了多少引用。<br><br>" +
+        "所以刚才那两个互相引用的对象：从根出发根本走不到它们，标记不上，清除阶段照样被回收。" +
+        "<b>环在它面前不是问题，因为在不在环里根本不重要，重要的是能不能从根走到。</b><br><br>" +
+        "代价是什么？① 它不是实时的，得停下来扫一遍堆，会造成停顿（stop-the-world）；" +
+        "② 它需要知道「根」在哪里，所以实现时必须让 GC 能遍历栈和寄存器。" +
+        "这也是为什么 CPython 要用分代：把对象按存活时间分成三代，只在第 0 代频繁扫（大部分对象活不过一次收集），" +
+        "活得久的对象往上升代，扫得越来越稀。",
+      extra(){ return ""; },
+      bind(){}
+    },
+    {
+      title:"断开一个引用，看引用计数立刻归零并释放",
+      desc:"先点「创建对象」造一个对象（根变量 a 会指向它，计数 = 1）。" +
+           "然后在「从」里选<b>根变量 a</b>、「到」里选这个对象，点「断开」，再点「执行引用计数回收」。" +
+           "判定条件：有一个对象因为引用计数降到 0 而被释放。",
+      setup(){ GC.reset(); },
+      test(){ return GC.rcFreed >= 1; },
+      hint:"创建一个对象 → 断开根变量对它的引用 → 点「执行引用计数回收」。",
+      note:"<b>引用计数是实时的：计数一归零，立刻释放。</b>你刚才做的「断开」就是让 <code>ob_refcnt</code> 减 1，" +
+        "减到 0 的那一刻对象就死了——不用等任何 GC 周期。<br><br>" +
+        "而且它是<b>连锁</b>的：对象 A 被释放时，它指向的对象 B 的计数也要减 1；如果 B 因此归零，B 也要被释放，" +
+        "再继续往下传播。这就是为什么这个页面的「引用计数回收」按钮会一直循环到没有计数为 0 的对象为止——" +
+        "释放是会像多米诺骨牌一样传下去的。<br><br>" +
+        "两条路线对比一下就很清楚了：<b>引用计数管「有没有人指着我」，标记-清除管「还能不能从根走到我」。</b>" +
+        "前者快、实时、但怕环；后者能处理环、但要停顿扫描。工程上两个都要，各补各的短板——" +
+        "这正是 CPython 的选择，也是《自己动手写 Python 虚拟机》里讲 GC 那一章的核心。",
+      extra(){ return ""; },
+      bind(){}
+    }
+  ],
+  render(){
+    const t = this.tasks[this.idx];
+    $("#t3n").textContent = this.idx + 1;
+    $("#t3title").textContent = t.title;
+    $("#t3desc").innerHTML = t.desc;
+    $("#t3extra").innerHTML = t.extra();
+    t.bind();
+    if (this.done[this.idx]){
+      $("#t3verdict").className = "verdict ok";
+      $("#t3verdict").textContent = "✓ 已达成。";
+      $("#t3note").innerHTML = t.note;
+    } else {
+      $("#t3verdict").className = "verdict no";
+      $("#t3verdict").textContent = "还没达成 —— " + t.hint;
+      $("#t3note").innerHTML = "完成判定后，这里会解释背后的机制。";
+    }
+  },
+  check(){
+    const t = this.tasks[this.idx];
+    if (!this.done[this.idx] && t.test()){
+      this.done[this.idx] = true;
+      this.render();
+    } else if (!this.done[this.idx]){
+      $("#t3verdict").className = "verdict no";
+      $("#t3verdict").textContent = "还没达成 —— " + t.hint;
+    }
+  },
+  next(){
+    this.idx = (this.idx + 1) % this.tasks.length;
+    this.tasks[this.idx].setup();
+    this.render();
+    this.check();
+  }
+};
+
+/* ══════════════════════════════════════════════════════════════
+   10 · 绑定与启动
+   ══════════════════════════════════════════════════════════════ */
+/* 模块一 */
+PROGRAMS.forEach(function(p, i){
+  const o = document.createElement("option");
+  o.value = String(i);
+  o.textContent = p.label;
+  $("#progSel").appendChild(o);
+});
+$("#progSel").onchange = function(){
+  M1.reset(parseInt(this.value, 10));
+  T1.check();
+};
+$("#b1step").onclick = function(){ M1.step(); };
+$("#b1run").onclick = function(){ M1.runAll(); };
+$("#b1reset").onclick = function(){ M1.reset(null); T1.check(); };
+$("#b1skip").onclick = function(){ T1.next(); };
+
+/* 模块二 */
+let ph = "";
+M2.presets.forEach(function(p, i){
+  ph += '<button class="btn small" data-i="' + i + '">' + p.k + "</button>";
+});
+$("#presets").innerHTML = ph;
+document.querySelectorAll("#presets button").forEach(function(b){
+  b.onclick = function(){
+    const p = M2.presets[parseInt(b.dataset.i, 10)];
+    M2.edited = true;
+    M2.setSrc(p.s, true);
+    M2.push("sys", "载入预设片段：" + p.k);
+  };
+});
+$("#src2").addEventListener("input", function(){
+  M2.edited = true;
+  M2.reparse();
+});
+$("#cv2").addEventListener("click", function(e){
+  const r = e.target.getBoundingClientRect();
+  M2.onClick(e.clientX - r.left, e.clientY - r.top);
+});
+$("#b2skip").onclick = function(){ T2.next(); };
+
+/* 模块三 */
+$("#b3new").onclick = function(){ gcCreate(); gcRender(); };
+$("#b3cycle").onclick = function(){
+  const a = gcCreate();
+  const b = gcCreate();
+  gcFreeRoot(ROOTS[0]); gcFreeRoot(ROOTS[1]);
+  a.root = null; b.root = null;
+  a.refs.push(b.id); b.refs.push(a.id);
+  GC.sel = a.id;
+  gcPush("hit", "造出一对循环引用：" + a.label + " ↔ " + b.label + "，两个根变量都断开了。" +
+    "现在它们各自的引用计数都是 1，但它们已经不可能被访问到了。");
+  gcRender();
+};
+$("#b3link").onclick = function(){ gcLink($("#selA").value, parseInt($("#selB").value.replace("o:", ""), 10)); gcRender(); };
+$("#b3unlink").onclick = function(){ gcUnlink($("#selA").value, parseInt($("#selB").value.replace("o:", ""), 10)); gcRender(); };
+$("#b3rc").onclick = function(){ gcRcSweep(); T3.check(); };
+$("#b3ms").onclick = function(){ gcMsSweep(); T3.check(); };
+$("#b3reset").onclick = function(){ GC.reset(); T3.check(); };
+$("#b3skip").onclick = function(){ T3.next(); };
+
+/* tab 切换：必须用 requestAnimationFrame 延迟重绘，否则隐藏时 clientWidth 为 0 */
+document.querySelectorAll(".tab").forEach(function(t){
+  t.onclick = function(){
+    document.querySelectorAll(".tab").forEach(function(x){ x.classList.toggle("on", x === t); });
+    const m = t.dataset.m;
+    [0, 1, 2].forEach(function(i){ $("#mod" + i).classList.toggle("hide", String(i) !== m); });
+    requestAnimationFrame(function(){
+      if (m === "0") m1Draw();
+      if (m === "1") m2Draw();
+      if (m === "2") gcDraw();
+    });
+  };
+});
+
+/* 启动 */
+M1.reset(0);
+T1.render();
+T1.check();
+M2.edited = false;
+M2.setSrc("a = 1 + 2 * 3");
+T2.render();
+T2.check();
+GC.reset();
+T3.render();
+T3.check();
+setTimeout(function(){ m1Draw(); m2Draw(); gcDraw(); }, 60);
+window.addEventListener("resize", function(){ m1Draw(); m2Draw(); gcDraw(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>大模型实验室 · 分词 / 注意力 / 采样</title>
+<style>
+  :root{
+    --bg:#08090c; --panel:#0f1218; --panel2:#151a22; --line:#212833;
+    --fg:#e8ecf2; --dim:#7d8798; --cyan:#3fb6c8; --jade:#43c08a;
+    --blue:#5b9bd5; --purple:#a97bd6; --rose:#e0685f; --warm:#e0a141;
+    --mono:"Cascadia Code",Consolas,"SF Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);
+    font-family:"Segoe UI","Microsoft YaHei",-apple-system,sans-serif;
+    line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1240px;margin:0 auto;padding:34px 20px 90px}
+  button,input,textarea,select{font-family:inherit}
+  .hide{display:none !important}
+
+  h1{font-size:clamp(24px,3.6vw,32px);margin:0 0 8px;letter-spacing:-.01em}
+  .lede{color:var(--dim);font-size:15.5px;margin:0 0 24px;max-width:840px}
+  .lede b{color:#cfd6e0}
+
+  .tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px;
+    border-bottom:1px solid var(--line);padding-bottom:14px}
+  .tab{background:transparent;border:1px solid transparent;color:var(--dim);
+    padding:9px 17px;border-radius:9px;cursor:pointer;font-size:14.5px;transition:.15s}
+  .tab:hover{color:var(--fg);background:var(--panel2)}
+  .tab.on{background:var(--cyan);color:#04212a;font-weight:700}
+  .hintline{font-size:13.8px;color:var(--dim);margin:0 0 16px;max-width:900px}
+  .hintline b{color:var(--cyan)}
+
+  .grid2{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:18px;align-items:start}
+  .grid2b{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;align-items:start}
+  @media(max-width:1020px){.grid2,.grid2b{grid-template-columns:1fr}}
+  .gridtwo{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:900px){.gridtwo{grid-template-columns:1fr}}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .panel h3{margin:0 0 12px;font-size:11.5px;color:var(--dim);
+    letter-spacing:.16em;text-transform:uppercase;font-weight:700}
+  canvas{display:block;width:100%;touch-action:none}
+
+  input[type=text],textarea{width:100%;background:#06080b;color:var(--fg);
+    border:1px solid var(--line);border-radius:10px;padding:11px 14px;
+    font-size:15px;line-height:1.7;font-family:var(--mono)}
+  input[type=text]:focus,textarea:focus{outline:none;border-color:var(--cyan)}
+  textarea{resize:vertical;min-height:62px}
+
+  .btn{background:var(--panel2);color:var(--fg);border:1px solid var(--line);
+    border-radius:9px;padding:9px 15px;font-size:13.8px;cursor:pointer;transition:.14s}
+  .btn:hover{background:#1d242e;border-color:#333d4b}
+  .btn.primary{background:var(--cyan);color:#04212a;border-color:var(--cyan);font-weight:700}
+  .btn.small{padding:6px 11px;font-size:12.6px}
+  .btn.on{background:var(--cyan);color:#04212a;border-color:var(--cyan);font-weight:700}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .row.mt{margin-top:12px}
+
+  .readout{display:flex;justify-content:space-between;gap:10px;padding:6px 0;
+    border-bottom:1px solid var(--line);font-size:13.4px}
+  .readout:last-child{border-bottom:0}
+  .readout .k{color:var(--dim)}
+  .readout .v{font-variant-numeric:tabular-nums;font-weight:600}
+  .v.ok{color:var(--jade)} .v.bad{color:var(--rose)} .v.warn{color:var(--warm)}
+
+  .slider{margin:12px 0 2px}
+  .slider input{width:100%;height:6px;-webkit-appearance:none;appearance:none;
+    background:#1a212b;border-radius:4px;outline:none}
+  .slider input::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:22px;height:22px;border-radius:50%;background:var(--cyan);cursor:pointer;
+    border:3px solid var(--bg);box-shadow:0 0 0 1.5px var(--cyan)}
+  .slider input::-moz-range-thumb{width:22px;height:22px;border-radius:50%;
+    background:var(--cyan);cursor:pointer;border:3px solid var(--bg)}
+  .slabel{display:flex;justify-content:space-between;font-size:12.8px;color:var(--dim);margin-bottom:2px}
+  .slabel b{color:var(--fg);font-variant-numeric:tabular-nums}
+
+  .chipbox{background:#06080b;border:1px solid var(--line);border-radius:12px;
+    padding:22px 20px;min-height:180px;display:flex;flex-wrap:wrap;gap:7px;align-content:flex-start}
+  .chip{position:relative;padding:8px 12px;border-radius:9px;font-size:17.5px;
+    font-family:var(--mono);transition:transform .3s cubic-bezier(.2,1.6,.4,1),
+    box-shadow .25s;border:1px solid transparent;line-height:1.2}
+  .chip .n{position:absolute;top:-8px;right:-6px;font-size:9.5px;background:var(--panel2);
+    color:var(--dim);border-radius:8px;padding:0 5px;font-family:var(--mono);
+    border:1px solid var(--line);line-height:15px}
+  .chip.pop{animation:pop .55s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes pop{0%{transform:scale(.4);opacity:.3}45%{transform:scale(1.42)}100%{transform:scale(1)}}
+  .chip.hot{box-shadow:0 0 0 2px var(--warm),0 0 24px rgba(224,161,65,.4)}
+  .chip:hover{box-shadow:0 0 0 2px var(--cyan)}
+
+  .mergelog{max-height:210px;overflow-y:auto;font-family:var(--mono);font-size:12.6px}
+  .mergelog div{padding:5px 8px;border-radius:6px;margin-bottom:3px;color:var(--dim)}
+  .mergelog div.now{background:rgba(63,182,200,.13);color:var(--fg)}
+  .mergelog b{color:var(--warm)}
+  .rank{font-family:var(--mono);font-size:12.8px}
+  .rank div{display:flex;justify-content:space-between;padding:4px 8px;border-radius:6px;
+    color:var(--dim);margin-bottom:2px}
+  .rank div:first-child{background:rgba(224,161,65,.13);color:var(--fg)}
+  .rank b{color:var(--cyan)}
+
+  .samp{border-radius:14px;border:1px solid var(--line);background:var(--panel);
+    padding:16px 18px;display:flex;flex-direction:column;min-height:340px}
+  .samp.a{border-top:3px solid var(--blue)}
+  .samp.b{border-top:3px solid var(--purple)}
+  .samp .hd{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+  .samp .hd .dot{width:10px;height:10px;border-radius:50%;flex:none}
+  .samp .hd .t{font-weight:600;font-size:14.5px;flex:1}
+  .gen{font-family:var(--mono);font-size:15.5px;line-height:1.95;min-height:108px;
+    word-break:break-all}
+  .gen .prompt{color:var(--dim)}
+  .gen .new{color:var(--fg)}
+  .gen .last{background:rgba(224,161,65,.3);border-radius:3px}
+  .cands{margin-top:12px;border-top:1px solid var(--line);padding-top:11px}
+  .cand{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:13px;
+    padding:2px 0;transition:opacity .2s}
+  .cand .ch{width:26px;text-align:center;font-weight:700}
+  .cand .bar{flex:1;height:9px;background:#0a0e13;border-radius:5px;overflow:hidden}
+  .cand .bar i{display:block;height:100%;border-radius:5px;transition:width .18s}
+  .cand .pc{width:56px;text-align:right;font-size:12px;color:var(--dim);
+    font-variant-numeric:tabular-nums}
+  .cand.cut{opacity:.32;text-decoration:line-through}
+
+  .badge{font-size:11.5px;padding:2px 9px;border-radius:20px;font-family:var(--mono);
+    background:#12261d;color:var(--jade)}
+
+  .taskbox{background:linear-gradient(135deg,#0d1a20,#0f1218);border:1px solid #1b3a44;
+    border-radius:13px;padding:16px 20px;margin-top:16px}
+  .taskbox .k{font-size:11px;letter-spacing:.18em;color:var(--cyan);font-weight:700}
+  .taskbox h4{margin:6px 0 6px;font-size:16.5px}
+  .taskbox p{margin:0 0 8px;font-size:14.2px;color:var(--dim)}
+  .taskbox p:last-child{margin-bottom:0}
+  .verdict{margin-top:9px;font-weight:600;font-size:14px;min-height:20px}
+  .verdict.ok{color:var(--jade)}
+
+  .note{background:#0b0f15;border:1px solid var(--line);border-radius:11px;
+    padding:14px 18px;font-size:14.2px;color:var(--dim);margin-top:16px}
+  .note b{color:#cfd6e0} .note .hl{color:var(--warm);font-weight:600}
+  code{background:#05070a;padding:2px 6px;border-radius:5px;font-size:12.8px;font-family:var(--mono)}
+  .foot{color:var(--dim);font-size:13px;margin-top:44px;border-top:1px solid var(--line);padding-top:20px;line-height:1.85}
+  .foot a{color:var(--blue);text-decoration:none}
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:99;display:flex;gap:16px;align-items:center;justify-content:space-between;padding:9px 18px;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid #2b3444;font-size:13.5px;font-family:'Segoe UI','Microsoft YaHei',sans-serif"><a href="/" style="color:#8b98a8;text-decoration:none">← wzk 的技术笔记</a><a href="/zhihu/labs/" style="color:#58a6ff;text-decoration:none">全部交互页面</a></div>
+<div class="wrap">
+
+<h1>大模型实验室</h1>
+<p class="lede">
+  三块，每一块都是<b>真的在算</b>，而且你能直接用手改。<br>
+  没有事先画好的示意图——你输入什么，它就算什么。
+</p>
+
+<div class="tabs">
+  <button class="tab on" data-m="0">① 分词 <span style="opacity:.6;font-size:12px">看词怎么被拼出来</span></button>
+  <button class="tab" data-m="1">② 注意力 <span style="opacity:.6;font-size:12px">拖动词语改变它在看谁</span></button>
+  <button class="tab" data-m="2">③ 采样 <span style="opacity:.6;font-size:12px">同一个开头，两种命运</span></button>
+</div>
+
+<!-- ══════════ ① 分词 ══════════ -->
+<div id="mod0">
+  <p class="hintline">在下面输入任意一段中文，然后按 <b>▶ 自动合并</b> 或 <b>单步</b>。
+    你会看到字符两两合并成词，规则只有一个：<b>先合并出现次数最多的那一对</b>。</p>
+  <div class="grid2">
+    <div>
+      <div class="panel">
+        <h3>当前切分　（右上角小数字 = 这个 token 由几个字拼成）</h3>
+        <div class="chipbox" id="chips"></div>
+        <div class="row mt">
+          <button class="btn primary" id="bplay">▶ 自动合并</button>
+          <button class="btn" id="bstep">⏭ 单步</button>
+          <button class="btn" id="breset">↺ 重置</button>
+          <span style="font-size:13px;color:var(--dim);margin-left:6px">速度</span>
+          <input type="range" id="rspeed" min="1" max="10" step="1" value="5"
+            style="width:110px;accent-color:var(--cyan)">
+          <span style="flex:1"></span>
+          <span class="badge" id="stepno">第 0 步</span>
+        </div>
+      </div>
+      <textarea id="src" style="margin-top:14px">人工智能正在改变世界。人工智能也在改变我们的工作方式。人工智能让机器学习变得更强，而机器学习是人工智能的核心。</textarea>
+      <div class="row mt">
+        <button class="btn small" data-src="人工智能正在改变世界。人工智能也在改变我们的工作方式。人工智能让机器学习变得更强，而机器学习是人工智能的核心。">中英混排长句</button>
+        <button class="btn small" data-src="strawberry strawberry strawberry">strawberry ×3</button>
+        <button class="btn small" data-src="下雨天路上很堵，下雨天最好待在家里，下雨天出门记得带伞。">重复句式</button>
+        <button class="btn small" data-src="def tokenize(text): return text.split()">代码</button>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <h3>这一步做了什么</h3>
+        <div id="stepdesc" style="font-size:14.4px;color:var(--dim);min-height:96px"></div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <h3>下一步会合并谁（真实计数）</h3>
+        <div class="rank" id="rank"></div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <h3>合并记录</h3>
+        <div class="mergelog" id="log"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="taskbox">
+    <div class="k">动 手 试 试</div>
+    <h4 id="t1title"></h4>
+    <p id="t1desc"></p>
+    <div class="verdict" id="t1v"></div>
+    <div class="row mt"><button class="btn small" id="b1skip">换一个任务</button></div>
+  </div>
+
+  <div class="note">
+    <b>为什么这件事重要：</b>模型看到的从来不是「字」，而是这些块。块怎么切，是由<span class="hl">训练语料里的出现频率</span>决定的——
+    常见搭配会被合并成整块，罕见的东西（生僻术语、人名、非拉丁文字）会被切得很碎。<br><br>
+    这也解释了那个著名的段子：<b>模型数不清 strawberry 里有几个 r</b>。因为 r 被包在 token 内部，模型根本没有「逐字母」的视角。
+    把上面的输入换成 strawberry 试试，看它会被切成什么。
+  </div>
+</div>
+
+<!-- ══════════ ② 注意力 ══════════ -->
+<div id="mod1" class="hide">
+  <p class="hintline">每一个词是平面上一个点。<b>用鼠标拖动它们</b>——两个点方向越一致，它们之间的注意力就越强，右下角那个矩阵会实时跟着变。</p>
+  <div class="grid2b">
+    <div>
+      <div class="panel" style="padding:12px 14px">
+        <canvas id="cvA" height="450"></canvas>
+      </div>
+      <div class="row mt">
+        <input type="text" id="sent" value="小猫 追着 毛线球 在 客厅 里 跑" style="flex:1;min-width:240px">
+        <button class="btn" id="brelayout">重新排布</button>
+      </div>
+    </div>
+    <div>
+      <div class="panel" style="padding:14px 16px">
+        <h3>注意力矩阵　行 = 谁在看　列 = 被看</h3>
+        <canvas id="cvB" height="270"></canvas>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <h3>规则</h3>
+        <div class="row" id="heads"></div>
+        <div class="row mt">
+          <button class="btn small on" id="bq">编辑 Query</button>
+          <button class="btn small" id="bk">编辑 Key</button>
+          <button class="btn small" id="bmask">因果遮罩：关</button>
+        </div>
+        <div class="slabel" style="margin-top:14px"><span>缩放（softmax 温度）</span><b id="vscale">1.0</b></div>
+        <div class="slider"><input type="range" id="rscale" min="0.2" max="3" step="0.1" value="1"></div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <h3>读数</h3>
+        <div class="readout"><span class="k">正在看的词</span><span class="v" id="oq">—</span></div>
+        <div class="readout"><span class="k">它最注意的是</span><span class="v" id="otop">—</span></div>
+        <div class="readout"><span class="k">这一行的分散程度</span><span class="v" id="oent">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="taskbox">
+    <div class="k">三 个 谜 题</div>
+    <h4 id="t2title"></h4>
+    <p id="t2desc"></p>
+    <div class="verdict" id="t2v"></div>
+    <div class="row mt"><button class="btn small" id="b2skip">换一个谜题</button></div>
+  </div>
+
+  <div class="note">
+    <b>这就是注意力本身，不是它的比喻。</b>真实模型里每个词会被投影成两个向量：一个
+    <span class="hl">Query</span>（我在找什么）、一个 <span class="hl">Key</span>（我是什么）。
+    注意力就是它们的内积，过一遍 softmax 变成权重。<br><br>
+    这里你拖的点同时扮演 Query 和 Key，所以你是在用鼠标<b>做梯度下降要做的事</b>——把该互相注意的词拖到一起。
+    真实训练里这件事由反向传播自动完成，但目标完全一样。
+  </div>
+</div>
+
+<!-- ══════════ ③ 采样 ══════════ -->
+<div id="mod2" class="hide">
+  <p class="hintline">左右两边是<b>同一个模型、同一个开头</b>，只有采样参数不同。点「同时生成」，看它们从第几个字开始分道扬镳。</p>
+
+  <div class="panel" style="margin-bottom:16px">
+    <h3>开头</h3>
+    <div class="row">
+      <input type="text" id="prompt" value="今天天气" style="flex:1;min-width:220px">
+      <button class="btn primary" id="bgen">▶ 同时生成</button>
+      <button class="btn" id="bclear">清除</button>
+    </div>
+    <div class="row mt">
+      <button class="btn small" data-p="今天天气">今天天气</button>
+      <button class="btn small" data-p="明天可能">明天可能</button>
+      <button class="btn small" data-p="出门记得">出门记得</button>
+      <button class="btn small" data-p="下雨天">下雨天</button>
+      <span style="font-size:12.8px;color:var(--dim);margin-left:6px">← 换个开头试试</span>
+    </div>
+  </div>
+
+  <div class="gridtwo">
+    <div class="samp a">
+      <div class="hd"><span class="dot" style="background:var(--blue)"></span>
+        <span class="t">A 组 · 保守</span><span class="badge" id="badgeA">—</span></div>
+      <div class="slabel"><span>温度</span><b id="vta">0.30</b></div>
+      <div class="slider"><input type="range" id="rta" min="0.05" max="2.5" step="0.05" value="0.3"></div>
+      <div class="slabel"><span>top-k</span><b id="vka">全部</b></div>
+      <div class="slider"><input type="range" id="rka" min="1" max="12" step="1" value="12"></div>
+      <div class="slabel"><span>top-p</span><b id="vpa">1.00</b></div>
+      <div class="slider"><input type="range" id="rpa" min="0.1" max="1" step="0.05" value="1"></div>
+      <div class="gen" id="genA" style="margin-top:14px"></div>
+      <div class="cands">
+        <div style="font-size:11.5px;color:var(--dim);letter-spacing:.14em;
+          text-transform:uppercase;font-weight:700;margin-bottom:7px">下一个字的候选</div>
+        <div id="candA"></div>
+      </div>
+    </div>
+    <div class="samp b">
+      <div class="hd"><span class="dot" style="background:var(--purple)"></span>
+        <span class="t">B 组 · 放飞</span><span class="badge" id="badgeB">—</span></div>
+      <div class="slabel"><span>温度</span><b id="vtb">1.60</b></div>
+      <div class="slider"><input type="range" id="rtb" min="0.05" max="2.5" step="0.05" value="1.6"></div>
+      <div class="slabel"><span>top-k</span><b id="vkb">全部</b></div>
+      <div class="slider"><input type="range" id="rkb" min="1" max="12" step="1" value="12"></div>
+      <div class="slabel"><span>top-p</span><b id="vpb">1.00</b></div>
+      <div class="slider"><input type="range" id="rpb" min="0.1" max="1" step="0.05" value="1"></div>
+      <div class="gen" id="genB" style="margin-top:14px"></div>
+      <div class="cands">
+        <div style="font-size:11.5px;color:var(--dim);letter-spacing:.14em;
+          text-transform:uppercase;font-weight:700;margin-bottom:7px">下一个字的候选</div>
+        <div id="candB"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:16px">
+    <h3>模型此刻看到的是什么（真实计数，不是示意）</h3>
+    <div id="ctxinfo" style="font-size:14.2px;color:var(--dim)"></div>
+  </div>
+
+  <div class="taskbox">
+    <div class="k">动 手 试 试</div>
+    <h4 id="t3title"></h4>
+    <p id="t3desc"></p>
+    <div class="verdict" id="t3v"></div>
+    <div class="row mt"><button class="btn small" id="b3skip">换一个任务</button></div>
+  </div>
+
+  <div class="note">
+    <b>注意一个容易搞混的地方：</b>温度会<b>改变分布的形状</b>（把概率拉平或拉尖），
+    而 top-k / top-p 只是<b>截断</b>——它们把长尾砍掉，但不改变留下来的那几个之间的相对比例。<br><br>
+    所以正确的理解是：<span class="hl">温度决定「多敢冒险」，top-p 决定「最多考虑几个候选」</span>。两个一起用才完整。
+  </div>
+</div>
+
+<div class="foot">
+  对应的书：《图解大模型：生成式 AI 原理与实战》（Jay Alammar / Maarten Grootendorst）第 2、3、7 章。<br>
+  交互设计参考了这几件公认做得最好的作品：
+  <a href="https://bbycroft.net/llm" target="_blank">Brendan Bycroft 的 LLM Visualization</a>（走进去看真实的矩阵运算）、
+  <a href="https://poloclub.github.io/transformer-explainer/" target="_blank">Georgia Tech 的 Transformer Explainer</a>（在浏览器里跑真模型，用你自己的文本）、
+  <a href="https://tiktokenizer.vercel.app/" target="_blank">tiktokenizer</a>（点开一个 token 看它的字节）。<br>
+  这一页的模型是一个<b>字符级 n-gram</b>（从内置语料当场统计出来的），不是神经网络，所以它说的话很简单。
+  但采样那三个参数作用在它身上的方式，和作用在 GPT 上完全一样，而且这里的每个概率你都能手工核对。
+</div>
+
+</div>
+
+<script>
+"use strict";
+const $=(s)=>document.querySelector(s);
+const $$=(s)=>[...document.querySelectorAll(s)];
+const clamp=(v,a,b)=>Math.min(b,Math.max(v,a));
+const fx=(n,d=1)=>(Math.round(n*Math.pow(10,d))/Math.pow(10,d)).toFixed(d);
+const esc=(s)=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const CHCOL=["#43c08a","#5b9bd5","#a97bd6","#e0a141","#3fb6c8","#e0685f","#7bc0a8","#c96a7a"];
+
+/* ══════════════════════════════════════════════════════════════
+   ① 分词 —— 真实 BPE，带逐步过程
+   ══════════════════════════════════════════════════════════════ */
+const BPE = {
+  steps:[], cur:0, timer:null,
+  build(text){
+    this.stop();
+    let tokens=[...text];
+    const steps=[{tokens:tokens.slice(), pair:null, count:0, cands:this.cands(tokens)}];
+    for(let s=0;s<400;s++){
+      const cands=this.cands(tokens);
+      if(!cands.length || cands[0].n<2) break;
+      const [a,b]=cands[0].pair;
+      const next=[];
+      for(let i=0;i<tokens.length;i++){
+        if(i<tokens.length-1 && tokens[i]===a && tokens[i+1]===b){ next.push(a+b); i++; }
+        else next.push(tokens[i]);
+      }
+      tokens=next;
+      steps.push({tokens:tokens.slice(), pair:[a,b], count:cands[0].n, cands:this.cands(tokens)});
+      if(tokens.length<=1) break;
+    }
+    this.steps=steps; this.cur=0; this.render();
+  },
+  cands(tokens){
+    const m=new Map();
+    for(let i=0;i<tokens.length-1;i++){
+      const k=tokens[i]+"\u0002"+tokens[i+1];
+      if(!m.has(k)) m.set(k,{pair:[tokens[i],tokens[i+1]], n:0});
+      m.get(k).n++;
+    }
+    return [...m.values()].sort((x,y)=>y.n-x.n);
+  },
+  render(){
+    const st=this.steps[this.cur]; if(!st) return;
+    const prev = this.cur>0 ? this.steps[this.cur-1] : null;
+    const merged = st.pair ? st.pair[0]+st.pair[1] : null;
+    let marked=false;
+    $("#chips").innerHTML = st.tokens.map((t,i)=>{
+      const len=[...t].length;
+      const isMerged = merged && t===merged && !marked && (marked=true);
+      const col=CHCOL[(i*3+len)%CHCOL.length];
+      return `<span class="chip ${isMerged?"pop hot":""}"
+        style="background:${col}1c;border-color:${col}55;color:${col}">${esc(t)||"␣"}<span class="n">${len}</span></span>`;
+    }).join("");
+    $("#stepno").textContent = "第 "+this.cur+" 步 · "+st.tokens.length+" 个 token";
+
+    if(prev && st.pair){
+      const [a,b]=st.pair;
+      $("#stepdesc").innerHTML =
+        `扫描当前所有相邻的两个 token，<b style="color:var(--warm)">「${esc(a)}」+「${esc(b)}」</b>
+         是出现次数最多的一对——出现了 <b style="color:var(--warm)">${st.count}</b> 次。<br><br>
+         所以把它们合并成一个新 token：<b style="color:var(--warm)">「${esc(a+b)}」</b>。<br><br>
+         <span style="color:var(--dim)">token 数从 ${prev.tokens.length} 变成 ${st.tokens.length}。</span>`;
+    } else {
+      $("#stepdesc").innerHTML =
+        `现在是<b>最原始的状态</b>：每个字各自是一个 token。<br><br>
+         按「单步」或「自动合并」，看第一步会合并谁——规则只有一个：<b>谁出现得最多，就先合并谁</b>。`;
+    }
+    $("#rank").innerHTML = st.cands.slice(0,7).map(c=>
+      `<div><span>${esc(c.pair[0])} + ${esc(c.pair[1])}</span><b>${c.n} 次</b></div>`).join("")
+      || `<div style="color:var(--dim)">已经没有可以合并的对了</div>`;
+    $("#log").innerHTML = this.steps.slice(1,this.cur+1).slice(-40).map((s,i,arr)=>
+      `<div class="${i===arr.length-1?"now":""}">${esc(s.pair[0])} + ${esc(s.pair[1])} →
+        <b>${esc(s.pair[0]+s.pair[1])}</b>　(${s.count} 次)</div>`).join("")
+      || `<div style="color:var(--dim)">还没有合并过</div>`;
+    const lg=$("#log"); lg.scrollTop=lg.scrollHeight;
+    T1.check();
+  },
+  step(){ if(this.cur<this.steps.length-1){ this.cur++; this.render(); return true; } return false; },
+  play(){
+    if(this.timer){ this.stop(); return; }
+    $("#bplay").textContent="⏸ 暂停";
+    const delay = 950 - (+$("#rspeed").value)*85;
+    this.timer=setInterval(()=>{ if(!this.step()) this.stop(); }, delay);
+  },
+  stop(){ if(this.timer){ clearInterval(this.timer); this.timer=null; } $("#bplay").textContent="▶ 自动合并"; },
+};
+$("#src").oninput = e => BPE.build(e.target.value);
+$("#bstep").onclick = () => { BPE.stop(); BPE.step(); };
+$("#bplay").onclick = () => BPE.play();
+$("#breset").onclick = () => BPE.build($("#src").value);
+$("#rspeed").oninput = () => { if(BPE.timer){ BPE.stop(); BPE.play(); } };
+$$("[data-src]").forEach(b=>b.onclick=()=>{
+  $("#src").value=b.dataset.src; BPE.build(b.dataset.src);
+  $("#chips").scrollIntoView({behavior:"smooth",block:"center"});
+});
+
+const T1 = {
+  idx:0, done:-1,
+  tasks:[
+    {title:"让「人工智能」变成一个 token",
+     desc:"用默认那句话。一直按「单步」，数一数：从四个独立的字，到合并成一整块，用了多少步？",
+     test:()=> BPE.steps[BPE.cur] && BPE.steps[BPE.cur].tokens.includes("人工智能")},
+    {title:"看看 strawberry 会碎成什么样",
+     desc:"点「strawberry ×3」按钮，然后连按几次单步。注意合并是按<b>出现次数</b>决定的——重复三次之后，哪些字母组合会先被合并？",
+     test:()=> $("#src").value.includes("strawberry") && BPE.cur>=4},
+    {title:"一路合并到底",
+     desc:"点「重复句式」按钮，然后按「▶ 自动合并」让它跑完。<b>看最后剩下几个 token、它们分别是什么。</b>",
+     test:()=> BPE.steps.length>4 && BPE.cur===BPE.steps.length-1},
+  ],
+  render(){ const t=this.tasks[this.idx];
+    $("#t1title").textContent=t.title; $("#t1desc").innerHTML=t.desc;
+    $("#t1v").className="verdict";
+    $("#t1v").textContent = this.done===this.idx ? "✓ 做到了" : "";
+    if(this.done===this.idx) $("#t1v").className="verdict ok"; },
+  check(){ if(this.done===this.idx) return;
+    if(this.tasks[this.idx].test()){ this.done=this.idx;
+      $("#t1v").className="verdict ok"; $("#t1v").textContent="✓ 做到了"; } },
+  next(){ this.idx=(this.idx+1)%this.tasks.length; this.done=-1; this.render(); },
+};
+$("#b1skip").onclick = () => T1.next();
+
+/* ══════════════════════════════════════════════════════════════
+   ② 注意力 —— 拖动平面上的点
+   ══════════════════════════════════════════════════════════════ */
+const ATT = {
+  words:[], qPos:[], kPos:[], drag:-1, causal:false, head:"align", scale:1, sel:0, mode:"q",
+  setSentence(s){
+    this.words = s.trim().split(/\s+/).filter(Boolean).slice(0,9);
+    this.layout(); this.sel=0; this.render();
+  },
+  layout(){
+    const n=this.words.length;
+    const ring=(base)=>this.words.map((_,i)=>{
+      const a=i/n*Math.PI*2+base, r=0.60+(i%3)*0.17;
+      return {x:Math.cos(a)*r, y:Math.sin(a)*r};
+    });
+    this.qPos = ring(0.35);
+    this.kPos = ring(0.35);
+  },
+  cur(){ return this.mode==="q" ? this.qPos : this.kPos; },
+  projQ(p){ return this.head==="xaxis" ? {x:p.x, y:0} : {x:p.x, y:p.y}; },
+  projK(p){
+    if(this.head==="local") return {x:-p.x, y:-p.y};
+    if(this.head==="xaxis") return {x:p.x, y:0};
+    return {x:p.x, y:p.y};
+  },
+  mat(){
+    const n=this.words.length, out=[];
+    const Q=this.qPos.map(p=>this.projQ(p)), K=this.kPos.map(p=>this.projK(p));
+    for(let i=0;i<n;i++){
+      const raw=[];
+      for(let j=0;j<n;j++){
+        if(this.causal && j>i){ raw.push(-1e9); continue; }
+        raw.push((Q[i].x*K[j].x + Q[i].y*K[j].y) * this.scale);
+      }
+      const mx=Math.max(...raw.filter(isFinite));
+      const ex=raw.map(v=>isFinite(v)?Math.exp(v-mx):0);
+      const s=ex.reduce((a,b)=>a+b,0)||1;
+      out.push(ex.map(v=>v/s));
+    }
+    return out;
+  },
+  render(){
+    this.drawSpace(); this.drawMatrix();
+    const A=this.mat(), row=A[this.sel]||[];
+    $("#oq").textContent = this.words[this.sel]||"—";
+    if(row.length){
+      let bi=0; row.forEach((v,i)=>{ if(v>row[bi]) bi=i; });
+      $("#otop").textContent = `${this.words[bi]}（${fx(row[bi]*100,0)}%）`;
+      const ent=-row.reduce((s,p)=>s+(p>1e-9?p*Math.log2(p):0),0);
+      const cnt=row.filter((_,j)=>!(this.causal&&j>this.sel)).length||1;
+      $("#oent").textContent = `${fx(ent,2)} / ${fx(Math.log2(cnt),2)} bit`;
+    }
+    T2.check();
+  },
+  geo(){
+    const cv=$("#cvA");
+    const W=cv.clientWidth, H=450;
+    return {W,H,cx:W/2,cy:H/2,R:Math.min(W,H)*0.40};
+  },
+  drawSpace(){
+    const cv=$("#cvA"); if(!cv||!cv.clientWidth) return;
+    const dpr=window.devicePixelRatio||1, {W,H,cx,cy,R}=this.geo();
+    cv.width=W*dpr; cv.height=H*dpr;
+    const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+    c.fillStyle="#06080b"; c.fillRect(0,0,W,H);
+    c.strokeStyle="#141a23"; c.lineWidth=1;
+    for(let i=-2;i<=2;i++){
+      if(i===0) continue;
+      c.beginPath(); c.moveTo(cx+i*R/2, 30); c.lineTo(cx+i*R/2, H-30); c.stroke();
+      c.beginPath(); c.moveTo(30, cy+i*R/2); c.lineTo(W-30, cy+i*R/2); c.stroke();
+    }
+    c.strokeStyle="#202834"; c.lineWidth=1.4;
+    c.beginPath(); c.moveTo(30,cy); c.lineTo(W-30,cy); c.stroke();
+    c.beginPath(); c.moveTo(cx,30); c.lineTo(cx,H-30); c.stroke();
+
+    const A=this.mat();
+    if(A[this.sel]){
+      A[this.sel].forEach((p,j)=>{
+        if(j===this.sel||p<0.02) return;
+        const x1=cx+this.qPos[this.sel].x*R, y1=cy-this.qPos[this.sel].y*R;
+        const x2=cx+this.kPos[j].x*R, y2=cy-this.kPos[j].y*R;
+        c.strokeStyle=`rgba(224,161,65,${clamp(p,0,1)*0.8})`;
+        c.lineWidth=1+clamp(p,0,1)*8;
+        c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+      });
+    }
+    const drawSet=(ps, active)=>{
+      this.words.forEach((w,i)=>{
+        const x=cx+ps[i].x*R, y=cy-ps[i].y*R;
+        const isSel=(i===this.sel);
+        c.strokeStyle = active ? (isSel?"#e0a141":"#2b3543") : "#1a2129";
+        c.lineWidth = active ? (isSel?2.4:1.4) : 1;
+        c.beginPath(); c.moveTo(cx,cy); c.lineTo(x,y); c.stroke();
+        if(active){
+          c.beginPath(); c.arc(x,y,isSel?12:9,0,Math.PI*2);
+          c.fillStyle = isSel?"#e0a141":CHCOL[i%CHCOL.length]; c.fill();
+          if(this.drag===i){ c.strokeStyle="#fff"; c.lineWidth=2.5; c.stroke(); }
+          c.fillStyle = isSel?"#fff":"#c8d2de";
+          c.font="600 13.5px 'Segoe UI',sans-serif"; c.textAlign="center";
+          c.fillText(w, x, y-18);
+        } else {
+          c.beginPath(); c.arc(x,y,isSel?7:5,0,Math.PI*2);
+          c.strokeStyle="#39424f"; c.lineWidth=1.4; c.stroke();
+        }
+      });
+    };
+    if(this.mode==="q"){ drawSet(this.qPos,true); drawSet(this.kPos,false); }
+    else { drawSet(this.kPos,true); drawSet(this.qPos,false); }
+
+    c.fillStyle = this.mode==="q" ? "#e0a141" : "#5b9bd5";
+    c.font="600 13px 'Segoe UI',sans-serif"; c.textAlign="left";
+    c.fillText(this.mode==="q"
+      ? "正在编辑 Query（实心）——「这个字在找什么」。空心圈是各字的 Key。"
+      : "正在编辑 Key（实心）——「这个字是什么」。空心圈是各字的 Query。", 16, 22);
+    c.fillStyle="#4a5466"; c.font="12px 'Segoe UI',sans-serif";
+    c.fillText("点一下选中某个词，会画出它对其他词的注意力（线越粗越强）", 16, H-14);
+  },
+  drawMatrix(){
+    const cv=$("#cvB"); if(!cv||!cv.clientWidth) return;
+    const dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=270;
+    cv.width=W*dpr; cv.height=H*dpr;
+    const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+    c.fillStyle="#06080b"; c.fillRect(0,0,W,H);
+    const A=this.mat(), n=this.words.length;
+    const padL=60, padT=42;
+    const cell=Math.min((W-padL-16)/n, (H-padT-20)/n, 40);
+    for(let i=0;i<n;i++) for(let j=0;j<n;j++){
+      const x=padL+j*cell, y=padT+i*cell;
+      const masked=this.causal&&j>i;
+      c.fillStyle = masked ? "#0d1117"
+        : `rgba(63,182,200,${clamp(A[i][j]*1.2,0.02,1).toFixed(3)})`;
+      c.fillRect(x+1,y+1,cell-2,cell-2);
+      if(!masked && A[i][j]>0.06){
+        c.fillStyle = A[i][j]>0.5?"#04212a":"#b8c6d0";
+        c.font="600 10px 'Segoe UI',sans-serif"; c.textAlign="center";
+        c.fillText(fx(A[i][j]*100,0), x+cell/2, y+cell/2+3.5);
+      }
+      if(masked){
+        c.strokeStyle="#1a212b"; c.lineWidth=1;
+        c.beginPath(); c.moveTo(x+3,y+cell-3); c.lineTo(x+cell-3,y+3); c.stroke();
+      }
+    }
+    this.words.forEach((w,i)=>{
+      c.fillStyle = i===this.sel?"#e0a141":"#7d8798";
+      c.font = i===this.sel?"700 11.5px 'Segoe UI',sans-serif":"11.5px 'Segoe UI',sans-serif";
+      c.textAlign="right"; c.fillText(w, padL-7, padT+i*cell+cell/2+4);
+      c.save(); c.translate(padL+i*cell+cell/2, padT-9); c.rotate(-0.72);
+      c.textAlign="left"; c.fillText(w,0,0); c.restore();
+    });
+    c.strokeStyle="#e0a141"; c.lineWidth=1.6;
+    c.strokeRect(padL+1, padT+this.sel*cell+1, n*cell-2, cell-2);
+  },
+};
+(function(){
+  const cv=$("#cvA");
+  const xy=e=>{ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; };
+  cv.addEventListener("pointerdown", e=>{
+    const p=xy(e), g=ATT.geo(), arr=ATT.cur();
+    let hit=-1;
+    for(let i=0;i<ATT.words.length;i++){
+      const x=g.cx+arr[i].x*g.R, y=g.cy-arr[i].y*g.R;
+      if((p.x-x)**2+(p.y-y)**2 < 22*22) hit=i;
+    }
+    if(hit>=0){ ATT.drag=hit; ATT.sel=hit; try{cv.setPointerCapture(e.pointerId);}catch(_){} }
+    ATT.render();
+  });
+  cv.addEventListener("pointermove", e=>{
+    if(ATT.drag<0) return;
+    const p=xy(e), g=ATT.geo();
+    ATT.cur()[ATT.drag]={x:(p.x-g.cx)/g.R, y:-(p.y-g.cy)/g.R};
+    ATT.render();
+  });
+  const up=()=>{ if(ATT.drag>=0){ ATT.drag=-1; ATT.render(); } };
+  cv.addEventListener("pointerup", up);
+  cv.addEventListener("pointercancel", up);
+})();
+$("#sent").oninput = e => ATT.setSentence(e.target.value);
+$("#brelayout").onclick = () => { ATT.layout(); ATT.render(); };
+$("#rscale").oninput = e => { ATT.scale=+e.target.value; $("#vscale").textContent=fx(ATT.scale,1); ATT.render(); };
+$("#bmask").onclick = () => {
+  ATT.causal=!ATT.causal;
+  $("#bmask").textContent="因果遮罩："+(ATT.causal?"开":"关");
+  $("#bmask").classList.toggle("on",ATT.causal);
+  ATT.render();
+};
+function setMode(m){
+  ATT.mode=m;
+  $("#bq").classList.toggle("on", m==="q");
+  $("#bk").classList.toggle("on", m==="k");
+  ATT.render();
+}
+$("#bq").onclick=()=>setMode("q");
+$("#bk").onclick=()=>setMode("k");
+
+const HEADS=[
+  {id:"align",name:"方向对齐",desc:"方向越一致越互相注意"},
+  {id:"local",name:"方向相反",desc:"方向越相反越互相注意"},
+  {id:"xaxis",name:"只看横轴",desc:"忽略纵轴，只比横向分量"},
+];
+$("#heads").innerHTML = HEADS.map(h=>
+  `<button class="btn small ${h.id===ATT.head?"on":""}" data-head="${h.id}" title="${h.desc}">${h.name}</button>`).join("");
+$$("[data-head]").forEach(b=>b.onclick=()=>{
+  ATT.head=b.dataset.head;
+  $$("[data-head]").forEach(x=>x.classList.toggle("on", x===b));
+  ATT.render();
+});
+
+const T2 = {
+  idx:0, done:-1,
+  tasks:[
+    {title:"让「追着」几乎只看向「毛线球」",
+     desc:"目标：让「追着」对「毛线球」的注意力超过 <b>70%</b>。<br>用左下角的按钮切换编辑 <b>Query</b> 和 <b>Key</b>：把「追着」的 Query 指向「毛线球」的 Key，同时把它们自己的 Key 转向别处。",
+     test:()=>{ const A=ATT.mat();
+       const i=ATT.words.indexOf("追着"), j=ATT.words.indexOf("毛线球");
+       return i>=0 && j>=0 && A[i] && A[i][j]>0.70; }},
+    {title:"让注意力变得完全平均",
+     desc:"目标：每一行的注意力都一样平（分散程度达到最大值的 <b>92%</b> 以上）。<br>提示：softmax 的输入全都相等时，输出就是平均的。",
+     test:()=>{ const A=ATT.mat(), n=ATT.words.length; if(!n) return false;
+       const mx=Math.log2(n);
+       return A.every(row=>{
+         const e=-row.reduce((s,p)=>s+(p>1e-9?p*Math.log2(p):0),0);
+         return e>mx*0.92; }); }},
+    {title:"让每个词都最注意自己",
+     desc:"目标：矩阵的<b>每一行里，自己那一格都是最大的</b>。<br>提示：自己的内积是 |v|²，别人的是 |v|²cosθ。想一想什么情况下自己一定赢。",
+     test:()=>{ const A=ATT.mat();
+       return A.length>1 && A.every((row,i)=>{
+         let b=0; row.forEach((v,j)=>{ if(v>row[b]) b=j; });
+         return b===i; }); }},
+  ],
+  render(){ const t=this.tasks[this.idx];
+    $("#t2title").textContent=t.title; $("#t2desc").innerHTML=t.desc;
+    $("#t2v").className="verdict";
+    $("#t2v").textContent = this.done===this.idx ? "✓ 做到了 —— 想一想你是怎么做到的" : "";
+    if(this.done===this.idx) $("#t2v").className="verdict ok"; },
+  check(){ if(this.done===this.idx) return;
+    if(this.tasks[this.idx].test()){ this.done=this.idx;
+      $("#t2v").className="verdict ok";
+      $("#t2v").textContent="✓ 做到了 —— 你刚才做的事，就是梯度下降在训练时做的事。"; } },
+  next(){ this.idx=(this.idx+1)%this.tasks.length; this.done=-1; this.render(); },
+};
+$("#b2skip").onclick = () => T2.next();
+
+/* ══════════════════════════════════════════════════════════════
+   ③ 采样 —— 真实字符级 n-gram
+   ══════════════════════════════════════════════════════════════ */
+const CORPUS = ["今天天气很好","今天天气不错","今天天气有点冷","今天天气很热","明天可能会下雨","明天可能是个晴天","后天可能降温","外面风很大","外面正在下雨","外面太阳很晒","出门记得带伞","出门记得穿外套","出门前看一下天气","带伞就不会淋湿","不带伞就会淋雨","天气预报说今天有雨","天气预报说明天转晴","天气预报不太准","早上有点凉","中午很热","晚上会冷一些","早晚温差很大","温度在二十度左右","温度降到了十度","气温还会继续下降","空气很干燥","空气湿度有点高","湿度大的时候不舒服","下雨天路上很堵","下雨天最好待在家里","晴天适合出去走走","晴天的时候心情也好","阴天让人有点困","刮风的时候窗户会响","下雪的时候很安静","今年的冬天来得早","今年的夏天特别长","春天经常下雨","夏天要注意防晒","秋天是最好的季节","冬天要多穿一点","我打算周末去爬山","我打算周末在家休息","周末想去公园散步","如果下雨就改天再去","如果天气好就出门","看情况再决定","记得多喝水","记得早点休息","路上注意安全","路上小心一点","到了记得说一声","我今天要早点出门","我今天可能会晚点回来","明天早上要开会","明天下午有空","这件事等明天再说","我们改天再约","我们到时候再联系","时间还早不用着急"];
+
+const LM = {
+  tri:new Map(), bi:new Map(), uni:new Map(),
+  build(){
+    this.tri.clear(); this.bi.clear(); this.uni.clear();
+    CORPUS.forEach(s=>{
+      for(let i=0;i<s.length;i++){
+        const c=s[i];
+        this.uni.set(c,(this.uni.get(c)||0)+1);
+        if(i>=1){
+          const k=s.slice(i-1,i);
+          if(!this.bi.has(k)) this.bi.set(k,new Map());
+          const m=this.bi.get(k); m.set(c,(m.get(c)||0)+1);
+        }
+        if(i>=2){
+          const k=s.slice(i-2,i);
+          if(!this.tri.has(k)) this.tri.set(k,new Map());
+          const m=this.tri.get(k); m.set(c,(m.get(c)||0)+1);
+        }
+      }
+    });
+  },
+  dist(ctx){
+    const last2=ctx.slice(-2), last1=ctx.slice(-1);
+    let src, level;
+    if(last2.length===2 && this.tri.has(last2) && this.tri.get(last2).size>=2){
+      src=this.tri.get(last2); level=`用了前两个字「${last2}」`;
+    } else if(last1.length===1 && this.bi.has(last1) && this.bi.get(last1).size>=2){
+      src=this.bi.get(last1); level=`回退一层：只看前一个字「${last1}」`;
+    } else {
+      src=this.uni; level=`再回退一层：只看单字总频率`;
+    }
+    const total=[...src.values()].reduce((a,b)=>a+b,0);
+    return { list:[...src.entries()].map(([ch,n])=>({ch,n,p:n/total})).sort((a,b)=>b.p-a.p),
+             level, total };
+  },
+};
+LM.build();
+
+function softmaxT(list,T){
+  const t=Math.max(T,0.01);
+  const lg=list.map(x=>Math.log(x.p+1e-12)/t);
+  const mx=Math.max(...lg);
+  const ex=lg.map(v=>Math.exp(v-mx));
+  const s=ex.reduce((a,b)=>a+b,0)||1;
+  return list.map((x,i)=>({...x, q:ex[i]/s}));
+}
+function truncate(list,K,P){
+  const arr=[...list].sort((a,b)=>b.q-a.q).slice(0, Math.min(K,list.length));
+  let cum=0; const keep=[];
+  for(const x of arr){ if(cum>=P) break; keep.push(x); cum+=x.q; }
+  const s=keep.reduce((a,b)=>a+b.q,0)||1;
+  return { keep: keep.map(x=>({...x, q:x.q/s})), all: arr };
+}
+function sampleFrom(keep){
+  let r=Math.random(), acc=0;
+  for(const x of keep){ acc+=x.q; if(r<=acc) return x.ch; }
+  return keep[keep.length-1].ch;
+}
+function entropyOf(keep){ return -keep.reduce((s,x)=>s+(x.q>1e-9?x.q*Math.log2(x.q):0),0); }
+
+const S3 = {
+  st:{ A:{text:"",temp:0.3,k:12,p:1,last:null,trunc:null,dist:null},
+       B:{text:"",temp:1.6,k:12,p:1,last:null,trunc:null,dist:null} },
+  running:false,
+  reset(){
+    ["A","B"].forEach(g=>{ const s=this.st[g];
+      s.text=$("#prompt").value; s.last=null; s.trunc=null; s.dist=null; });
+    this.render();
+  },
+  compute(g){
+    const s=this.st[g];
+    s.dist=LM.dist(s.text);
+    s.trunc=truncate(softmaxT(s.dist.list, s.temp), s.k, s.p);
+  },
+  tick(){
+    let moved=false;
+    ["A","B"].forEach(g=>{
+      const s=this.st[g];
+      if(s.text.length>=44) return;
+      this.compute(g);
+      const ch=sampleFrom(s.trunc.keep);
+      s.last=ch; s.text+=ch; moved=true;
+    });
+    this.render();
+    return moved;
+  },
+  render(){
+    const pre=$("#prompt").value;
+    ["A","B"].forEach((g,idx)=>{
+      const s=this.st[g];
+      if(!s.trunc) this.compute(g);
+      const gen=s.text.slice(pre.length);
+      $("#gen"+g).innerHTML = `<span class="prompt">${esc(pre)}</span>` +
+        (gen ? `<span class="new">${esc(gen.slice(0,-1))}</span><span class="new last">${esc(gen.slice(-1))}</span>` : "");
+      const keepSet=new Set(s.trunc.keep.map(x=>x.ch));
+      const col = idx===0 ? "#5b9bd5" : "#a97bd6";
+      $("#cand"+g).innerHTML = s.trunc.all.slice(0,9).map(x=>{
+        const cut=!keepSet.has(x.ch);
+        return `<div class="cand ${cut?"cut":""}">
+          <span class="ch" style="color:${cut?"#4a5466":col}">${esc(x.ch)}</span>
+          <span class="bar"><i style="width:${clamp(x.q*100,0,100)}%;background:${cut?"#2a3340":col}"></i></span>
+          <span class="pc">${fx(x.q*100,1)}%</span></div>`;
+      }).join("") || `<div style="color:var(--dim);font-size:13px">没有候选</div>`;
+      $("#badge"+g).textContent =
+        `候选 ${s.trunc.keep.length} 个 · 熵 ${fx(entropyOf(s.trunc.keep),2)} bit`;
+      if(idx===0){
+        $("#ctxinfo").innerHTML =
+          `<b>当前上下文：</b>「${esc(s.text.slice(-2))}」　→　${esc(s.dist.level)}，共 ${s.dist.total} 次计数<br><br>` +
+          s.dist.list.slice(0,6).map(x=>
+            `「${esc(x.ch)}」出现 ${x.n} 次 → 原始概率 ${fx(x.p*100,1)}%`).join("　·　") +
+          `<br><br><span style="color:#4a5466">（这些百分比就是模型唯一的"知识"。它没有别的了——你可以手工核对每一个数字。）</span>`;
+      }
+    });
+    T3.check();
+  },
+};
+function bindSide(g,ids){
+  const s=S3.st[g];
+  $(ids.t).oninput=e=>{ s.temp=+e.target.value; $(ids.tv).textContent=fx(s.temp,2); S3.compute(g); S3.render(); };
+  $(ids.k).oninput=e=>{ s.k=+e.target.value; $(ids.kv).textContent=s.k>=12?"全部":s.k; S3.compute(g); S3.render(); };
+  $(ids.p).oninput=e=>{ s.p=+e.target.value; $(ids.pv).textContent=fx(s.p,2); S3.compute(g); S3.render(); };
+}
+bindSide("A",{t:"#rta",tv:"#vta",k:"#rka",kv:"#vka",p:"#rpa",pv:"#vpa"});
+bindSide("B",{t:"#rtb",tv:"#vtb",k:"#rkb",kv:"#vkb",p:"#rpb",pv:"#vpb"});
+$("#prompt").oninput = () => { S3.running=false; $("#bgen").textContent="▶ 同时生成"; S3.reset(); };
+$$("[data-p]").forEach(b=>b.onclick=()=>{
+  $("#prompt").value=b.dataset.p; S3.running=false;
+  $("#bgen").textContent="▶ 同时生成"; S3.reset();
+});
+$("#bclear").onclick = () => { S3.running=false; $("#bgen").textContent="▶ 同时生成"; S3.reset(); };
+$("#bgen").onclick = () => {
+  if(S3.running){ S3.running=false; $("#bgen").textContent="▶ 同时生成"; return; }
+  S3.reset();
+  S3.running=true; $("#bgen").textContent="⏸ 暂停";
+  const loop=()=>{
+    if(!S3.running) return;
+    if(!S3.tick()){ S3.running=false; $("#bgen").textContent="▶ 同时生成"; return; }
+    setTimeout(()=>requestAnimationFrame(loop), 170);
+  };
+  loop();
+};
+
+const T3 = {
+  idx:0, done:-1,
+  tasks:[
+    {title:"让 A 组每次都输出同一个结果",
+     desc:"把 A 组调成<b>完全确定</b>——无论生成多少次，一个字都不会变。",
+     test:()=> S3.st.A.temp<=0.1 || S3.st.A.k===1},
+    {title:"让 B 组的候选变得最多",
+     desc:"把 B 组的候选数推到 <b>10 个以上</b>（看右边那个徽章）。想一想：调什么参数能变多？",
+     test:()=> S3.st.B.trunc && S3.st.B.trunc.keep.length>=10},
+    {title:"用 top-p 把 B 组的长尾砍掉",
+     desc:"温度<b>保持 1.6 不变</b>，只调 top-p，让 B 组的候选掉到 <b>4 个以下</b>。观察被划掉的那些候选有什么共同点。",
+     test:()=> S3.st.B.p<=0.6 && S3.st.B.temp>=1.4 && S3.st.B.trunc.keep.length<=4},
+  ],
+  render(){ const t=this.tasks[this.idx];
+    $("#t3title").textContent=t.title; $("#t3desc").innerHTML=t.desc;
+    $("#t3v").className="verdict";
+    $("#t3v").textContent = this.done===this.idx ? "✓ 做到了" : "";
+    if(this.done===this.idx) $("#t3v").className="verdict ok"; },
+  check(){ if(this.done===this.idx) return;
+    if(this.tasks[this.idx].test()){ this.done=this.idx;
+      $("#t3v").className="verdict ok"; $("#t3v").textContent="✓ 做到了"; } },
+  next(){ this.idx=(this.idx+1)%this.tasks.length; this.done=-1; this.render(); },
+};
+$("#b3skip").onclick = () => T3.next();
+["#rta","#rka","#rpa","#rtb","#rkb","#rpb"].forEach(id=>{
+  $(id).addEventListener("input", ()=>T3.check());
+  $(id).addEventListener("change", ()=>T3.check());
+});
+
+/* ══════════════════════════════════════════════════════════════
+   tabs & 启动
+   ══════════════════════════════════════════════════════════════ */
+$$(".tab").forEach(t=>t.onclick=()=>{
+  $$(".tab").forEach(x=>x.classList.toggle("on", x===t));
+  const m=t.dataset.m;
+  [0,1,2].forEach(i=>$("#mod"+i).classList.toggle("hide", String(i)!==m));
+  requestAnimationFrame(()=>{
+    if(m==="1") ATT.render();
+    if(m==="2") S3.render();
+  });
+});
+
+BPE.build($("#src").value);
+T1.idx=0; T1.done=-1; T1.render();
+ATT.setSentence($("#sent").value);
+T2.idx=0; T2.done=-1; T2.render();
+S3.reset();
+T3.idx=0; T3.done=-1; T3.render();
+window.addEventListener("resize", ()=>{ ATT.render(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>行列式实验室 · 带符号体积的变换倍数</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#2b3444;
+    --fg:#e6edf3; --dim:#8b98a8; --accent:#58a6ff; --pos:#3fb950; --neg:#f85149;
+    --warn:#d29922; --purple:#bc8cff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);
+    font-family:"Segoe UI","Microsoft YaHei",-apple-system,BlinkMacSystemFont,sans-serif;
+    line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+
+  header.hero{padding:56px 0 32px;border-bottom:1px solid var(--line);margin-bottom:36px}
+  .kicker{color:var(--accent);font-size:13px;letter-spacing:.18em;text-transform:uppercase;font-weight:600}
+  h1{font-size:clamp(26px,4vw,40px);margin:12px 0 10px;line-height:1.25;font-weight:700}
+  .lede{color:var(--dim);font-size:17px;max-width:760px;margin:0}
+  .thesis{margin-top:26px;padding:18px 22px;background:linear-gradient(135deg,#132033,#161b22);
+    border-left:3px solid var(--accent);border-radius:0 10px 10px 0;font-size:17px}
+  .thesis b{color:var(--accent)}
+
+  section{margin:0 0 56px}
+  h2{font-size:23px;margin:0 0 6px;display:flex;align-items:center;gap:10px}
+  h2 .num{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+    border-radius:8px;background:var(--accent);color:#06101f;font-size:15px;font-weight:700;flex:none}
+  .sub{color:var(--dim);margin:0 0 20px;font-size:15px}
+
+  .lab{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:22px;align-items:start}
+  @media(max-width:900px){.lab{grid-template-columns:1fr}}
+
+  .canvas-box{position:relative;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;overflow:hidden}
+  canvas{display:block;width:100%;touch-action:none;cursor:crosshair}
+  .hint{position:absolute;left:14px;bottom:12px;font-size:12.5px;color:var(--dim);
+    background:rgba(13,17,23,.82);padding:5px 10px;border-radius:7px;pointer-events:none}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .panel h3{margin:0 0 14px;font-size:14px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase}
+
+  .matrix{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;
+    border-left:3px solid var(--line);border-right:3px solid var(--line);
+    padding:10px 14px;border-radius:4px;margin:0 auto 16px;width:fit-content;font-variant-numeric:tabular-nums}
+  .matrix div{text-align:center;font-size:21px;font-weight:600;min-width:66px}
+  .matrix .colA{color:var(--accent)} .matrix .colB{color:var(--purple)}
+
+  .readout{display:flex;justify-content:space-between;align-items:baseline;
+    padding:9px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+  .readout:last-of-type{border-bottom:0}
+  .readout .k{color:var(--dim)}
+  .readout .v{font-variant-numeric:tabular-nums;font-weight:600;font-size:16px}
+  .v.pos{color:var(--pos)} .v.neg{color:var(--neg)} .v.zero{color:var(--warn)}
+  .detbig{text-align:center;padding:14px 0 6px}
+  .detbig .lbl{font-size:12.5px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase}
+  .detbig .val{font-size:44px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
+
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  button{background:var(--panel2);color:var(--fg);border:1px solid var(--line);
+    border-radius:9px;padding:9px 14px;font-size:13.5px;cursor:pointer;
+    font-family:inherit;transition:.15s}
+  button:hover:not(:disabled){background:#232c3d;border-color:#3d4a5f}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.on{background:var(--accent);color:#06101f;border-color:var(--accent);font-weight:600}
+  button.primary{background:var(--accent);color:#06101f;border-color:var(--accent);font-weight:600}
+
+  .axiom{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}
+  @media(max-width:820px){.axiom{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .card h4{margin:0 0 8px;font-size:15px}
+  .card p{margin:0;color:var(--dim);font-size:14px}
+  .card .tag{display:inline-block;font-size:11.5px;padding:2px 8px;border-radius:20px;
+    background:#1f2a3a;color:var(--accent);margin-bottom:9px;letter-spacing:.06em}
+
+  .steps{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px}
+  .stepbody{min-height:118px;font-size:15.5px}
+  .stepbody .eq{font-family:"Cascadia Code",Consolas,monospace;font-size:16px;
+    background:#0b1017;border:1px solid var(--line);border-radius:8px;padding:10px 14px;
+    margin:12px 0;overflow-x:auto;white-space:nowrap}
+  .stepbody .eq .zero{color:var(--warn);text-decoration:line-through}
+  .stepbody .eq .keep{color:var(--pos);font-weight:600}
+  .stepnav{display:flex;align-items:center;gap:12px;margin-top:18px}
+  .dots{display:flex;gap:6px;margin-left:auto}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
+  .dot.on{background:var(--accent)}
+
+  .challenge{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px}
+  .task{font-size:17px;margin-bottom:6px}
+  .task b{color:var(--accent)}
+  .status{margin-top:14px;font-weight:600;font-size:15.5px;min-height:26px}
+  .status.ok{color:var(--pos)} .status.no{color:var(--dim)}
+  .score{color:var(--dim);font-size:14px;margin-left:auto}
+
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:fit-content;margin:0 auto}
+  .grid3 input[type=range]{width:100%;accent-color:var(--accent)}
+  .cellwrap{text-align:center;font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums}
+
+  .note{background:#12181f;border:1px solid var(--line);border-radius:12px;
+    padding:16px 20px;font-size:14.5px;color:var(--dim);margin-top:18px}
+  .note b{color:var(--fg)}
+  .src{font-size:13.5px;color:var(--dim)}
+  .src a{color:var(--accent);text-decoration:none}
+  .src a:hover{text-decoration:underline}
+  code{background:#0b1017;padding:2px 6px;border-radius:5px;font-size:13.5px;
+    font-family:"Cascadia Code",Consolas,monospace}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media(max-width:820px){.split{grid-template-columns:1fr}}
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:99;display:flex;gap:16px;align-items:center;justify-content:space-between;padding:9px 18px;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid #2b3444;font-size:13.5px;font-family:'Segoe UI','Microsoft YaHei',sans-serif"><a href="/" style="color:#8b98a8;text-decoration:none">← wzk 的技术笔记</a><a href="/zhihu/labs/" style="color:#58a6ff;text-decoration:none">全部交互页面</a></div>
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">Interactive · Linear Algebra</div>
+  <h1>行列式实验室</h1>
+  <p class="lede">课本把顺序讲反了：先给公式，再让人验证性质。把层次倒回来——几何直觉在前，公理在中间，公式在最后——<code>ad−bc</code> 就不再是凭空冒出来的一串加减。</p>
+  <div class="thesis">
+    本质只有一句话：<b>行列式是 n 维带符号体积在线性变换下的倍数。</b><br>
+    矩阵把单位超立方体变成一个平行多面体，行列式就是后者与前者的体积之比，再带一个记录方向是否翻转的正负号。
+  </div>
+</header>
+
+<!-- ── 1 ───────────────────────────────────────────────── -->
+<section>
+  <h2><span class="num">1</span>主实验台：拖动列向量，看着面积变</h2>
+  <p class="sub">两条列向量 <b style="color:var(--accent)">u=(a,c)</b> 与 <b style="color:var(--purple)">v=(b,d)</b> 张成一个平行四边形。它的带符号面积，就是 <code>det(A)</code>。直接拖动手柄试试。</p>
+
+  <div class="lab">
+    <div class="canvas-box">
+      <canvas id="main" height="560"></canvas>
+      <div class="hint" id="mainHint">拖动 ● 手柄移动向量</div>
+    </div>
+
+    <div class="panel">
+      <h3>矩阵 A</h3>
+      <div class="matrix">
+        <div class="colA" id="m00">1</div><div class="colB" id="m01">0</div>
+        <div class="colA" id="m10">0</div><div class="colB" id="m11">1</div>
+      </div>
+
+      <div class="detbig">
+        <div class="lbl">det(A)</div>
+        <div class="val" id="detval">1.00</div>
+      </div>
+
+      <div class="readout"><span class="k">|det(A)| 面积</span><span class="v" id="area">1.00</span></div>
+      <div class="readout"><span class="k">方向</span><span class="v" id="orient">保持（右手系）</span></div>
+      <div class="readout"><span class="k">可逆性</span><span class="v" id="invert">可逆</span></div>
+      <div class="readout"><span class="k">秩</span><span class="v" id="rank">2</span></div>
+
+      <div class="btns">
+        <button id="btnReset">重置为单位阵</button>
+        <button id="btnSwap">交换两列</button>
+        <button id="btnCollapse">压扁（det→0）</button>
+        <button id="btnRight">旋转 90°</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="axiom">
+    <div class="card">
+      <span class="tag">公理一</span>
+      <h4>多重线性</h4>
+      <p>某条边放大 k 倍，体积就放大 k 倍；一条边若是两个向量的和，体积也可拆成两项之和。</p>
+      <div class="btns"><button data-demo="linearity">播放演示</button></div>
+    </div>
+    <div class="card">
+      <span class="tag">公理二</span>
+      <h4>交替性</h4>
+      <p>交换任意两条边，体积数值不变但方向反转，于是变号。两条边相同则退化，体积为零。</p>
+      <div class="btns"><button data-demo="alternate">播放演示</button></div>
+    </div>
+    <div class="card">
+      <span class="tag">公理三</span>
+      <h4>归一化</h4>
+      <p>标准基张成的单位立方体，体积定为 1。这是度量单位的起点。</p>
+      <div class="btns"><button data-demo="normalize">播放演示</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 2 ───────────────────────────────────────────────── -->
+<section>
+  <h2><span class="num">2</span>推导剧场：三条公理硬解出 ad − bc</h2>
+  <p class="sub">左边画布会随步骤高亮对应的几何对象（画布本身也可以拖动，换一个算例看看）。把第一列拆成 <code>a·e₁ + c·e₂</code>，第二列拆成 <code>b·e₁ + d·e₂</code>，再用多重线性展开成四块。</p>
+
+  <div class="canvas-box">
+    <canvas id="derive" height="470"></canvas>
+    <div class="hint" id="deriveHint">这一步：原始的两条列向量张成的平行四边形</div>
+  </div>
+
+  <div class="steps" style="margin-top:18px">
+    <div class="stepbody" id="stepbody"></div>
+    <div class="stepnav">
+      <button id="stepPrev">← 上一步</button>
+      <button id="stepNext" class="primary">下一步 →</button>
+      <div class="dots" id="dots"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 3 ───────────────────────────────────────────────── -->
+<section>
+  <h2><span class="num">3</span>挑战模式：用手拖出指定的行列式</h2>
+  <p class="sub">概念懂了不等于手上有感觉。完成下面的任务，画布上的实时数值会判定你是否达成。</p>
+
+  <div class="challenge">
+    <div style="display:flex;align-items:baseline;gap:8px">
+      <div class="task" id="taskText"></div>
+      <div class="score" id="scoreText">已完成 0 / 0</div>
+    </div>
+    <div class="status no" id="taskStatus">拖动上方第 1 节的手柄来达成目标。</div>
+    <div class="btns">
+      <button id="taskNext" class="primary">换一个任务</button>
+      <button id="taskReset">重置向量</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── 4 ───────────────────────────────────────────────── -->
+<section>
+  <h2><span class="num">4</span>推论：为什么 det(AB) = det(A)·det(B)</h2>
+  <p class="sub">A 和 B 都是线性变换。B 先把单位正方形放大 det(B) 倍，A 再把这个结果放大 det(A) 倍。连续做两次拉伸，总倍数就是两次倍数相乘——这不是需要证明的定理，这是"倍数"这个概念的定义性质。</p>
+
+  <div class="split">
+    <div class="canvas-box"><canvas id="compose" height="380"></canvas></div>
+    <div class="panel">
+      <h3>两次变换的倍数</h3>
+      <div class="readout"><span class="k">det(B)</span><span class="v" id="cDetB">1.00</span></div>
+      <div class="readout"><span class="k">det(A)</span><span class="v" id="cDetA">1.00</span></div>
+      <div class="readout"><span class="k">det(A)·det(B)</span><span class="v" id="cProd">1.00</span></div>
+      <div class="readout"><span class="k">det(AB) 直接算</span><span class="v" id="cDetAB">1.00</span></div>
+      <div class="readout"><span class="k">差值</span><span class="v" id="cDiff">0</span></div>
+      <div class="btns">
+        <button id="cEditA" class="on">编辑 A</button>
+        <button id="cEditB">编辑 B</button>
+      </div>
+      <div class="note" style="margin-top:14px">
+        灰格 = 单位正方形，蓝格 = B 的像，绿格 = A 作用在 B 的像上，也就是 AB 的像。
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 5 ───────────────────────────────────────────────── -->
+<section>
+  <h2><span class="num">5</span>升到三维：det 就是平行六面体的体积</h2>
+  <p class="sub">把 3×3 的九个元素直接当滑块拖动。体积会跟着变；当三个向量被压到同一张平面上，体积归零，矩阵不可逆。拖动画面可以旋转视角。</p>
+
+  <div class="lab">
+    <div class="canvas-box"><canvas id="vol3d" height="440"></canvas>
+      <div class="hint">拖动画面旋转视角 · 右侧滑块调整矩阵元素</div>
+    </div>
+    <div class="panel">
+      <h3>矩阵元素</h3>
+      <div class="grid3" id="grid3"></div>
+      <div class="detbig">
+        <div class="lbl">det = 体积</div>
+        <div class="val" id="vol3val">1.00</div>
+      </div>
+      <div class="readout"><span class="k">体积 |det|</span><span class="v" id="vol3abs">1.00</span></div>
+      <div class="readout"><span class="k">定向</span><span class="v" id="vol3orient">右手系</span></div>
+      <div class="btns">
+        <button id="vol3Reset">重置</button>
+        <button id="vol3Flatten">压成平面</button>
+        <button id="vol3Flip">翻转定向</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 6 ───────────────────────────────────────────────── -->
+<section>
+  <h2><span class="num">6</span>再往外走一步：雅可比行列式</h2>
+  <p class="sub">行列式不是线性代数的孤立章节，它是"变换如何影响体积"的底层语言，线性和非线性都归它管。</p>
+  <div class="note">
+    二重积分换元时冒出来的 <code>|det(J)|</code> 不是微积分课本临时借了一个线性代数的概念。<br><br>
+    一个光滑映射在每一点附近都可以被它的雅可比矩阵线性逼近：在 (u,v) 空间里取一个微小的正方形，映射后变成 (x,y) 空间里一个微小的平行四边形，这个小平行四边形的面积就是原面积乘以<b>局部变换倍数</b>——而局部变换倍数正是雅可比矩阵的行列式。积分就是把每一点的函数值乘以该点附近的面积再累加，换了变量这块面积变成了原来的 <code>|det(J)|</code> 倍，所以要乘回去。
+  </div>
+  <div class="note">
+    <b>三个侧面，一个东西。</b><br>
+    代数公式，是三条公理下硬解出来的唯一函数；几何量，是这三条公理背后的真正内容：带符号体积；不变量，是这个几何量具备的关键性质——乘法性、识别奇异性、换元时的局部系数。课本里那个求和公式，是这三者在最抽象、最远离直觉的形式上被压扁之后的样子。
+  </div>
+</section>
+
+<div class="note src">
+  <b>内容来源</b>：本页概念框架来自你收藏的知乎回答《行列式的本质是什么？》（作者 <b>玖果果</b>，赞同 102）：
+  <a href="https://www.zhihu.com/question/36966326/answer/2030407309009084992" target="_blank" rel="noopener">原文链接</a>。
+  三条公理的刻画（多重线性、交替性、归一化）与唯一性定理、以及 ad−bc 的推导步骤均出自该文；交互与可视化为本页自行实现。<br>
+  本地文件：<code><a href="/blog/zhihu/tech/what-is-a-determinant-really">行列式的本质是什么？</a></code>
+</div>
+
+</div>
+
+<script>
+"use strict";
+/* ══════════════════════════════════════════════════════════
+   公共工具
+   ══════════════════════════════════════════════════════════ */
+const $ = (id) => document.getElementById(id);
+const fmt = (n, d = 2) => {
+  if (!isFinite(n)) return "—";
+  const v = Math.abs(n) < 5e-3 ? 0 : n;
+  return v.toFixed(d);
+};
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+/** 二维线性变换画布 */
+function makeStage(canvas, opts = {}) {
+  const dpr = window.devicePixelRatio || 1;
+  const state = {
+    u: { x: 1, y: 0 },   // 第一列 (a, c)
+    v: { x: 0, y: 1 },   // 第二列 (b, d)
+    unit: opts.unit || 66,
+    drag: null,
+    hover: null,
+    ghost: null,          // {u,v} 用于演示动画的额外轮廓
+    extra: null,          // 自定义绘制钩子
+    // 世界坐标 y 向上，屏幕 y 向下
+  };
+  const ctx = canvas.getContext("2d");
+
+  function resize() {
+    const w = canvas.clientWidth || canvas.parentElement.clientWidth;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(Number(canvas.getAttribute("height")) * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    state.W = w;
+    state.H = Number(canvas.getAttribute("height"));
+    draw();
+  }
+  const ox = () => state.W / 2;
+  const oy = () => state.H / 2;
+  const toScreen = (p) => ({ x: ox() + p.x * state.unit, y: oy() - p.y * state.unit });
+  const toWorld = (sx, sy) => ({ x: (sx - ox()) / state.unit, y: (oy() - sy) / state.unit });
+
+  function det() { return state.u.x * state.v.y - state.v.x * state.u.y; }
+
+  function drawGrid() {
+    const { W, H, unit } = state;
+    ctx.save();
+    ctx.strokeStyle = "#1b2330"; ctx.lineWidth = 1;
+    const nx = Math.ceil(W / 2 / unit), ny = Math.ceil(H / 2 / unit);
+    for (let i = -nx; i <= nx; i++) {
+      const x = Math.round(ox() + i * unit) + .5;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+    for (let j = -ny; j <= ny; j++) {
+      const y = Math.round(oy() + j * unit) + .5;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+    ctx.strokeStyle = "#2f3d51"; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(0, Math.round(oy()) + .5); ctx.lineTo(W, Math.round(oy()) + .5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(Math.round(ox()) + .5, 0); ctx.lineTo(Math.round(ox()) + .5, H); ctx.stroke();
+    ctx.restore();
+  }
+
+  function poly(pts, fill, stroke, lw = 2, dash = null) {
+    const s = pts.map(toScreen);
+    ctx.save();
+    ctx.beginPath();
+    s.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+    ctx.closePath();
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+    if (stroke) {
+      ctx.strokeStyle = stroke; ctx.lineWidth = lw;
+      if (dash) ctx.setLineDash(dash);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function arrow(vec, color, label) {
+    const O = toScreen({ x: 0, y: 0 });
+    const P = toScreen(vec);
+    const dx = P.x - O.x, dy = P.y - O.y;
+    const len = Math.hypot(dx, dy);
+    ctx.save();
+    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 3.2; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(O.x, O.y); ctx.lineTo(P.x, P.y); ctx.stroke();
+    if (len > 12) {
+      const a = Math.atan2(dy, dx);
+      ctx.beginPath();
+      ctx.moveTo(P.x, P.y);
+      ctx.lineTo(P.x - 13 * Math.cos(a - .4), P.y - 13 * Math.sin(a - .4));
+      ctx.lineTo(P.x - 13 * Math.cos(a + .4), P.y - 13 * Math.sin(a + .4));
+      ctx.closePath(); ctx.fill();
+    }
+    if (label) {
+      ctx.font = "600 14px 'Segoe UI',sans-serif";
+      ctx.fillStyle = color;
+      ctx.fillText(label, P.x + 10, P.y - 8);
+    }
+    ctx.restore();
+  }
+
+  function draw() {
+    state.W = state.W || canvas.clientWidth; state.H = state.H || Number(canvas.getAttribute("height"));
+    ctx.clearRect(0, 0, state.W, state.H);
+    ctx.fillStyle = "#10151c"; ctx.fillRect(0, 0, state.W, state.H);
+    drawGrid();
+
+    const d = det();
+
+    // 单位正方形
+    if (!opts.bare) poly([{x:0,y:0},{x:1,y:0},{x:1,y:1},{x:0,y:1}], "rgba(139,152,168,.10)", "rgba(139,152,168,.5)", 1.4, [5,4]);
+
+    // 演示用的幽灵轮廓
+    if (state.ghost) {
+      const g = state.ghost, gu = g.u, gv = g.v;
+      poly([{x:0,y:0}, gu, {x:gu.x+gv.x,y:gu.y+gv.y}, gv],
+           "rgba(210,153,34,.10)", "rgba(210,153,34,.75)", 2, [7,5]);
+    }
+
+    // 主平行四边形
+    if (!opts.bare) {
+      const fill = d > 1e-6 ? "rgba(63,185,80,.22)" : d < -1e-6 ? "rgba(248,81,73,.22)" : "rgba(210,153,34,.22)";
+      const stroke = d > 1e-6 ? "#3fb950" : d < -1e-6 ? "#f85149" : "#d29922";
+      poly([{x:0,y:0}, state.u, {x:state.u.x+state.v.x, y:state.u.y+state.v.y}, state.v], fill, stroke, 2.2);
+    }
+
+    if (state.extra) state.extra(ctx, { toScreen, toWorld, state, poly, arrow });
+
+    arrow(state.u, "#58a6ff", "u");
+    arrow(state.v, "#bc8cff", "v");
+
+    // 拖拽手柄
+    [["u", "#58a6ff"], ["v", "#bc8cff"]].forEach(([k, c]) => {
+      const p = toScreen(state[k]);
+      ctx.save();
+      ctx.beginPath(); ctx.arc(p.x, p.y, state.drag === k || state.hover === k ? 11 : 8, 0, Math.PI * 2);
+      ctx.fillStyle = c; ctx.fill();
+      ctx.strokeStyle = "#0d1117"; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.restore();
+    });
+  }
+
+  function hit(sx, sy) {
+    for (const k of ["u", "v"]) {
+      const p = toScreen(state[k]);
+      if (Math.hypot(p.x - sx, p.y - sy) < 18) return k;
+    }
+    return null;
+  }
+  function localPos(e) {
+    const r = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX - r.left, y: t.clientY - r.top };
+  }
+
+  canvas.addEventListener("pointerdown", (e) => {
+    const p = localPos(e);
+    state.drag = hit(p.x, p.y);
+    if (state.drag) {
+      try { canvas.setPointerCapture(e.pointerId); } catch { /* 合成事件无活动指针 */ }
+      draw();
+    }
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    const p = localPos(e);
+    if (state.drag) {
+      const w = toWorld(p.x, p.y);
+      state[state.drag] = { x: clamp(w.x, -4.2, 4.2), y: clamp(w.y, -4.2, 4.2) };
+      if (opts.onChange) opts.onChange(state);
+      draw();
+    } else {
+      const h = hit(p.x, p.y);
+      if (h !== state.hover) { state.hover = h; canvas.style.cursor = h ? "grab" : "crosshair"; draw(); }
+    }
+  });
+  const release = () => { if (state.drag) { state.drag = null; draw(); } };
+  canvas.addEventListener("pointerup", release);
+  canvas.addEventListener("pointercancel", release);
+
+  window.addEventListener("resize", resize);
+  resize();
+  return { state, draw, det, toScreen, toWorld, resize };
+}
+
+/* ══════════════════════════════════════════════════════════
+   1. 主实验台
+   ══════════════════════════════════════════════════════════ */
+let anim = null;
+const main = makeStage($("main"), { unit: 80, onChange: () => { updateMain(); challengeCheck(); } });
+main.state.u = { x: 1.7, y: 0.5 };
+main.state.v = { x: -0.6, y: 1.4 };
+
+function updateMain() {
+  const { u, v } = main.state;
+  const a = u.x, c = u.y, b = v.x, d = v.y;
+  const det = a * d - b * c;
+
+  $("m00").textContent = fmt(a); $("m01").textContent = fmt(b);
+  $("m10").textContent = fmt(c); $("m11").textContent = fmt(d);
+
+  const dv = $("detval");
+  dv.textContent = fmt(det);
+  dv.className = "val " + (det > 1e-6 ? "pos" : det < -1e-6 ? "neg" : "zero");
+
+  $("area").textContent = fmt(Math.abs(det));
+  $("orient").textContent = det > 1e-6 ? "保持（右手系）" : det < -1e-6 ? "翻转（镜像）" : "退化（无定向）";
+  $("orient").className = "v " + (det > 1e-6 ? "pos" : det < -1e-6 ? "neg" : "zero");
+
+  const degenerate = Math.abs(det) < 1e-3;
+  $("invert").textContent = degenerate ? "不可逆（已降维）" : "可逆";
+  $("invert").className = "v " + (degenerate ? "neg" : "pos");
+  $("rank").textContent = degenerate ? "≤1" : "2";
+  if (typeof onMainChange === "function") onMainChange();
+}
+
+function stopAnim() { if (anim) { cancelAnimationFrame(anim.id); anim = null; } main.state.ghost = null; }
+
+function setVectors(u, v) {
+  main.state.u = { ...u }; main.state.v = { ...v };
+  main.draw(); updateMain(); challengeCheck();
+}
+
+$("btnReset").onclick = () => { stopAnim(); setVectors({ x: 1, y: 0 }, { x: 0, y: 1 }); };
+$("btnSwap").onclick = () => {
+  stopAnim();
+  const { u, v } = main.state;
+  setVectors(v, u);
+};
+$("btnRight").onclick = () => {
+  stopAnim();
+  const { u, v } = main.state;
+  setVectors({ x: -u.y, y: u.x }, { x: -v.y, y: v.x });
+};
+$("btnCollapse").onclick = () => {
+  stopAnim();
+  const { u } = main.state;
+  setVectors({ ...u }, { x: u.x * 1.6, y: u.y * 1.6 });   // v 落在线性相关方向上
+};
+
+/* ── 公理演示 ─────────────────────────────────────────── */
+function tween(ms, onFrame, onDone) {
+  stopAnim();
+  const from = { u: { ...main.state.u }, v: { ...main.state.v } };
+  const t0 = performance.now();
+  const id = requestAnimationFrame(function loop(now) {
+    const t = clamp((now - t0) / ms, 0, 1);
+    const e = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    onFrame(e, from);
+    main.draw();
+    if (t < 1) anim = { id: requestAnimationFrame(loop) };
+    else { anim = null; if (onDone) onDone(); }
+  });
+  anim = { id };
+}
+
+const demos = {
+  linearity() {
+    stopAnim();
+    const base = { u: { ...main.state.u }, v: { ...main.state.v } };
+    const d0 = base.u.x * base.v.y - base.v.x * base.u.y;
+    tween(2600, (e, from) => {
+      const k = 1 + Math.sin(e * Math.PI * 2) * 0.75;        // 1 → 1.75 → 1 → 0.25 → 1
+      main.state.u = { x: from.u.x * k, y: from.u.y * k };
+      main.state.ghost = { u: base.u, v: base.v };
+      updateMain();
+      $("mainHint").textContent = `第一列放大 ${k.toFixed(2)} 倍 → det ${fmt(d0)} → ${fmt(d0 * k)}（同比例）`;
+    }, () => {
+      main.state.ghost = null;
+      main.state.u = base.u;
+      main.draw(); updateMain();
+      $("mainHint").textContent = "拖动 ● 手柄移动向量";
+    });
+  },
+  alternate() {
+    stopAnim();
+    const u0 = { ...main.state.u }, v0 = { ...main.state.v };
+    const d0 = u0.x * v0.y - v0.x * u0.y;
+    tween(1800, (e) => {
+      main.state.v = { x: v0.x + (u0.x - v0.x) * e, y: v0.y + (u0.y - v0.y) * e };
+      updateMain();
+      const d = main.det();
+      $("mainHint").textContent = `交换中… det ${fmt(d0)} → ${fmt(d)}，正负号正在翻过来`;
+    }, () => {
+      main.state.u = v0; main.state.v = u0;
+      main.draw(); updateMain();
+      $("mainHint").textContent = `交换完成：det 从 ${fmt(d0)} 变成 ${fmt(-d0)}，面积一样，方向反了`;
+    });
+  },
+  normalize() {
+    stopAnim();
+    const u0 = { ...main.state.u }, v0 = { ...main.state.v };
+    tween(1800, (e) => {
+      main.state.u = { x: u0.x + (1 - u0.x) * e, y: u0.y + (0 - u0.y) * e };
+      main.state.v = { x: v0.x + (0 - v0.x) * e, y: v0.y + (1 - v0.y) * e };
+      updateMain();
+      $("mainHint").textContent = `向标准基收敛… det → ${fmt(main.det())}`;
+    }, () => {
+      $("mainHint").textContent = "单位阵的行列式规定为 1，这就是度量单位的起点";
+      challengeCheck();
+    });
+  }
+};
+document.querySelectorAll("[data-demo]").forEach((b) => {
+  b.onclick = () => demos[b.dataset.demo]();
+});
+
+/* ══════════════════════════════════════════════════════════
+   2. 推导剧场
+   ══════════════════════════════════════════════════════════ */
+const derive = makeStage($("derive"), { bare: true, unit: 74 });
+// 给推导剧场一个非平凡的算例：a=1.6, b=−0.5, c=0.6, d=1.3 → det = 2.38
+derive.state.u = { x: 1.6, y: 0.6 };
+derive.state.v = { x: -0.5, y: 1.3 };
+let step = 0;
+
+const STEPS = [
+  {
+    t: "起点：两条列向量张成的平行四边形",
+    e: "det(A) = det(u, v)，其中 u = a·e₁ + c·e₂，v = b·e₁ + d·e₂",
+    hint: "原始的两条列向量张成的平行四边形",
+    draw(ctx, h) {
+      const { state } = h;
+      h.poly([{x:0,y:0}, state.u, {x:state.u.x+state.v.x,y:state.u.y+state.v.y}, state.v],
+             "rgba(88,166,255,.18)", "#58a6ff", 2.4);
+      const a = state.u.x, c = state.u.y, b = state.v.x, d = state.v.y;
+      // 带偏移的分解段，避免标注全部挤在原点附近
+      const seg = (from, to, color, text, off) => {
+        const p1 = h.toScreen(from), p2 = h.toScreen(to);
+        ctx.save();
+        ctx.strokeStyle = color; ctx.lineWidth = 4.5; ctx.lineCap = "round";
+        ctx.setLineDash([8,6]);
+        ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font = "600 13px 'Segoe UI',sans-serif";
+        const mx = (p1.x+p2.x)/2 + off[0], my = (p1.y+p2.y)/2 + off[1];
+        const w = ctx.measureText(text).width;
+        ctx.fillStyle = "rgba(13,17,23,.9)";
+        ctx.fillRect(mx - w/2 - 5, my - 11, w + 10, 19);
+        ctx.fillStyle = color;
+        ctx.textAlign = "center";
+        ctx.fillText(text, mx, my + 3);
+        ctx.restore();
+      };
+      seg({x:0,y:0}, {x:a,y:0}, "#58a6ff", `a·e₁ = ${fmt(a)}`, [0, 24]);
+      seg({x:a,y:0}, {x:a,y:c}, "#58a6ff", `c·e₂ = ${fmt(c)}`, [58, 0]);
+      seg({x:0,y:0}, {x:b,y:0}, "#bc8cff", `b·e₁ = ${fmt(b)}`, [0, -16]);
+      seg({x:b,y:0}, {x:b,y:d}, "#bc8cff", `d·e₂ = ${fmt(d)}`, [-58, 0]);
+      // 明确画出两个方向的合成关系
+      h.arrow(state.u, "#58a6ff", "u");
+      h.arrow(state.v, "#bc8cff", "v");
+    }
+  },
+  {
+    t: "用多重线性展开：一块变四块",
+    e: "det(a·e₁+c·e₂, b·e₁+d·e₂) = ab·det(e₁,e₁) + ad·det(e₁,e₂) + cb·det(e₂,e₁) + cd·det(e₂,e₂)",
+    hint: "四块小平行四边形拼回原来的大平行四边形",
+    draw(ctx, h) {
+      const { state } = h;
+      const a = state.u.x, c = state.u.y, b = state.v.x, d = state.v.y;
+      const P = (x1,y1,x2,y2,fill,stroke) => h.poly(
+        [{x:0,y:0},{x:x1,y:y1},{x:x1+x2,y:y1+y2},{x:x2,y:y2}], fill, stroke, 2);
+      P(a, 0, b, 0, "rgba(210,153,34,.18)", "rgba(210,153,34,.7)");      // ab·(e1,e1) 退化
+      P(a, 0, 0, d, "rgba(63,185,80,.22)", "rgba(63,185,80,.85)");       // ad·(e1,e2)
+      P(0, c, b, 0, "rgba(188,140,255,.22)", "rgba(188,140,255,.85)");   // cb·(e2,e1)
+      P(0, c, 0, d, "rgba(210,153,34,.18)", "rgba(210,153,34,.7)");      // cd·(e2,e2) 退化
+      const tag = (wx, wy, text, color, off = [0, 0]) => {
+        const p = h.toScreen({ x: wx, y: wy });
+        const px = p.x + off[0], py = p.y + off[1];
+        ctx.save();
+        ctx.font = "700 14px 'Segoe UI',sans-serif";
+        ctx.textAlign = "center";
+        const w = ctx.measureText(text).width;
+        ctx.fillStyle = "rgba(13,17,23,.92)";
+        ctx.fillRect(px - w/2 - 6, py - 12, w + 12, 21);
+        ctx.fillStyle = color;
+        ctx.fillText(text, px, py + 3);
+        ctx.restore();
+      };
+      tag(a / 2, 0, `ab = ${fmt(a*b)}`, "#d29922", [0, 20]);
+      tag(a / 2, d / 2, `ad = ${fmt(a*d)}`, "#3fb950", [0, 0]);
+      tag(b / 2, c / 2, `cb = ${fmt(c*b)}`, "#bc8cff", [0, 0]);
+      tag(0, d / 2, `cd = ${fmt(c*d)}`, "#d29922", [-66, -14]);
+    }
+  },
+  {
+    t: "交替性消掉两块",
+    e: "det(e₁,e₁) = 0，det(e₂,e₂) = 0 —— 两条边相同就退化，面积为 0",
+    hint: "两块退化成线段，只剩 ad 与 cb 两块",
+    draw(ctx, h) {
+      const { state } = h;
+      const a = state.u.x, c = state.u.y, b = state.v.x, d = state.v.y;
+      h.poly([{x:0,y:0},{x:a,y:0},{x:a,y:0},{x:0,y:0}], null, "rgba(210,153,34,.85)", 3, [6,4]);
+      h.poly([{x:0,y:0},{x:0,y:c},{x:0,y:c},{x:0,y:0}], null, "rgba(210,153,34,.85)", 3, [6,4]);
+      h.poly([{x:0,y:0},{x:a,y:0},{x:a,y:d},{x:0,y:d}], "rgba(63,185,80,.22)", "rgba(63,185,80,.9)", 2);
+      h.poly([{x:0,y:0},{x:0,y:c},{x:b,y:c},{x:b,y:0}], "rgba(188,140,255,.22)", "rgba(188,140,255,.9)", 2);
+    }
+  },
+  {
+    t: "归一化与交替性给出两个符号",
+    e: "det(e₁,e₂) = 1（归一化）　·　det(e₂,e₁) = −det(e₁,e₂) = −1（交替性）",
+    hint: "绿色那块取 +1，紫色那块取 −1",
+    draw(ctx, h) {
+      const { state } = h;
+      const a = state.u.x, c = state.u.y, b = state.v.x, d = state.v.y;
+      h.poly([{x:0,y:0},{x:1,y:0},{x:1,y:1},{x:0,y:1}], "rgba(63,185,80,.28)", "#3fb950", 2.4);
+      const p = h.toScreen({ x: .5, y: .5 });
+      ctx.save();
+      ctx.fillStyle = "#3fb950"; ctx.font = "700 20px 'Segoe UI',sans-serif";
+      ctx.fillText("+1", p.x - 14, p.y + 7);
+      ctx.restore();
+      // 反序的基：紫色平行四边形在第四象限
+      h.poly([{x:0,y:0},{x:0,y:1},{x:1,y:1},{x:1,y:0}], "rgba(188,140,255,.28)", "#bc8cff", 2.4);
+      const q = h.toScreen({ x: .5, y: .5 });
+      ctx.save();
+      ctx.fillStyle = "#bc8cff"; ctx.font = "700 20px 'Segoe UI',sans-serif";
+      ctx.fillText("−1", q.x - 14, q.y + 7);
+      ctx.restore();
+    }
+  },
+  {
+    t: "代回去：ad − bc 冒出来了",
+    e: "det(A) = ad·(+1) + cb·(−1) = ad − bc",
+    hint: "四个字符里，三条公理已经全部写在里面",
+    draw(ctx, h) {
+      const { state } = h;
+      const a = state.u.x, c = state.u.y, b = state.v.x, d = state.v.y;
+      const det = a * d - b * c;
+      h.poly([{x:0,y:0}, state.u, {x:state.u.x+state.v.x,y:state.u.y+state.v.y}, state.v],
+             det >= 0 ? "rgba(63,185,80,.24)" : "rgba(248,81,73,.24)",
+             det >= 0 ? "#3fb950" : "#f85149", 2.6);
+      const p = h.toScreen({ x: (a + b) / 2, y: (c + d) / 2 });
+      ctx.save();
+      ctx.fillStyle = det >= 0 ? "#3fb950" : "#f85149";
+      ctx.font = "700 26px 'Segoe UI',sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(fmt(det), p.x, p.y + 9);
+      ctx.restore();
+    }
+  }
+];
+
+function renderStep() {
+  const s = STEPS[step];
+  $("stepbody").innerHTML =
+    `<div style="font-size:17px;font-weight:600;margin-bottom:4px">${s.t}</div>
+     <div class="eq">${s.e.replace(/det\(e₁,e₁\)|det\(e₂,e₂\)/g, m => `<span class="zero">${m}</span>`)
+                        .replace(/ad·\(\+1\)|det\(e₁,e₂\) = 1/g, m => `<span class="keep">${m}</span>`)}</div>`;
+  $("deriveHint").textContent = s.hint;
+  $("stepPrev").disabled = step === 0;
+  $("stepNext").disabled = step === STEPS.length - 1;
+  $("dots").innerHTML = STEPS.map((_, i) => `<div class="dot ${i === step ? "on" : ""}"></div>`).join("");
+  derive.draw();
+}
+$("stepPrev").onclick = () => { if (step > 0) { step--; renderStep(); } };
+$("stepNext").onclick = () => { if (step < STEPS.length - 1) { step++; renderStep(); } };
+// 让推导画布叠加当前步骤的可视化
+derive.state.extra = (ctx, h) => { STEPS[step].draw(ctx, h); };
+
+/* ══════════════════════════════════════════════════════════
+   3. 挑战模式
+   ══════════════════════════════════════════════════════════ */
+const TASKS = [
+  { text: "让 det(A) 恰好等于 <b>0</b>（把平面压成一条线）", test: d => Math.abs(d) < 0.12 },
+  { text: "让 det(A) 落在 <b>5.8 ~ 6.2</b> 之间", test: d => d > 5.8 && d < 6.2 },
+  { text: "让 det(A) 落在 <b>−4.2 ~ −3.8</b> 之间（面积 4，方向翻转）", test: d => d < -3.8 && d > -4.2 },
+  { text: "让 |det(A)| 落在 <b>0.9 ~ 1.1</b>，但 <b>det(A) 必须为负</b>", test: d => d < -0.9 && d > -1.1 },
+  { text: "让 det(A) 落在 <b>2.4 ~ 2.6</b> 之间", test: d => d > 2.4 && d < 2.6 },
+  { text: "让 det(A) 落在 <b>11.5 ~ 12.5</b> 之间（大拉伸）", test: d => d > 11.5 && d < 12.5 },
+];
+let taskIdx = 0, solved = new Set(), justSolved = false;
+
+function renderTask() {
+  $("taskText").innerHTML = TASKS[taskIdx].text;
+  $("scoreText").textContent = `已完成 ${solved.size} / ${TASKS.length}`;
+}
+function challengeCheck() {
+  const d = main.det();
+  const ok = TASKS[taskIdx].test(d);
+  const st = $("taskStatus");
+  if (ok) {
+    if (!justSolved) {
+      solved.add(taskIdx); justSolved = true;
+      $("scoreText").textContent = `已完成 ${solved.size} / ${TASKS.length}`;
+    }
+    st.className = "status ok";
+    st.textContent = `✓ 达成！当前 det = ${fmt(d)}`;
+  } else {
+    justSolved = false;
+    st.className = "status no";
+    st.textContent = `当前 det = ${fmt(d)}，还没达成。`;
+  }
+}
+$("taskNext").onclick = () => {
+  taskIdx = (taskIdx + 1) % TASKS.length;
+  justSolved = false;
+  renderTask(); challengeCheck();
+};
+$("taskReset").onclick = () => setVectors({ x: 1, y: 0 }, { x: 0, y: 1 });
+
+/* ══════════════════════════════════════════════════════════
+   4. det(AB) = det(A)det(B)
+   ══════════════════════════════════════════════════════════ */
+let editing = "A";
+const A = { u: { x: 1.3, y: 0.5 }, v: { x: -0.4, y: 1.1 } };
+const B = { u: { x: 0.8, y: 0 }, v: { x: 0.5, y: 1.2 } };
+
+function matApply(M, p) {
+  return { x: M.u.x * p.x + M.v.x * p.y, y: M.u.y * p.x + M.v.y * p.y };
+}
+function composeMat(A, B) {   // AB：先 B 后 A
+  return {
+    u: matApply(A, B.u),
+    v: matApply(A, B.v),
+  };
+}
+const cStage = makeStage($("compose"), {
+  unit: 52,
+  onChange: (st) => {
+    const M = editing === "A" ? A : B;
+    M.u = { ...st.u }; M.v = { ...st.v };
+    updateCompose();
+  },
+});
+cStage.state.extra = (ctx, h) => {
+  const AB = composeMat(A, B);
+  h.poly([{x:0,y:0}, B.u, {x:B.u.x+B.v.x,y:B.u.y+B.v.y}, B.v],
+         "rgba(88,166,255,.18)", "rgba(88,166,255,.8)", 2, [7,5]);
+  h.poly([{x:0,y:0}, AB.u, {x:AB.u.x+AB.v.x,y:AB.u.y+AB.v.y}, AB.v],
+         "rgba(63,185,80,.22)", "#3fb950", 2.4);
+};
+function updateCompose() {
+  const M = editing === "A" ? A : B;
+  cStage.state.u = { ...M.u }; cStage.state.v = { ...M.v };
+  const dA = A.u.x * A.v.y - A.v.x * A.u.y;
+  const dB = B.u.x * B.v.y - B.v.x * B.u.y;
+  const AB = composeMat(A, B);
+  const dAB = AB.u.x * AB.v.y - AB.v.x * AB.u.y;
+  $("cDetA").textContent = fmt(dA);
+  $("cDetB").textContent = fmt(dB);
+  $("cProd").textContent = fmt(dA * dB);
+  $("cDetAB").textContent = fmt(dAB);
+  $("cDiff").textContent = fmt(Math.abs(dAB - dA * dB), 6);
+  cStage.draw();
+}
+cStage.state.onChange = () => {};   // 实际的 onChange 已在 makeStage 的 opts 中传入
+$("cEditA").onclick = () => { editing = "A"; $("cEditA").classList.add("on"); $("cEditB").classList.remove("on"); updateCompose(); };
+$("cEditB").onclick = () => { editing = "B"; $("cEditB").classList.add("on"); $("cEditA").classList.remove("on"); updateCompose(); };
+
+/* ══════════════════════════════════════════════════════════
+   5. 三维体积
+   ══════════════════════════════════════════════════════════ */
+const M3 = [[1,0,0],[0,1,0],[0,0,1]];
+let yaw = 0.62, pitch = 0.42;
+const v3 = $("vol3d"), c3 = v3.getContext("2d");
+const dpr3 = window.devicePixelRatio || 1;
+
+function det3(m) {
+  return m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1])
+       - m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0])
+       + m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]);
+}
+function project(p) {
+  const cy = Math.cos(yaw), sy = Math.sin(yaw);
+  const x1 = p[0]*cy - p[2]*sy, z1 = p[0]*sy + p[2]*cy;
+  const cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const y1 = p[1]*cp - z1*sp, z2 = p[1]*sp + z1*cp;
+  const f = 1 / (1 + z2 * 0.16);
+  return { x: x1 * f, y: y1 * f, z: z2, f };
+}
+function draw3() {
+  const W = v3.clientWidth, H = 440;
+  v3.width = Math.round(W * dpr3); v3.height = Math.round(H * dpr3);
+  c3.setTransform(dpr3,0,0,dpr3,0,0);
+  c3.clearRect(0,0,W,H);
+  c3.fillStyle = "#10151c"; c3.fillRect(0,0,W,H);
+
+  const S = Math.min(W, H) * 0.26;
+  const O = { x: W/2, y: H/2 + 10 };
+  const P = (p) => { const q = project(p); return { x: O.x + q.x*S, y: O.y - q.y*S }; };
+
+  // 地面网格
+  c3.strokeStyle = "#1b2330"; c3.lineWidth = 1;
+  for (let i = -3; i <= 3; i++) {
+    let a = P([i,0,-3]), b = P([i,0,3]);
+    c3.beginPath(); c3.moveTo(a.x,a.y); c3.lineTo(b.x,b.y); c3.stroke();
+    a = P([-3,0,i]); b = P([3,0,i]);
+    c3.beginPath(); c3.moveTo(a.x,a.y); c3.lineTo(b.x,b.y); c3.stroke();
+  }
+  // 坐标轴
+  const axes = [[[2.4,0,0],"#f85149","x"],[[0,2.4,0],"#3fb950","y"],[[0,0,2.4],"#58a6ff","z"]];
+  axes.forEach(([v, col, nm]) => {
+    const a = P([0,0,0]), b = P(v);
+    c3.strokeStyle = col; c3.lineWidth = 1.6; c3.globalAlpha = .65;
+    c3.beginPath(); c3.moveTo(a.x,a.y); c3.lineTo(b.x,b.y); c3.stroke();
+    c3.globalAlpha = 1;
+    c3.fillStyle = col; c3.font = "600 12px 'Segoe UI',sans-serif";
+    c3.fillText(nm, b.x+5, b.y);
+  });
+
+  // 三个列向量
+  const cols = [
+    [M3[0][0], M3[1][0], M3[2][0]],
+    [M3[0][1], M3[1][1], M3[2][1]],
+    [M3[0][2], M3[1][2], M3[2][2]],
+  ];
+  const vcol = ["#58a6ff", "#bc8cff", "#d29922"];
+  const names = ["v₁", "v₂", "v₃"];
+
+  // 平行六面体的 6 个面
+  const c = cols;
+  const corners = [];
+  for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) for (let k = 0; k < 2; k++) {
+    corners.push([ i*c[0][0]+j*c[1][0]+k*c[2][0],
+                   i*c[0][1]+j*c[1][1]+k*c[2][1],
+                   i*c[0][2]+j*c[1][2]+k*c[2][2] ]);
+  }
+  const idx = (i,j,k) => i*4 + j*2 + k;
+  const faces = [
+    [[0,0,0],[1,0,0],[1,1,0],[0,1,0]],
+    [[0,0,1],[1,0,1],[1,1,1],[0,1,1]],
+    [[0,0,0],[1,0,0],[1,0,1],[0,0,1]],
+    [[0,1,0],[1,1,0],[1,1,1],[0,1,1]],
+    [[0,0,0],[0,1,0],[0,1,1],[0,0,1]],
+    [[1,0,0],[1,1,0],[1,1,1],[1,0,1]],
+  ];
+  const d = det3(M3);
+  const base = d >= 0 ? [63,185,80] : [248,81,73];
+  faces.forEach((f) => {
+    const pts = f.map(([i,j,k]) => P(corners[idx(i,j,k)]));
+    const depth = f.reduce((s,[i,j,k]) => s + corners[idx(i,j,k)][2], 0) / 4;
+    c3.beginPath();
+    pts.forEach((p, n) => n ? c3.lineTo(p.x,p.y) : c3.moveTo(p.x,p.y));
+    c3.closePath();
+    const alpha = clamp(0.10 + depth * 0.05, 0.05, 0.3);
+    c3.fillStyle = `rgba(${base[0]},${base[1]},${base[2]},${alpha})`;
+    c3.fill();
+    c3.strokeStyle = `rgba(${base[0]},${base[1]},${base[2]},.55)`;
+    c3.lineWidth = 1.4; c3.stroke();
+  });
+
+  cols.forEach((v, i) => {
+    const a = P([0,0,0]), b = P(v);
+    c3.strokeStyle = vcol[i]; c3.fillStyle = vcol[i]; c3.lineWidth = 3.4; c3.lineCap = "round";
+    c3.beginPath(); c3.moveTo(a.x,a.y); c3.lineTo(b.x,b.y); c3.stroke();
+    c3.beginPath(); c3.arc(b.x,b.y,6,0,Math.PI*2); c3.fill();
+    c3.font = "700 14px 'Segoe UI',sans-serif";
+    c3.fillText(names[i], b.x+9, b.y-7);
+  });
+
+  const dv = $("vol3val");
+  dv.textContent = fmt(d);
+  dv.className = "val " + (d > 1e-6 ? "pos" : d < -1e-6 ? "neg" : "zero");
+  $("vol3abs").textContent = fmt(Math.abs(d));
+  $("vol3orient").textContent = d > 1e-6 ? "右手系（保持）" : d < -1e-6 ? "左手系（翻转）" : "退化（共面）";
+  $("vol3orient").className = "v " + (d > 1e-6 ? "pos" : d < -1e-6 ? "neg" : "zero");
+}
+
+// 九宫格滑块
+const grid = $("grid3");
+for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+  const w = document.createElement("div");
+  w.className = "cellwrap";
+  const r = document.createElement("input");
+  r.type = "range"; r.min = "-2"; r.max = "2"; r.step = "0.05";
+  r.value = M3[i][j];
+  const lab = document.createElement("div");
+  lab.textContent = `a${i+1}${j+1}`;
+  r.oninput = () => { M3[i][j] = parseFloat(r.value); draw3(); };
+  w.appendChild(r); w.appendChild(lab);
+  grid.appendChild(w);
+}
+function syncGrid() {
+  const rs = grid.querySelectorAll("input");
+  let n = 0;
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { rs[n].value = M3[i][j]; n++; }
+}
+$("vol3Reset").onclick = () => { M3[0]=[1,0,0]; M3[1]=[0,1,0]; M3[2]=[0,0,1]; syncGrid(); draw3(); };
+$("vol3Flatten").onclick = () => { M3[0]=[1,0.4,0]; M3[1]=[0.5,1,0]; M3[2]=[0.7,0.7,0]; syncGrid(); draw3(); };
+$("vol3Flip").onclick = () => { M3[0]=[1,0,0]; M3[1]=[0,1,0]; M3[2]=[0.6,0.6,-1]; syncGrid(); draw3(); };
+
+let drag3 = null;
+v3.addEventListener("pointerdown", (e) => {
+  v3.setPointerCapture(e.pointerId);
+  drag3 = { x: e.clientX, y: e.clientY, yaw, pitch };
+});
+v3.addEventListener("pointermove", (e) => {
+  if (!drag3) return;
+  yaw = drag3.yaw + (e.clientX - drag3.x) * 0.008;
+  pitch = clamp(drag3.pitch + (e.clientY - drag3.y) * 0.008, -1.35, 1.35);
+  draw3();
+});
+const rel3 = () => { drag3 = null; };
+v3.addEventListener("pointerup", rel3);
+v3.addEventListener("pointercancel", rel3);
+
+/* ══════════════════════════════════════════════════════════
+   初始化
+   ══════════════════════════════════════════════════════════ */
+window.addEventListener("resize", () => { draw3(); });
+renderStep();
+renderTask();
+updateMain();
+updateCompose();
+draw3();
+</script>
+</body>
+</html>

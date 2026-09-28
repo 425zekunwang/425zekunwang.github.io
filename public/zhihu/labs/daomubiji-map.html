@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>《盗墓笔记》脉络图 · 主线 / 暗线 / 时间线</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a20; --panel2:#1e222a; --line:#2a2f3a;
+    --fg:#e8eaed; --dim:#8b93a1; --gold:#d4a24c; --jade:#4bbf8a;
+    --blood:#d9534f; --blue:#5b9bd5; --purple:#a97bd6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);line-height:1.75;
+    font-family:"Segoe UI","Microsoft YaHei",-apple-system,BlinkMacSystemFont,sans-serif}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px 90px}
+
+  header.hero{padding:56px 0 30px;border-bottom:1px solid var(--line);margin-bottom:34px}
+  .kicker{color:var(--gold);font-size:13px;letter-spacing:.2em;text-transform:uppercase;font-weight:600}
+  h1{font-size:clamp(28px,4.4vw,44px);margin:12px 0 8px;font-weight:700;letter-spacing:.02em}
+  .lede{color:var(--dim);font-size:16.5px;max-width:780px;margin:0}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+  .chip{background:var(--panel);border:1px solid var(--line);border-radius:20px;
+    padding:6px 14px;font-size:13.5px;color:var(--dim)}
+  .chip b{color:var(--fg);font-weight:600}
+
+  section{margin:0 0 54px}
+  h2{font-size:22px;margin:0 0 6px;display:flex;align-items:center;gap:10px}
+  h2 .num{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+    border-radius:8px;background:var(--gold);color:#1a1206;font-size:15px;font-weight:700;flex:none}
+  .sub{color:var(--dim);margin:0 0 20px;font-size:15px}
+
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .tab{background:var(--panel);border:1px solid var(--line);color:var(--dim);
+    padding:9px 16px;border-radius:9px;cursor:pointer;font-size:14px;font-family:inherit;transition:.15s}
+  .tab:hover{color:var(--fg);border-color:#3a4150}
+  .tab.on{background:var(--gold);color:#1a1206;border-color:var(--gold);font-weight:600}
+  .tab.on[data-thread="long"]{background:var(--jade);border-color:var(--jade)}
+  .tab.on[data-thread="people"]{background:var(--blue);border-color:var(--blue);color:#04121f}
+
+  .thread{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px}
+  .thread h3{margin:0 0 6px;font-size:19px}
+  .thread .tagline{color:var(--dim);font-size:14.5px;margin:0 0 20px}
+  .beats{list-style:none;margin:0;padding:0;position:relative}
+  .beats::before{content:"";position:absolute;left:11px;top:8px;bottom:8px;width:2px;background:var(--line)}
+  .beats li{position:relative;padding:0 0 20px 38px}
+  .beats li:last-child{padding-bottom:0}
+  .beats li::before{content:"";position:absolute;left:5px;top:9px;width:14px;height:14px;
+    border-radius:50%;background:var(--bg);border:2.5px solid var(--gold)}
+  .thread[data-tone="long"] .beats li::before{border-color:var(--jade)}
+  .thread[data-tone="people"] .beats li::before{border-color:var(--blue)}
+  .beats .bt{font-weight:600;font-size:15.5px}
+  .beats .bd{color:var(--dim);font-size:14.5px}
+
+  .vols{display:grid;gap:12px}
+  .vol{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .volhead{display:flex;align-items:center;gap:14px;padding:15px 20px;cursor:pointer;user-select:none}
+  .volhead:hover{background:var(--panel2)}
+  .volno{flex:none;width:34px;height:34px;border-radius:9px;background:#241d10;color:var(--gold);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+  .voltitle{font-weight:600;font-size:16px}
+  .volplace{color:var(--dim);font-size:13.5px;margin-left:auto}
+  .volarrow{color:var(--dim);transition:.2s;flex:none}
+  .vol.open .volarrow{transform:rotate(90deg)}
+  .volbody{max-height:0;overflow:hidden;transition:max-height .28s ease}
+  .vol.open .volbody{max-height:520px}
+  .volbody .inner{padding:0 20px 18px 68px;color:var(--dim);font-size:14.8px;
+    border-top:1px solid var(--line);padding-top:16px}
+  .volbody .inner b{color:var(--fg)}
+
+  .eraBar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+  .era{background:var(--panel);border:1px solid var(--line);color:var(--dim);
+    padding:7px 14px;border-radius:20px;cursor:pointer;font-size:13.5px;font-family:inherit}
+  .era:hover{color:var(--fg)}
+  .era.on{background:#2b2416;border-color:var(--gold);color:var(--gold);font-weight:600}
+
+  .tl{position:relative;padding-left:26px}
+  .tl::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--line)}
+  .ev{position:relative;margin-bottom:10px}
+  .ev::before{content:"";position:absolute;left:-24px;top:14px;width:11px;height:11px;border-radius:50%;
+    background:var(--bg);border:2.5px solid var(--line)}
+  .ev[data-w="main"]::before{border-color:var(--gold)}
+  .ev[data-w="long"]::before{border-color:var(--jade)}
+  .ev[data-w="side"]::before{border-color:var(--blue)}
+  .evhead{display:flex;gap:12px;align-items:baseline;padding:9px 14px;border-radius:9px;cursor:pointer}
+  .evhead:hover{background:var(--panel)}
+  .evtime{flex:none;min-width:104px;color:var(--gold);font-weight:600;font-size:14px;
+    font-variant-numeric:tabular-nums}
+  .evtext{font-size:14.8px}
+  .evmore{max-height:0;overflow:hidden;transition:max-height .25s ease}
+  .ev.open .evmore{max-height:300px}
+  .evmore .inner{margin:2px 0 12px 130px;padding:12px 16px;background:var(--panel);
+    border-left:2px solid var(--gold);border-radius:0 8px 8px 0;color:var(--dim);font-size:14px}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13.5px;color:var(--dim);margin-bottom:16px}
+  .legend span{display:flex;align-items:center;gap:7px}
+  .legend i{width:11px;height:11px;border-radius:50%;display:inline-block;border:2.5px solid}
+  .lg-main i{border-color:var(--gold)} .lg-long i{border-color:var(--jade)} .lg-side i{border-color:var(--blue)}
+
+  .callout{border-radius:12px;padding:18px 22px;font-size:14.8px;margin-bottom:14px;border:1px solid}
+  .c-canon{background:#141a16;border-color:#25402f}
+  .c-fan{background:#1a1614;border-color:#40342a}
+  .c-warn{background:#1a1416;border-color:#402a2e}
+  .callout h4{margin:0 0 8px;font-size:15px}
+  .c-canon h4{color:var(--jade)} .c-fan h4{color:var(--gold)} .c-warn h4{color:var(--blood)}
+  .callout p{margin:0 0 8px;color:var(--dim)}
+  .callout p:last-child{margin-bottom:0}
+  .callout a{color:var(--blue);text-decoration:none}
+  .callout a:hover{text-decoration:underline}
+  .callout ul{margin:8px 0 0;padding-left:22px;color:var(--dim)}
+  .callout li{margin-bottom:5px}
+
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:820px){.split{grid-template-columns:1fr}}
+  .srcbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .srcbox h4{margin:0 0 10px;font-size:15px;color:var(--fg)}
+  .srcbox p,.srcbox li{color:var(--dim);font-size:14.2px}
+  .srcbox ol{margin:0;padding-left:20px}
+  .srcbox li{margin-bottom:8px}
+  code{background:#0c0e12;padding:2px 6px;border-radius:5px;font-size:13.5px;
+    font-family:"Cascadia Code",Consolas,monospace}
+  .foot{margin-top:44px;padding-top:22px;border-top:1px solid var(--line);
+    color:var(--dim);font-size:13.5px}
+  .foot a{color:var(--blue);text-decoration:none}
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:99;display:flex;gap:16px;align-items:center;justify-content:space-between;padding:9px 18px;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid #2b3444;font-size:13.5px;font-family:'Segoe UI','Microsoft YaHei',sans-serif"><a href="/" style="color:#8b98a8;text-decoration:none">← wzk 的技术笔记</a><a href="/zhihu/labs/" style="color:#58a6ff;text-decoration:none">全部交互页面</a></div>
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">Reading Map · 作品脉络</div>
+  <h1>《盗墓笔记》全文脉络</h1>
+  <p class="lede">八卷正传的前后因果、明线与暗线、以及被反复讨论却始终没有官方定论的那部分。本页把<b>可核查的出版事实</b>与<b>读者推演</b>分开呈现，不把粉丝解读当成原著设定。</p>
+  <p style="margin-top:18px;font-size:15px">
+    → 配套页：<a href="daomubiji-author-model.html" style="color:var(--gold);text-decoration:none;border-bottom:1px dashed var(--gold)">徐磊为什么会这么写 · 作者直觉模型</a>
+    <span style="color:var(--dim)">——从生平经历还原作者的写作动机，并回看三个具体片段。</span>
+  </p>
+  <div class="meta">
+    <span class="chip">作者 <b>南派三叔</b>（徐磊）</span>
+    <span class="chip">正传 <b>8 卷 / 9 册</b></span>
+    <span class="chip">上海文化出版社</span>
+    <span class="chip">首发 <b>2007 年</b>起</span>
+    <span class="chip">本页整理自 <b>中国作家网</b> 等公开资料</span>
+  </div>
+</header>
+
+<!-- ── 0 可靠性分层 ──────────────────────────────────── -->
+<section>
+  <h2><span class="num">0</span>先分清三种"事实"</h2>
+  <p class="sub">《盗墓笔记》的讨论之所以混乱，是因为原著留下了大量空白，导致"原著写的"、"官方出版的"、"读者推出来的"经常被混为一谈。本页全程用颜色区分。</p>
+
+  <div class="callout c-canon">
+    <h4>■ 出版事实（可核查）</h4>
+    <p>正传八卷的书名、册数、出版社、ISBN、分卷内容简介。这部分以中国作家网（中国作家协会主管）的图书条目为准，是可核对的硬信息。</p>
+  </div>
+  <div class="callout c-fan">
+    <h4>■ 读者推演（流传很广，但不是原著明写）</h4>
+    <p>你收藏的那篇知乎回答（作者 <b>寰宇</b>，赞同 23195）其实就是这一类。它把散落的线索拼成了一套自洽的解释，其中最有名的是：<b>张起灵同时拥有张替身、汪藏海、铁面生三重记忆</b>；<b>吴邪是吴家培育出来的"完美容器"，幼年被喂过含汪藏海记忆的丹药</b>。</p>
+    <p>这套解释能说通很多情节，但它属于读者的整合推理，原著并没有逐条明确写出来。本页把它单独成层。</p>
+  </div>
+  <div class="callout c-warn">
+    <h4>■ 原著未解之谜</h4>
+    <p>三叔的真实结局、青铜门后的"终极"到底是什么、张家的完整来历、老九门各家的下落——原著始终留有空白，官方也没有给出统一答案。任何声称"唯一正确解释"的说法都值得警惕。</p>
+  </div>
+</section>
+
+<!-- ── 1 三条线 ──────────────────────────────────────── -->
+<section>
+  <h2><span class="num">1</span>三条叙事线</h2>
+  <p class="sub">同一段故事同时在三层上推进。理解这点，八卷的走向就不会显得跳跃。</p>
+
+  <div class="tabs">
+    <button class="tab on" data-thread="main">明线 · 盗墓路线</button>
+    <button class="tab" data-thread="long">暗线 · 长生秘密</button>
+    <button class="tab" data-thread="people">人物线 · 两族与九门</button>
+  </div>
+
+  <div class="thread" data-tone="main" id="threadBox">
+    <h3 id="threadTitle"></h3>
+    <p class="tagline" id="threadTag"></p>
+    <ul class="beats" id="threadBeats"></ul>
+  </div>
+</section>
+
+<!-- ── 2 分卷 ────────────────────────────────────────── -->
+<section>
+  <h2><span class="num">2</span>正传八卷：每一卷走到哪一步</h2>
+  <p class="sub">点开任意一卷。简介概要来自中国作家网图书条目的官方内容推荐。</p>
+  <div class="vols" id="vols"></div>
+</section>
+
+<!-- ── 3 时间线 ──────────────────────────────────────── -->
+<section>
+  <h2><span class="num">3</span>大事时间线</h2>
+  <p class="sub">这条时间线是读者整理的版本，跨度从远古一直到 2015 年，把正传的时间背景往前推了几千年。点击条目展开细节。</p>
+
+  <div class="legend">
+    <span class="lg-main"><i></i>主线推进</span>
+    <span class="lg-long"><i></i>长生暗线</span>
+    <span class="lg-side"><i></i>支线 / 人物背景</span>
+  </div>
+  <div class="eraBar" id="eraBar"></div>
+  <div class="tl" id="timeline"></div>
+</section>
+
+<!-- ── 4 阅读顺序 ────────────────────────────────────── -->
+<section>
+  <h2><span class="num">4</span>怎么读：顺序与坑</h2>
+  <div class="split">
+    <div class="srcbox">
+      <h4>推荐顺序</h4>
+      <ol>
+        <li><b>正传八卷按顺序读</b>。表面上是八个独立的墓，实际是一条连续线，跳读会丢掉大半伏笔。</li>
+        <li><b>读前先接受一件事</b>：很多谜题不会在正传里给出答案。带着"必须全部解开"的预期读，会非常挫败。</li>
+        <li><b>正传之后再考虑外延作品</b>。系列还有若干后续与番外作品（如常被提到的《藏海花》《沙海》等），它们补充的是正传之后的支线。本页只对正传八卷做了权威源核对，外延作品的出版信息未逐一核实。</li>
+      </ol>
+    </div>
+    <div class="srcbox">
+      <h4>常见的三个误解</h4>
+      <ol>
+        <li><b>把读者推理当原著设定。</b>网上流传最广的那套"三重记忆""容器"解释，读起来极其顺，但它是一套整合推理，不是原著逐字写明的内容。</li>
+        <li><b>以为"终极"有官方答案。</b>青铜门后是什么，官方长期没有给定论，各种说法都停留在推测层面。</li>
+        <li><b>把影视剧当原著。</b>改编剧集与影视作品对情节做了大量调整，和小说不能互相印证。</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ── 5 来源 ────────────────────────────────────────── -->
+<section>
+  <h2><span class="num">5</span>来源与核实情况</h2>
+  <div class="split">
+    <div class="srcbox">
+      <h4>权威源（本页据此核对）</h4>
+      <ol>
+        <li>
+          <b>中国作家网</b>《盗墓笔记》图书条目（中国作家协会主管）<br>
+          <a href="http://www.chinawriter.com.cn/n1/2016/0705/c404025-28526141.html" target="_blank" rel="noopener">chinawriter.com.cn</a><br>
+          提供：作者、出版社（上海文化出版社）、出版时间（2013 年 2 月）、ISBN 9787807407270、八卷九册书目与分卷内容简介。本页第 2 节全部依据此条目。
+        </li>
+        <li>
+          <b>维基百科 / 百度百科</b> 相关条目<br>
+          <span style="color:#6b7280">说明：本机网络环境无法访问维基百科（连接失败），百度百科返回 403 反爬拦截，因此这两处<b>未能实际核对</b>，本页未引用其内容。</span>
+        </li>
+      </ol>
+    </div>
+    <div class="srcbox">
+      <h4>读者推演层</h4>
+      <ol>
+        <li>
+          <b>知乎回答《盗墓笔记讲了什么?》</b>（作者 寰宇，赞同 23195，评论 1012）<br>
+          <a href="https://www.zhihu.com/question/32090742/answer/1989657786678805264" target="_blank" rel="noopener">原文链接</a><br>
+          本页第 1、3 节的叙事框架与大事年表出自该文。<br>
+          本地文件：<code><a href="/blog/zhihu/works/what-is-daomubiji-about">《盗墓笔记》讲了什么?</a></code>
+        </li>
+      </ol>
+      <p style="margin-top:12px">把它单独标出的原因：这篇回答把"张替身—汪藏海—铁面生"的记忆继承关系、"吴邪是容器"等设定写成了确定的事实，而这些内容在原著中并没有被逐条明确写出。它是一套<b>自洽的读者解释</b>，不是官方设定集。阅读时值得带着这个区分。</p>
+    </div>
+  </div>
+
+  <div class="foot">
+    本页为本地静态页面，无外部依赖，可离线打开。作品解读分类下另有 4 篇（《无职转生》×2、日本动漫血统论、十二魔器十二神器）尚未做同样整理。
+  </div>
+</section>
+
+</div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+
+/* ── 1. 三条叙事线 ─────────────────────────────────── */
+const THREADS = {
+  main: {
+    title: "明线：吴邪的盗墓路线",
+    tag: "读者视角能看到的那条线——从一个杭州小古董店老板，被一卷战国帛书拖进地下世界，一路走到张家古楼。",
+    beats: [
+      ["第 1 卷 · 七星鲁王宫", "大金牙带着战国帛书找上门，吴邪第一次下墓。铁三角（吴邪、张起灵、王胖子）在此相遇，吴邪得到蛇眉铜鱼。"],
+      ["第 2 卷 · 秦岭神树", "被朋友老痒带去秦岭，见到巨大的青铜树与所谓「物质化」能力。这一段在读者中长期争议最大，因为它和主线的衔接最松。"],
+      ["第 3 卷 · 云顶天宫", "长白山雪山下的大墓。张起灵进入青铜门，与吴邪定下「十年之约」。"],
+      ["第 4 卷 · 蛇沼鬼城", "从云顶天宫脱出后，吴邪与苏醒的三叔长谈，得知二十年前海底古墓里被隐瞒的隐情；解连环之死与战国帛书的恩怨浮出水面。"],
+      ["第 5 卷 · 谜海归巢", "深入西王母的蛇沼鬼城，找到西王母宫入口，遇到文锦，西沙事件的秘密与三叔真正的过去被揭开。"],
+      ["第 6 卷 · 阴山古楼", "广西巴乃，为了帮闷油瓶找回记忆再入险境。水下瑶寨、汉式大院，随着麒麟纹身与古寨呼应，闷油瓶的身世前所未有地清晰。"],
+      ["第 7 卷 · 邛笼石影", "北京拍卖会误点天灯，与老九门后人交换消息。所有线索最后都指向同一处，吴邪与闷油瓶兵分两路前往四川与广西。"],
+      ["第 8 卷 · 大结局", "吴邪戴上三叔的人皮面具接管长沙盘口，三路人马会合广西巴乃，深入张家古楼。三十年前那支考古队的真相与终极悬念在这里揭晓。"],
+    ],
+  },
+  long: {
+    title: "暗线：一个延续数千年的长生秘密",
+    tag: "读者推演层。这条线正传里从来没有被集中讲过，是把散落各卷的线索拼起来之后才浮现的。",
+    beats: [
+      ["起点 · 两块陨石", "一块落在格尔木化成陨玉，一块落在巴乃化成玉脉，长生的秘密藏在里面。闯入陨玉的人成了西王母，玉脉的碎片则变成了密洛陀。"],
+      ["西周 · 周穆王与西王母", "周穆王进入西王母宫，得到尸鳖丹药、玉俑与鬼玺，约定死后重生再会。"],
+      ["战国 · 鲁殇王与铁面生", "重生的周穆王成了鲁殇王，晚年再度求长生，被军师铁面生算计，从玉俑里被拖出成为血尸。铁面生夺走鬼玺，摸清长生的关键，并留下六个携带自己记忆的替身。"],
+      ["明代 · 汪藏海", "铁面生真身复活后改名汪藏海，追杀替身时跑掉了张替身，两家第一次火拼，吴家惨败，汪藏海被杀，但留下两只携带自己记忆的尸鳖虫。"],
+      ["明清之后 · 两条不同的路", "张家没有玉俑，就用活人试满剂量丹药，失败品变成密洛陀；吴家走「进化论」路线，一代代让族人吃微量丹药，筛选能扛住的后代。"],
+      ["汇合点 · 张起灵与吴邪", "读者推演认为：民国时复活的张起灵同时承载了三重记忆；而吴邪是吴家筛选出的「完美容器」，幼年被喂过含汪藏海记忆的丹药。"],
+      ["结局 · 十年之约", "陨玉抹除记忆的效果只有十年。小哥用「用我一生，换你十年天真无邪」把选择权留给了吴邪，自己走进青铜门守十年。"],
+    ],
+  },
+  people: {
+    title: "人物线：老九门、两族与那支考古队",
+    tag: "正传里最容易读乱的一层——因为很多人同时在演戏，包括吴邪最信任的人。",
+    beats: [
+      ["老九门", "长沙的九个盗墓世家。1952 年战国帛书案爆发后，张启山（张大佛爷）为保护老九门躲避追杀，反而亲手清扫了部分知情成员，老九门自此衰落。"],
+      ["吴家三代", "吴老狗（狗五爷）、吴一穷、吴二白、吴三省。读者推演认为三兄弟一辈子都在为「复活汪藏海」作准备，吴二白与吴三省终身不娶，是随时能牺牲的死士。"],
+      ["解连环与吴三省的双簧", "解连环长期被吴三省拿捏着假扮「三叔」，两人一明一暗。这是正传前中期最大的一个阅读陷阱：你以为是三叔的人，可能不是。"],
+      ["考古队", "张大佛爷投靠组织后献出部分长生秘密，组织组建考古队。读者推演认为张家把考古队当成「钓鱼」的饵，用来引出铁面生的后人。"],
+      ["裘德考与霍家", "裘德考是贯穿数十年的外部势力，从战国帛书追到长白山；霍家则在考古队里摸到长生线索后想自己捞好处，用吴三省走私的把柄威胁他。"],
+      ["「它」", "正传里反复出现的、意图不可捉摸的那股势力。原著对其着墨含糊，是全书最典型的未解之谜之一。"],
+    ],
+  },
+};
+let curThread = "main";
+function renderThread() {
+  const t = THREADS[curThread];
+  $("threadBox").dataset.tone = curThread;
+  $("threadTitle").textContent = t.title;
+  $("threadTag").textContent = t.tag;
+  $("threadBeats").innerHTML = t.beats
+    .map(([a, b]) => `<li><div class="bt">${a}</div><div class="bd">${b}</div></li>`).join("");
+}
+document.querySelectorAll(".tab").forEach((b) => {
+  b.onclick = () => {
+    document.querySelectorAll(".tab").forEach(x => x.classList.remove("on"));
+    b.classList.add("on");
+    curThread = b.dataset.thread;
+    renderThread();
+  };
+});
+
+/* ── 2. 分卷 ───────────────────────────────────────── */
+const VOLS = [
+  ["1", "七星鲁王宫", "五十年前，一群长沙土夫子挖到一部战国帛书，残篇记载了一座奇特战国古墓的位置，但下地的人几乎全部身亡。五十年后，其中一个土夫子的孙子在先人笔记里发现了这个秘密，纠集一批盗墓高手前去寻宝——等待他们的是七星疑棺、青眼狐尸、九头蛇柏。",
+   "全书起点。铁三角在此相遇，「战国帛书」这个贯穿全书的引子也在此抛出。"],
+  ["2", "秦岭神树", "朋友老痒出狱，给刚从西沙海底墓归来、在家赋闲没几日的「我」带来惊人消息：诡异的六角铃铛、古老的厍族、巨大的青铜树。二人孤身深入秦岭，遭遇哲罗鲑、黄泉瀑布、尸阵、麒麟竭、烛九阴。",
+   "结构上最独立的一卷，与主线衔接最松，也是读者争议最大的一卷。"],
+  ["3", "云顶天宫", "十年前，顺子的父亲带一批神秘人进入大雪山，闯入地宫发现无数财宝，却几乎全部死于非命。十年后一行人再次踏足云顶天宫，昆仑胎、墙串子、百足神龙接替出现，藏尸阁、排道、火山口、门殿、殉葬渠带来超强感官刺激。",
+   "张起灵进入青铜门、「十年之约」的起点。"],
+  ["4", "蛇沼鬼城", "从云顶天宫脱出后，吴邪与苏醒的三叔长谈，了解到二十年前海底古墓里三叔没有透露的隐情。关于解连环的神秘死亡、以及背后牵涉的战国帛书和老长沙恩怨，也理出了端倪。就在吴邪以为接近真相时，两盘来自张起灵的录像带又让事情重回迷雾。",
+   "「三叔到底是谁」这个陷阱正式铺开。"],
+  ["5", "谜海归巢", "深入西王母的蛇沼鬼城，经过三天三夜紧张搜索，在密林神庙附近找到西王母宫入口。入口泥潭处三叔的队伍几乎全部离奇死去，却没找到三叔的尸体。继续涉险进入西王母城庞大的地下体系，终于遇到文锦，得悉西沙的秘密。",
+   "三叔真正的过去在此浮出水面。"],
+  ["6", "阴山古楼", "广西巴乃十万大山腹地，为帮闷油瓶找回记忆，吴邪与胖子再入险境。死而复生的考古队队员、奇怪气味的铁块、离奇暴毙的当事人；经盘马老爹口述，几人几入魔湖，发现水下数百米的瑶族古寨与其中的汉式大院。",
+   "闷油瓶的身世第一次前所未有地明朗。"],
+  ["7", "邛笼石影", "回到北京，与老九门后人的约见撞上拍卖会，因误「点天灯」不得不携玉玺逃走。随后交换到的消息令双方都大吃一惊：神秘失踪的考古队、闷油瓶非同寻常的身份、连续多年收到的录像带，所有秘密最后都指向同一处。",
+   "「谜题终结之前的最后一步」。"],
+  ["8", "大结局（上、下）", "吴邪戴上三叔的人皮面具，以三叔身份整顿长沙产业。吴邪、潘子、小花兵分三路从杭州、长沙、北京前往广西。巴乃村寨中，假扮三叔的吴邪再遇裘德考的队伍，见到肩膀融化垮塌的「鬼影」——三十年前张家古楼考古队的队员，名叫张起灵。",
+   "深入张家古楼，终极悬念一次揭晓。"],
+];
+$("vols").innerHTML = VOLS.map(([n, t, d, note]) => `
+  <div class="vol">
+    <div class="volhead">
+      <div class="volno">${n}</div>
+      <div class="voltitle">${t}</div>
+      <div class="volplace">正传第 ${n} 卷</div>
+      <div class="volarrow">▶</div>
+    </div>
+    <div class="volbody"><div class="inner">${d}<br><br><b>在主线上的位置：</b>${note}</div></div>
+  </div>`).join("");
+document.querySelectorAll(".volhead").forEach((h) => {
+  h.onclick = () => h.parentElement.classList.toggle("open");
+});
+
+/* ── 3. 时间线 ─────────────────────────────────────── */
+const ERAS = ["远古–先秦", "秦汉–明清", "清末–民国", "1950–2002", "2003–2005", "2006–2014", "2015"];
+const EVENTS = [
+  ["远古", "远古–先秦", "long", "陨石天降裂为两半，一半落格尔木（陨玉），一半落巴乃（玉脉），暗藏长生秘密", "古居延城文明前身诞生，古潼京位于其附近。巴乃玉脉碎片化为密洛陀，被当地人奉为山神。"],
+  ["远古", "远古–先秦", "long", "西王母族在昆仑山建立古国，掌握长生术（人与蛇共生），铸造青铜门", "有人闯入格尔木陨玉获长生成为西王母，设机关令万奴王世代守护，守护者可借陨玉重生。"],
+  ["远古", "远古–先秦", "side", "张家崛起，立下「世代守护终极」的祖训", "族人拥有麒麟血，寿命远超常人。"],
+  ["西周", "远古–先秦", "long", "周穆王西行拜见西王母，获尸鳖丹药、玉俑及鬼玺", "双方约定死后重生再会；周穆王修建七星鲁王宫作为长生之所。"],
+  ["战国", "远古–先秦", "long", "周穆王重生为鲁殇王，晚年欲再次重生，被军师铁面生算计，遭拖出玉俑变为血尸", "铁面生夺取鬼玺，易容骗过万奴王并将其杀害，摸清长生关键：尸鳖丹药存记忆，复活或长生大概率变怪物。他找 6 个替身服含自身记忆的丹药，令家族（吴家前身）守护主墓。"],
+  ["汉", "秦汉–明清", "side", "军队带出古潼京地图，经堪舆师重绘为《古潼京沙海图》", "刻于碧玺屏风，封入佛像佛肚内的石函中。"],
+  ["明", "秦汉–明清", "long", "铁面生真身复活，改名汪藏海", "追杀 6 个替身时，张替身（周穆王亲信后裔、张家之人）逃脱。汪藏海投靠朱元璋借朝廷力量追杀，张吴两家首次火拼，吴家惨败，汪藏海被张替身杀害，吴家残余隐姓埋名。汪藏海留下两只含自身记忆的尸鳖虫。"],
+  ["1812–1911", "清末–民国", "side", "龙纹石盒被打开，内含未知秘密", "龙纹石盒后来关联到周穆王留下的长生坐标。"],
+  ["1903", "清末–民国", "side", "张起灵（闷油瓶）出生", "襁褓中被张家人从尼泊尔地区带回。"],
+  ["1916", "清末–民国", "side", "张家「放野」，闷油瓶在泗州古城成功取出六角铃铛", "并救助了被困的张海客等人。"],
+  ["1926 前后", "清末–民国", "side", "闷油瓶被选为张家族长「张起灵」，张家开始搬迁", "马平川送信张家，得知张家已败落。"],
+  ["1931 后", "清末–民国", "side", "闷油瓶及张家子弟参与东北抗日，张家再次牺牲无数", ""],
+  ["1950", "1950–2002", "side", "吴家盗掘镖子岭血尸墓，吴老狗获得战国帛书相关线索", "同年闷油瓶前往康巴落调查董灿去向。"],
+  ["1952", "1950–2002", "side", "战国帛书案爆发，老九门自此衰落", "张启山为保护老九门躲避「黑飞子」灭门，清扫部分知晓秘密的老九门成员。吴老狗在解九爷帮助下逃亡杭州。"],
+  ["1962–1965", "1950–2002", "main", "闷油瓶带领「史上最大盗墓活动」，老九门悉数参与", "获取鲁黄帛书，行动死伤惨重，闷油瓶重伤后失忆，随后被幽禁于格尔木疗养院近二十年。"],
+  ["1974", "1950–2002", "side", "陈皮阿四倒斗镜儿宫，获得一枚蛇眉铜鱼；裘德考成功解开战国帛书密文", ""],
+  ["1979", "1950–2002", "side", "黑眼镜从张家古楼取出黑金古刀", "后藏于吴三省铺子地下古墓，最终归属于闷油瓶。"],
+  ["1984", "1950–2002", "main", "7 月，考古队进入西沙海底墓，中招后被囚禁于疗养院", "解九爷从疗养院救出闷油瓶，闷油瓶加入西沙考古队；吴三省与解连环首次联手。海底墓实为吴家处理失败实验品的地方。"],
+  ["1993", "1950–2002", "long", "陈文锦在长白山云顶天宫见到「终极」", "此前陈文锦等人通过海底墓资料发现长白山线索。"],
+  ["2000", "1950–2002", "side", "闷油瓶再次失忆，化名「阿坤」", "被当作肉饵放入古墓钓尸，被陈皮阿四所救，江湖人称「哑巴张」。"],
+  ["2002", "1950–2002", "side", "吴老狗（狗五爷）去世", ""],
+  ["2003.7", "2003–2005", "main", "大金牙带着战国帛书找到吴邪，吴邪正式踏入盗墓世界", "铁三角在七星鲁王宫相遇，吴邪获蛇眉铜鱼。"],
+  ["2003.8", "2003–2005", "main", "铁三角前往西沙海底墓，揭开吴三省与解连环的迷局", "吴三省易容成潘子混队，最终众人炸了海底墓。"],
+  ["2003.9", "2003–2005", "main", "吴邪被老痒骗至秦岭神树，见识「物质化」能力", "读者推演认为这是小哥为给吴邪的失忆找理由而演的一出戏。"],
+  ["2004.1", "2003–2005", "main", "铁三角前往长白山云顶天宫，张起灵进入青铜门，定下「十年之约」", "各方势力聚集云顶天宫，小哥带考古队进青铜门拿西王母宫密码。"],
+  ["2004.5", "2003–2005", "main", "铁三角前往塔木陀蛇沼鬼城，陈文锦进入西王母陨玉，阿宁被蛇群袭击身亡", "吴三省用鸡冠蛇给吴邪留下最后信息。"],
+  ["2004.10", "2003–2005", "main", "吴邪、胖子深入张家古楼，救出重伤失忆的张起灵", "此战吴三省、解连环、鬼影战死，吴邪得知全部真相。"],
+  ["2005 立秋", "2003–2005", "main", "闷油瓶前往长白山青铜门履行守护使命，吴邪送别，「十年之约」生效", ""],
+  ["2010.12", "2006–2014", "side", "吴邪前往墨脱，开启《藏海花》剧情，首次遭遇汪家人", ""],
+  ["2013.7–8", "2006–2014", "main", "吴邪为更好读取蛇费洛蒙，做手术破坏嗅觉，知晓自身名字的真正含义", "此前他拜黑眼镜为师学格斗，并调查异常长寿的村落寻找蛇矿。"],
+  ["2014.5", "2006–2014", "main", "黄严被追杀，死前在黎簇背上刻下古潼京沙海图", "梁湾发现黄严手腕刻有闷油瓶的梦呓「时间在这件事情上不起作用」。"],
+  ["2014.7", "2006–2014", "main", "黎簇等人进入沙漠，吴邪布局引汪家现身", "解雨臣发布「死亡」假消息吸引注意力；12 日吴邪在墨脱遭遇汪家杀手，被割喉后坠崖。"],
+  ["2015 春节", "2015", "side", "吴一穷等待吴邪归家，解家大宅空寂，霍秀秀行踪不明", "闷油瓶在青铜门内察觉异样。"],
+  ["2015", "2015", "long", "古潼京决战：吴邪启动基地自毁程序，汪家势力彻底覆灭", "强碱性雾气弥漫，汪家人因服用改良丹药大量死亡；黎簇带出核心数据后神秘失踪。"],
+  ["2015.8", "2015", "main", "吴邪、胖子、解雨臣前往长白山，迎接张起灵出青铜门", "铁三角重逢，十年之约圆满落幕。"],
+];
+let curEra = "全部";
+$("eraBar").innerHTML = ["全部", ...ERAS].map(e =>
+  `<button class="era ${e === "全部" ? "on" : ""}" data-era="${e}">${e}</button>`).join("");
+function renderTimeline() {
+  const list = curEra === "全部" ? EVENTS : EVENTS.filter(e => e[1] === curEra);
+  $("timeline").innerHTML = list.map(([time, , w, title, detail]) => `
+    <div class="ev" data-w="${w}">
+      <div class="evhead">
+        <div class="evtime">${time}</div>
+        <div class="evtext">${title}${detail ? " <span style='color:var(--dim)'>▾</span>" : ""}</div>
+      </div>
+      ${detail ? `<div class="evmore"><div class="inner">${detail}</div></div>` : ""}
+    </div>`).join("") || `<p style="color:var(--dim)">该时期暂无条目。</p>`;
+  document.querySelectorAll(".ev").forEach((el) => {
+    el.querySelector(".evhead").onclick = () => el.classList.toggle("open");
+  });
+}
+$("eraBar").onclick = (e) => {
+  const b = e.target.closest(".era");
+  if (!b) return;
+  document.querySelectorAll(".era").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  curEra = b.dataset.era;
+  renderTimeline();
+};
+
+/* ── 初始化 ────────────────────────────────────────── */
+renderThread();
+renderTimeline();
+</script>
+</body>
+</html>

@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一台机器上发生的事 · 容器、内存与虚拟机</title>
+<style>
+  :root{
+    --bg:#0a0c11; --panel:#131820; --panel2:#1a212b; --line:#252d3a;
+    --fg:#e9edf3; --dim:#8892a3; --cyan:#3fb6c8; --jade:#4cc08a;
+    --blue:#5b9bd5; --purple:#a97bd6; --rose:#e07a7a; --warm:#e0a54a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);
+    font-family:"Segoe UI","Microsoft YaHei",-apple-system,sans-serif;
+    line-height:1.78;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px;margin:0 auto;padding:44px 22px 100px}
+  button{font-family:inherit}
+  h1{font-size:clamp(27px,4.6vw,40px);margin:0 0 14px;letter-spacing:-.01em;line-height:1.28}
+  .sub{color:var(--dim);font-size:17px;margin:0 0 46px;max-width:640px}
+
+  .step{margin-bottom:76px}
+  .stephead{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+  .stepno{font-size:12.5px;color:var(--cyan);letter-spacing:.22em;font-weight:700;flex:none}
+  .steptitle{font-size:23px;font-weight:600;line-height:1.4}
+  .stepdesc{color:var(--dim);font-size:16px;margin:0 0 24px;max-width:660px}
+  .stepdesc b{color:#cfd6e0}
+
+  .bigbtn{display:block;width:100%;padding:36px 30px;border-radius:20px;
+    background:linear-gradient(135deg,#0d2630,#191a20);border:1px solid #1d4a56;
+    color:var(--fg);font-size:20px;cursor:pointer;transition:.2s;text-align:center;font-weight:600}
+  .bigbtn:hover{border-color:var(--cyan);transform:translateY(-2px)}
+  .bigbtn small{display:block;font-size:13.5px;font-weight:400;color:var(--dim);margin-top:8px}
+  .bigbtn.pulse{animation:pulse 2.4s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(63,182,200,0)}50%{box-shadow:0 0 0 16px rgba(63,182,200,.06)}}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px 26px}
+  canvas{display:block;width:100%}
+
+  .slider{margin:20px 0 6px}
+  .slider input{width:100%;height:8px;-webkit-appearance:none;appearance:none;
+    background:#1e2530;border-radius:6px;outline:none}
+  .slider input::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:28px;height:28px;border-radius:50%;background:var(--cyan);cursor:pointer;
+    border:4px solid #0a0c11;box-shadow:0 0 0 2px var(--cyan)}
+  .slider input::-moz-range-thumb{width:28px;height:28px;border-radius:50%;
+    background:var(--cyan);cursor:pointer;border:4px solid #0a0c11}
+  .sliderlabels{display:flex;justify-content:space-between;font-size:13px;
+    color:var(--dim);margin-top:10px;gap:12px}
+  .sliderlabels span{flex:1}
+  .sliderlabels span:last-child{text-align:right}
+
+  .reveal{background:linear-gradient(135deg,#0d2029,#131820);border:1px solid #1d4a56;
+    border-radius:16px;padding:24px 28px;margin-top:26px;
+    opacity:0;transform:translateY(12px);transition:.6s;pointer-events:none;max-height:0;overflow:hidden}
+  .reveal.on{opacity:1;transform:none;pointer-events:auto;max-height:4000px}
+  .reveal h4{margin:0 0 14px;font-size:19px;color:var(--cyan)}
+  .reveal p{margin:0 0 13px;font-size:15.8px;color:#cfd6e0}
+  .reveal p:last-child{margin-bottom:0}
+  .reveal b{color:#fff}
+
+  .term{background:#101720;border:1px solid #2a3444;border-left:3px solid var(--blue);
+    border-radius:0 12px 12px 0;padding:15px 20px;margin-top:18px}
+  .term .t{font-size:11.5px;letter-spacing:.18em;color:var(--blue);
+    text-transform:uppercase;font-weight:700;margin-bottom:8px}
+  .term p{margin:0 0 8px;font-size:15px;color:#cfd6e0}
+  .term p:last-child{margin-bottom:0}
+  .term .name{color:var(--warm);font-weight:600;
+    font-family:"Cascadia Code",Consolas,monospace;font-size:14.2px}
+  .term.alt{border-left-color:var(--rose)}
+  .term.alt .t{color:var(--rose)}
+
+  .workers{display:grid;gap:14px;margin-top:6px}
+  .w{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:15px 18px}
+  .w .top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .w .dot{width:14px;height:14px;border-radius:50%;flex:none}
+  .w .nm{font-weight:600;font-size:15.5px;flex:1}
+  .w .state{font-size:12.5px;padding:3px 11px;border-radius:20px;white-space:nowrap}
+  .st-run{background:#16261d;color:var(--jade)}
+  .st-cap{background:#2b2416;color:var(--warm)}
+  .st-idle{background:#1a1f28;color:var(--dim)}
+  .w .bars{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--dim);margin-bottom:4px}
+  .w .track{flex:1;height:13px;background:#0d1219;border-radius:7px;overflow:hidden;position:relative}
+  .w .fill{height:100%;border-radius:7px;transition:width .25s}
+  .w .demand{position:absolute;top:0;bottom:0;width:2px;background:#4a5566}
+  .w .sl{margin-top:11px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .w .sl label{font-size:12.5px;color:var(--dim);display:block;margin-bottom:3px}
+  .w .sl input{width:100%;accent-color:var(--cyan)}
+
+  .hint{font-size:15px;color:var(--cyan);margin-top:16px;min-height:24px;font-weight:500}
+  .hint b{color:#fff}
+  .toggle{background:none;border:1px solid var(--line);color:var(--dim);
+    border-radius:9px;padding:7px 15px;font-size:13px;cursor:pointer;margin-top:20px}
+  .toggle:hover{color:var(--fg);border-color:#3a4553}
+  .data{display:none;margin-top:16px;background:#0b1017;border:1px solid var(--line);
+    border-radius:12px;padding:16px 20px;font-size:13.4px;color:var(--dim);
+    font-family:"Cascadia Code",Consolas,monospace;line-height:2}
+  .data.on{display:block}
+
+  .foot{color:var(--dim);font-size:13.5px;margin-top:64px;border-top:1px solid var(--line);
+    padding-top:24px;line-height:1.85}
+  .foot b{color:var(--fg)}
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:99;display:flex;gap:16px;align-items:center;justify-content:space-between;padding:9px 18px;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid #2b3444;font-size:13.5px;font-family:'Segoe UI','Microsoft YaHei',sans-serif"><a href="/" style="color:#8b98a8;text-decoration:none">← wzk 的技术笔记</a><a href="/zhihu/labs/" style="color:#58a6ff;text-decoration:none">全部交互页面</a></div>
+<div class="wrap">
+
+<h1>一台机器上发生的事</h1>
+<p class="sub">
+  你会写代码，也遇到过程序变慢、进程莫名其妙的消失。这一页讲的是<b>机器底下到底发生了什么</b>。<br>
+  三个场景，每个都先用一个生活里的比喻讲清楚，最后才告诉你它在 Linux 里叫什么。
+</p>
+
+<!-- ═══════ 场景一 ═══════ -->
+<div class="step" id="s1">
+  <div class="stephead"><span class="stepno">场 景 一</span><span class="steptitle">三个工人，四张桌子</span></div>
+  <p class="stepdesc">
+    你的服务器有 <b>4 个能同时干活的位置</b>（4 核），上面跑了三个服务。<br>
+    三个服务都想干活，位置只有 4 个。现在由你决定：<b>谁先上？谁最多能占几个？</b>
+  </p>
+
+  <button class="bigbtn pulse" id="btn1">
+    ▶ 让他们开始干活
+    <small>（随时可以调下面的设置，画面会立刻反应）</small>
+  </button>
+
+  <div id="stage1" style="display:none;margin-top:30px">
+    <div class="card">
+      <canvas id="cv1" height="250"></canvas>
+      <div class="hint" id="hint1"></div>
+    </div>
+    <div class="workers" id="workers1" style="margin-top:18px"></div>
+    <div class="reveal" id="rev1">
+      <h4>你刚才其实只做了两件事</h4>
+      <p><b>第一件：「谁先上」</b>——你调的那个优先级，只在<b>有人抢不到位置</b>的时候才起作用。试试把三个服务的「想干多少」都调小到加起来不到 4，你会发现优先级调到多高都毫无区别：<b>没人在抢的时候，优先级不存在。</b></p>
+      <p><b>第二件：「最多占几个」</b>——这是一个<b>硬上限</b>。不管你优先级多高，碰到它就会被从位置上赶下来，站着等到下一秒。你会看到那个工人被标成「被上限卡住」。</p>
+      <p>这两件事的「坏法」完全不同，这一点在线上很要命：<b>优先级低只是慢一点，服务还平滑；撞上硬上限是被强制停顿再启动</b>，表现出来是一阵一阵的卡顿。而且这时候你看 CPU 总使用率并不高——因为它是被「掐停」的，不是「忙不过来」。</p>
+      <div class="term">
+        <div class="t">它们在 Linux 里叫什么</div>
+        <p>「优先级」= <span class="name">cpu.weight</span>。相对值，只在争抢时按比例分。</p>
+        <p>「最多占几个」= <span class="name">cpu.max</span>。硬配额，撞上去叫 <span class="name">throttled</span>（被限流）。</p>
+        <p>这三个工人住在同一个 <span class="name">cgroup</span> 里。Docker 给容器做资源限制，用的就是这个东西——那篇文章说「cgroup 是 docker 的基础」，指的就是这一层。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ 场景二 ═══════ -->
+<div class="step" id="s2" style="display:none">
+  <div class="stephead"><span class="stepno">场 景 二</span><span class="steptitle">桌子可以排队，这张桌子不行</span></div>
+  <p class="stepdesc">
+    位置不够的时候，工人排队等一会儿，活最终还是能干完。<br>
+    现在换一样东西试试：<b>内存</b>。每个服务有一张自己的桌子放材料，你也可以限制桌子的大小。
+  </p>
+
+  <div class="card">
+    <canvas id="cv2" height="290"></canvas>
+    <div class="hint" id="hint2"></div>
+    <div class="slider">
+      <input type="range" id="r2" min="120" max="900" step="10" value="780">
+      <div class="sliderlabels"><span>桌子很小</span><span>← 拖这条线改变限制 →</span><span>桌子很大</span></div>
+    </div>
+    <canvas id="cv2b" height="120" style="margin-top:18px"></canvas>
+  </div>
+
+  <div class="reveal" id="rev2">
+    <h4>这就是内存和 CPU 最根本的区别</h4>
+    <p>CPU 不够用的时候，大家<b>排队</b>。慢，但每个人都在往前走，活最终会干完。</p>
+    <p>内存不够用的时候，<b>没有排队这回事</b>。材料已经堆在那儿了，你要么给它地方，要么把它整个扔掉——不存在「先放一半，等下再放」。</p>
+    <p>所以超了内存的后果不是「变慢」，是<b>这个进程当场消失</b>。它手里做到一半的事情全部丢掉，然后从头再来一遍。你在监控上看到的现象是<b>服务反复重启</b>，而不是报错。</p>
+    <div class="term">
+      <div class="t">它在 Linux 里叫什么</div>
+      <p>你拖的那条红线 = <span class="name">memory.max</span>。</p>
+      <p>越线时被干掉的进程，日志里通常只有一行 <span class="name">OOMKilled</span>（Out Of Memory）。而且被杀的不一定是「吃得最多的那个」——内核会挑一个它认为代价最小的，这个选择经常反直觉。</p>
+      <p>所以容器反复重启，最常见的原因不是程序有 bug，是<b>限制设小了</b>。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ 场景三 ═══════ -->
+<div class="step" id="s3" style="display:none">
+  <div class="stephead"><span class="stepno">场 景 三</span><span class="steptitle">客人要用主人的工具</span></div>
+  <p class="stepdesc">
+    一台「虚拟机」就像一个住进你家的客人：他有自己的房间、自己的东西，大部分事情在自己屋里就能做。<br>
+    但有些工具只有主人有——硬盘、网卡、时钟。<b>他每用一次，都得走出房间办一趟手续。</b>
+  </p>
+
+  <div class="card">
+    <canvas id="cv3" height="300"></canvas>
+    <button class="bigbtn" id="btn3" style="padding:18px;font-size:16.5px;margin-top:14px">
+      ▶ 让客人干一会儿活
+    </button>
+    <div class="hint" id="hint3"></div>
+  </div>
+
+  <div class="reveal" id="rev3">
+    <h4>为什么「走出房间」这么贵</h4>
+    <p>客人在自己屋里算术，用的是同一块 CPU，<b>和真机一样快</b>，一分钱不多花。</p>
+    <p>但只要他想碰主人的东西，就得走一整套流程：<b>停下 → 出门 → 管家接手 → 操作 → 回家 → 继续</b>。这一趟来回花掉的时间，够他算好几千次加法。</p>
+    <p>虚拟化「慢」，慢的全是这些来回。所以过去二十年所有的优化都在做同一件事：<b>想办法让他少出门。</b>把工具搬进他屋里、给他一把钥匙、开一个传递窗口——</p>
+    <div style="margin-top:20px" id="kvmsw"></div>
+    <div class="hint" id="hint3b"></div>
+    <div class="term" style="margin-top:22px">
+      <div class="t">它们在 Linux 里叫什么</div>
+      <p>「走出房间」= <span class="name">VM Exit</span>，「回家」= <span class="name">VM Entry</span>，中间接待他的管家 = <span class="name">hypervisor</span>，在 Linux 上就是 <span class="name">KVM</span>。</p>
+      <p>「给他一把钥匙」（有些事他可以自己在屋里做）= <span class="name">VT-x / AMD-V</span>，CPU 直接提供的硬件虚拟化。</p>
+      <p>「把工具搬进他屋里」（不模拟真设备，双方约定怎么配合）= <span class="name">virtio</span>。</p>
+      <p>「开个传递窗口」（东西直接递进去，不用他出来拿）= <span class="name">Posted Interrupt</span>。</p>
+    </div>
+    <div class="term alt">
+      <div class="t">所以那篇文章为什么把票投给 KVM</div>
+      <p>KVM 本身只是 Linux 内核里的一个模块，代码量不算大。它做的事是：<b>把 CPU 提供的虚拟化能力，包装成一套干净的接口。</b></p>
+      <p>真正让「云」成为可能的就是这套机制——它把「再买一台机器」变成了「再开一个客人」。你今天用的每一个云服务，底下跑的都是这些来回。</p>
+    </div>
+  </div>
+</div>
+
+<button class="toggle" id="btnData">显示所有数字（不看也能懂）</button>
+<div class="data" id="dataBox"></div>
+
+<div class="foot">
+  这一页的三个场景，来自你收藏的知乎回答
+  <b><a href="/blog/zhihu/tech/brilliant-linux-kernel-designs">Linux 内核中有哪些比较牛逼的设计?</a></b>（作者 海纳，赞同 924）。
+  <br>那篇把票投给了四样：<b>KVM</b>（一票）、<b>eBPF</b>（一票）、<b>cgroup</b> 和 <b>DRM</b>（各半票）。
+  这一页覆盖了 cgroup 和 KVM。eBPF（"给程序装监控"）和 DRM（图形驱动）是另外两个故事，留着以后单独做。
+</div>
+
+</div>
+
+<script>
+"use strict";
+const $=(s)=>document.querySelector(s);
+const clamp=(v,a,b)=>Math.min(b,Math.max(v,a));
+
+/* ══════════════════════════════════════════════════════════════
+   场景一
+   ══════════════════════════════════════════════════════════════ */
+const CORES=4;
+const W1=[
+  {id:0,name:"前台服务",  col:"#4cc08a",want:2.5,prio:100,cap:4,got:0,state:"idle"},
+  {id:1,name:"批处理任务",col:"#5b9bd5",want:2.4,prio:100,cap:4,got:0,state:"idle"},
+  {id:2,name:"缓存服务",  col:"#a97bd6",want:0.8,prio:100,cap:4,got:0,state:"idle"},
+];
+let run1=false, t1=0;
+
+$("#btn1").onclick = () => {
+  $("#btn1").style.display="none";
+  $("#stage1").style.display="block";
+  buildW1(); run1=true; loop1();
+};
+function buildW1(){
+  $("#workers1").innerHTML = W1.map(w=>`
+    <div class="w">
+      <div class="top">
+        <span class="dot" style="background:${w.col}"></span>
+        <span class="nm">${w.name}</span>
+        <span class="state st-idle" id="st${w.id}">等待</span>
+      </div>
+      <div class="bars">
+        <span style="width:104px">实际拿到 <b id="got${w.id}" style="color:${w.col}">0</b> 个位置</span>
+        <span class="track"><i class="fill" id="fill${w.id}" style="width:0%;background:${w.col}"></i>
+          <i class="demand" id="dm${w.id}"></i></span>
+      </div>
+      <div class="sl">
+        <div><label>他想干多少</label>
+          <input type="range" id="want${w.id}" min="0.2" max="3.5" step="0.1" value="${w.want}"></div>
+        <div><label>最多能占几个</label>
+          <input type="range" id="cap${w.id}" min="0.3" max="4" step="0.1" value="${w.cap}"></div>
+      </div>
+      <div class="sl" style="grid-template-columns:1fr">
+        <div><label>抢位置的优先级</label>
+          <input type="range" id="prio${w.id}" min="10" max="500" step="10" value="${w.prio}"></div>
+      </div>
+    </div>`).join("");
+  W1.forEach(w=>{
+    $(`#want${w.id}`).oninput = e => { w.want=+e.target.value; };
+    $(`#cap${w.id}`).oninput  = e => { w.cap=+e.target.value; };
+    $(`#prio${w.id}`).oninput = e => { w.prio=+e.target.value; };
+  });
+}
+function alloc1(){
+  const total=W1.reduce((s,w)=>s+w.want,0);
+  const sumPrio=W1.reduce((s,w)=>s+w.prio,0);
+  W1.forEach(w=>{
+    let share = total<=CORES ? w.want : CORES*w.prio/sumPrio;
+    share = Math.min(share, w.want);
+    const beforeCap = share;
+    share = Math.min(share, w.cap);
+    w.got = share;
+    w.state = (beforeCap-share>0.05) ? "cap" : "run";
+  });
+  return { total, contention: total>CORES };
+}
+function loop1(){
+  if(!run1) return;
+  t1+=0.016;
+  const {contention}=alloc1();
+  W1.forEach(w=>{
+    const fill=$(`#fill${w.id}`); if(fill) fill.style.width=clamp(w.got/CORES*100,0,100)+"%";
+    const dm=$(`#dm${w.id}`); if(dm) dm.style.left=clamp(w.want/CORES*100,0,100)+"%";
+    const g=$(`#got${w.id}`); if(g) g.textContent=w.got.toFixed(1);
+    const st=$(`#st${w.id}`);
+    if(st){
+      if(w.state==="cap"){ st.className="state st-cap"; st.textContent="被上限卡住"; }
+      else if(contention){ st.className="state st-run"; st.textContent="干活中（在抢）"; }
+      else { st.className="state st-idle"; st.textContent="干活中（没人和他抢）"; }
+    }
+  });
+  const total=W1.reduce((s,w)=>s+w.want,0);
+  $("#hint1").innerHTML = contention
+    ? `三个服务一共想要 <b>${total.toFixed(1)}</b> 个位置，但只有 <b>4</b> 个 —— <b>现在优先级起作用了。</b>`
+    : `三个服务加起来只想要 <b>${total.toFixed(1)}</b> 个位置，不到 4 个 —— <b>没人在抢，优先级完全不起作用。</b>`;
+  drawW1();
+  if(contention && !$("#rev1").classList.contains("on")){
+    setTimeout(()=>{
+      $("#rev1").classList.add("on");
+      setTimeout(()=>{ if(run1) revealStep(2); }, 1600);
+    },600);
+  }
+  requestAnimationFrame(loop1);
+}
+function drawW1(){
+  const cv=$("#cv1"); if(!cv||!cv.clientWidth) return;
+  const dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=250;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+  c.fillStyle="#0b0f15"; c.fillRect(0,0,W,H);
+  const padL=26,padR=26, deskY=52, deskH=62;
+  const totalW=W-padL-padR;
+  c.fillStyle="#8892a3"; c.font="12.5px 'Segoe UI',sans-serif"; c.textAlign="left";
+  c.fillText("工位（这台机器同时能安排 4 个）", padL, 26);
+  const dw=totalW/CORES;
+  for(let i=0;i<CORES;i++){
+    const x=padL+i*dw;
+    c.fillStyle="#111823"; c.fillRect(x+4,deskY,dw-8,deskH);
+    c.strokeStyle="#232b36"; c.lineWidth=1; c.strokeRect(x+4,deskY,dw-8,deskH);
+    c.fillStyle="#3a4553"; c.font="11.5px 'Segoe UI',sans-serif"; c.textAlign="center";
+    c.fillText("工位 "+(i+1), x+dw/2, deskY+deskH+18);
+  }
+  let cx=padL;
+  W1.forEach(w=>{
+    const wpx=w.got/CORES*totalW;
+    if(wpx>0.5){
+      c.fillStyle=w.col+"cc";
+      c.fillRect(cx+4, deskY+4, Math.max(wpx-8,1), deskH-8);
+      if(wpx>56){
+        c.fillStyle="#0b0f15"; c.font="600 12px 'Segoe UI',sans-serif"; c.textAlign="left";
+        c.fillText(w.name, cx+12, deskY+deskH/2+4);
+      }
+    }
+    cx+=wpx;
+  });
+  const totalGot=W1.reduce((s,w)=>s+w.got,0);
+  if(totalGot<CORES-0.02){
+    const x=padL+totalGot/CORES*totalW, wpx=(CORES-totalGot)/CORES*totalW;
+    c.fillStyle="#1a212b"; c.fillRect(x+4,deskY+4,Math.max(wpx-8,1),deskH-8);
+    c.fillStyle="#5a6474"; c.font="12px 'Segoe UI',sans-serif"; c.textAlign="center";
+    c.fillText("空闲", x+wpx/2, deskY+deskH/2+4);
+  }
+  const wy=deskY+deskH+62;
+  W1.forEach((w,i)=>{
+    const x=padL+(i+0.5)*(totalW/3);
+    const bob=Math.sin(t1*3.4+i)*2.5;
+    c.beginPath(); c.arc(x,wy+bob,15,0,Math.PI*2); c.fillStyle=w.col; c.fill();
+    c.fillStyle="#0b0f15"; c.font="700 13px 'Segoe UI',sans-serif"; c.textAlign="center";
+    c.fillText(String(i+1), x, wy+bob+5);
+    c.fillStyle="#8892a3"; c.font="12px 'Segoe UI',sans-serif";
+    c.fillText(w.name, x, wy+34);
+    if(w.state==="cap"){
+      c.strokeStyle="#e0a54a"; c.lineWidth=2;
+      c.beginPath(); c.arc(x,wy+bob,21,0,Math.PI*2); c.stroke();
+      c.fillStyle="#e0a54a"; c.font="600 11.5px 'Segoe UI',sans-serif";
+      c.fillText("被卡住", x, wy-26+bob);
+    }
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   逐步揭示
+   ══════════════════════════════════════════════════════════════ */
+function revealStep(n){
+  const el=$("#s"+n); if(!el||el.style.display!=="none") return;
+  el.style.display="block";
+  requestAnimationFrame(()=>{
+    if(n===2){ drawTable(); run2=true; loop2(); }
+    if(n===3){ drawGuest(); }
+    setTimeout(()=>el.scrollIntoView({behavior:"smooth",block:"start"}),140);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   场景二
+   ══════════════════════════════════════════════════════════════ */
+let limit2=780, mem2=170, oomCount=0, run2=false, flash2=0, revealed2=false;
+$("#r2").oninput = e => { limit2=+e.target.value; drawTable(); };
+let lastT2=0;
+function loop2(ts){
+  if(!run2) return;
+  const dt = lastT2 ? Math.min((ts-lastT2)/1000, 0.12) : 0.016;
+  lastT2 = ts;
+  mem2 += 200*dt;                       // 约 200 MB/秒，3 秒左右越线
+  if(mem2>limit2){ oomCount++; mem2=limit2*0.18; flash2=1; }
+  if(flash2>0) flash2-=0.030;
+  drawTable();
+  $("#hint2").innerHTML = oomCount>0
+    ? `已经被扔掉 <b>${oomCount}</b> 次了。注意它不是"变慢"，是<b>整堆消失</b>，然后从零开始堆。`
+    : `材料正在往桌子上堆。越过你设的那条红线，就会发生一件事。`;
+  if(oomCount>=1 && !revealed2){
+    revealed2=true;
+    setTimeout(()=>{ $("#rev2").classList.add("on"); revealStep(3); },900);
+  }
+  requestAnimationFrame(loop2);
+}
+function drawTable(){
+  const cv=$("#cv2"); if(!cv||!cv.clientWidth) return;
+  const dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=290;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+  c.fillStyle="#0b0f15"; c.fillRect(0,0,W,H);
+  const x0=44,x1=W-44, ty=208, th=36;
+  const scale=(x1-x0)/900;
+  c.fillStyle="#1a212b"; c.fillRect(x0,ty,x1-x0,th);
+  c.strokeStyle="#39424f"; c.lineWidth=1.5; c.strokeRect(x0,ty,x1-x0,th);
+  c.fillStyle="#5a6474"; c.font="12px 'Segoe UI',sans-serif"; c.textAlign="center";
+  c.fillText("这张桌子就是内存", (x0+x1)/2, ty+th+22);
+  const mw=clamp(mem2,0,900)*scale;
+  c.globalAlpha = flash2>0 ? clamp(flash2,0,1) : 1;
+  c.fillStyle="#3fb6c8"; c.fillRect(x0+2, ty+2, Math.max(mw-4,1), th-4);
+  c.globalAlpha=1;
+  if(mw>96){
+    c.fillStyle="#0b0f15"; c.font="600 12px 'Segoe UI',sans-serif"; c.textAlign="left";
+    c.fillText(Math.round(mem2)+" MB", x0+12, ty+23);
+  }
+  if(flash2>0){
+    c.fillStyle="#e07a7a"; c.font="700 16px 'Segoe UI',sans-serif"; c.textAlign="center";
+    c.fillText("被扔掉了！", (x0+x1)/2, ty-18);
+  }
+  const lx=x0+limit2*scale;
+  c.strokeStyle="#e07a7a"; c.lineWidth=3; c.setLineDash([8,6]);
+  c.beginPath(); c.moveTo(lx, ty-76); c.lineTo(lx, ty+th+8); c.stroke(); c.setLineDash([]);
+  c.fillStyle="#e07a7a"; c.font="600 12.5px 'Segoe UI',sans-serif"; c.textAlign="center";
+  c.fillText("你设的限制", lx, ty-84);
+  const py=ty-42;
+  c.beginPath(); c.arc(x0+36, py, 16, 0, Math.PI*2); c.fillStyle="#3fb6c8"; c.fill();
+  c.fillStyle="#0b0f15"; c.font="700 14px 'Segoe UI',sans-serif"; c.textAlign="center";
+  c.fillText("1", x0+36, py+5);
+  c.fillStyle="#8892a3"; c.font="12px 'Segoe UI',sans-serif";
+  c.fillText("这个服务", x0+36, py-27);
+  c.textAlign="left"; c.fillStyle="#8892a3"; c.font="12.5px 'Segoe UI',sans-serif";
+  c.fillText("材料一直往里堆。CPU 不够时会排队，内存不够时没有排队这回事。", x0, 24);
+
+  const cv2=$("#cv2b");
+  if(cv2 && cv2.clientWidth){
+    cv2.width=cv2.clientWidth*dpr; cv2.height=120*dpr;
+    const c2=cv2.getContext("2d"); c2.setTransform(dpr,0,0,dpr,0,0);
+    const W2=cv2.clientWidth;
+    c2.fillStyle="#0f141b"; c2.fillRect(0,0,W2,120);
+    c2.fillStyle="#8892a3"; c2.font="12.5px 'Segoe UI',sans-serif"; c2.textAlign="left";
+    c2.fillText("两种情况放在一起看", 14, 20);
+    [{t:"CPU 不够",d:"排队等一会儿 —— 慢，但活能干完",col:"#4cc08a"},
+     {t:"内存不够",d:"没有排队 —— 进程当场消失，从头再来",col:"#e07a7a"}].forEach((r,i)=>{
+      const y=40+i*40;
+      c2.beginPath(); c2.arc(24,y+11,5,0,Math.PI*2); c2.fillStyle=r.col; c2.fill();
+      c2.fillStyle="#e9edf3"; c2.font="600 14px 'Segoe UI',sans-serif"; c2.textAlign="left";
+      c2.fillText(r.t, 40, y+16);
+      c2.fillStyle="#8892a3"; c2.font="13.5px 'Segoe UI',sans-serif";
+      c2.fillText(r.d, 132, y+16);
+    });
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   场景三
+   ══════════════════════════════════════════════════════════════ */
+const TOOLS=[
+  {id:"calc", name:"算术",     out:false, trips:0,   cost:1,    n:600000, fix:null},
+  {id:"priv", name:"特权操作", out:true,  trips:60,  cost:1400, n:60,  fix:"vt"},
+  {id:"page", name:"换页表",   out:true,  trips:40,  cost:900,  n:40,  fix:"ept"},
+  {id:"dev",  name:"设备读写", out:true,  trips:120, cost:1800, n:120, fix:"virtio"},
+  {id:"timer",name:"等时钟",   out:true,  trips:30,  cost:600,  n:30,  fix:"posted"},
+];
+const SW=[
+  {id:"vt",    name:"给他一把钥匙", desc:"有些操作他可以自己在屋里做，不必出门", cut:{priv:0.25}},
+  {id:"ept",   name:"换一本目录",   desc:"常用东西的位置直接告诉他，少跑几趟",   cut:{page:0.30}},
+  {id:"virtio",name:"把工具搬进屋", desc:"不模拟真设备，双方约定好怎么配合",     cut:{dev:0.35}},
+  {id:"posted",name:"开个传递窗口", desc:"东西直接递进来，不用他出来拿",         cut:{timer:0.35}},
+];
+const on3={vt:false,ept:false,virtio:false,posted:false};
+let running3=false, walkPhase=0, swBuilt=false;
+
+$("#btn3").onclick = () => {
+  if(running3){ running3=false; $("#btn3").textContent="▶ 继续"; return; }
+  running3=true; $("#btn3").textContent="⏸ 暂停"; loop3();
+};
+function calc3(){
+  let trips=0, exitCost=0, base=0;
+  const per=TOOLS.map(t=>{
+    let n=t.trips;
+    if(t.fix && on3[t.fix]) n = t.trips * SW.find(s=>s.id===t.fix).cut[t.id];
+    base += t.n*t.cost;
+    trips += n; exitCost += n*t.cost;
+    return {t,n};
+  });
+  return {per, trips, exitCost, base, grand: base+exitCost};
+}
+const OFF_TOTAL = TOOLS.reduce((s,t)=>s+t.n*t.cost + t.trips*t.cost, 0);
+function loop3(){
+  if(!running3) return;
+  walkPhase += 0.085;
+  const r=calc3();
+  drawGuest(r);
+  $("#hint3").innerHTML = `这批活干完，他需要走出房间 <b>${Math.round(r.trips)}</b> 次。每一次来回都要花时间——这些时间本来可以用来干活。`;
+  if(r.trips>150 && !$("#rev3").classList.contains("on")){
+    running3=false; $("#btn3").textContent="▶ 继续";
+    setTimeout(()=>{ $("#rev3").classList.add("on"); if(!swBuilt){ buildSW(); swBuilt=true; } updateKvmHint(); },600);
+    return;
+  }
+  requestAnimationFrame(loop3);
+}
+function buildSW(){
+  $("#kvmsw").innerHTML = SW.map(s=>`
+    <div style="display:flex;gap:13px;align-items:flex-start;padding:13px 17px;margin-bottom:9px;
+      border-radius:12px;background:${on3[s.id]?"#0d2029":"#1a212b"};
+      border:1px solid ${on3[s.id]?"#1d4a56":"#252d3a"}">
+      <button data-sw="${s.id}" style="flex:none;background:${on3[s.id]?"#3fb6c8":"#222a36"};
+        color:${on3[s.id]?"#04212a":"#e9edf3"};border:none;border-radius:8px;padding:9px 15px;
+        font-size:13.5px;cursor:pointer;font-weight:600;font-family:inherit">
+        ${on3[s.id]?"已开启":"开启"}</button>
+      <div><div style="font-weight:600;font-size:14.8px">${s.name}</div>
+      <div style="font-size:13.2px;color:var(--dim)">${s.desc}</div></div>
+    </div>`).join("");
+  document.querySelectorAll("[data-sw]").forEach(b=>b.onclick=()=>{
+    on3[b.dataset.sw]=!on3[b.dataset.sw];
+    buildSW(); updateKvmHint();
+    if(!running3){ running3=true; $("#btn3").textContent="⏸ 暂停"; loop3(); }
+  });
+}
+function updateKvmHint(){
+  const r=calc3();
+  const allOn=SW.every(s=>on3[s.id]);
+  $("#hint3b").innerHTML = allOn
+    ? `<b>全开之后：出门 ${Math.round(r.trips)} 次、总耗时 ${r.grand.toLocaleString()}；全关时是出门 ${TOOLS.reduce((s,t)=>s+t.trips,0)} 次、总耗时 ${OFF_TOTAL.toLocaleString()}。</b><br>
+       注意那 900 次算术<b>一次门都没出</b>——虚拟化只对少数"要碰硬件"的操作收费，普通计算和真机一样快。`
+    : `当前：出门 <b>${Math.round(r.trips)}</b> 次，总耗时 <b>${r.grand.toLocaleString()}</b>（全关时 ${OFF_TOTAL.toLocaleString()}）。把上面四个开关逐个打开试试。`;
+  drawGuest(r);
+}
+function drawGuest(r){
+  const cv=$("#cv3"); if(!cv||!cv.clientWidth) return;
+  if(!r) r=calc3();
+  const dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=300;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+  c.fillStyle="#0b0f15"; c.fillRect(0,0,W,H);
+  const roomX=26, roomW=W*0.44, roomY=56, roomH=178;
+  const hallX=roomX+roomW+44, hallW=W-roomW-96;
+
+  c.fillStyle="#101720"; c.fillRect(roomX,roomY,roomW,roomH);
+  c.strokeStyle="#2a3444"; c.lineWidth=2; c.strokeRect(roomX,roomY,roomW,roomH);
+  c.fillStyle="#5b9bd5"; c.font="600 13.5px 'Segoe UI',sans-serif"; c.textAlign="left";
+  c.fillText("客人的房间（虚拟机）", roomX+2, roomY-13);
+
+  c.fillStyle="#101720"; c.fillRect(hallX,roomY,hallW,roomH);
+  c.strokeStyle="#2a3444"; c.lineWidth=2; c.strokeRect(hallX,roomY,hallW,roomH);
+  c.fillStyle="#e0a54a"; c.font="600 13.5px 'Segoe UI',sans-serif";
+  c.fillText("主人家的工具", hallX+2, roomY-13);
+
+  TOOLS.forEach((t,i)=>{
+    const isOut = t.out && !(t.fix && on3[t.fix]);
+    const x = isOut ? hallX+16 : roomX+16;
+    const y = roomY+30+i*31;
+    c.beginPath(); c.arc(x+3, y-4, 5, 0, Math.PI*2);
+    c.fillStyle = isOut ? "#e0a54a" : "#4cc08a"; c.fill();
+    c.fillStyle="#cfd6e0"; c.font="13.5px 'Segoe UI',sans-serif"; c.textAlign="left";
+    c.fillText(t.name + (t.out && !isOut ? "（已搬进来）" : ""), x+15, y);
+  });
+  // 工具全搬进来后，主人这边空了 —— 说明一下，免得看起来像出错
+  const anyOut = TOOLS.some(t=>t.out && !(t.fix && on3[t.fix]));
+  if(!anyOut){
+    c.fillStyle="#4a5566"; c.font="13px 'Segoe UI',sans-serif"; c.textAlign="center";
+    c.fillText("工具都搬到客房了", hallX+hallW/2, roomY+roomH/2-4);
+    c.fillStyle="#3a4553"; c.font="12.5px 'Segoe UI',sans-serif";
+    c.fillText("客人基本不用出门", hallX+hallW/2, roomY+roomH/2+18);
+  }
+
+  const u = running3 ? (Math.sin(walkPhase)*0.5+0.5) : 0.5;
+  const startX=roomX+roomW*0.66, px=startX+u*(hallX-startX), py=roomY+roomH-32;
+  c.beginPath(); c.arc(px,py,15,0,Math.PI*2); c.fillStyle="#5b9bd5"; c.fill();
+  c.fillStyle="#0b0f15"; c.font="700 13px 'Segoe UI',sans-serif"; c.textAlign="center";
+  c.fillText("客", px, py+5);
+
+  c.strokeStyle="#e07a7a"; c.lineWidth=3;
+  c.beginPath(); c.moveTo(roomX+roomW, roomY+22); c.lineTo(roomX+roomW, roomY+roomH-22); c.stroke();
+
+  c.fillStyle="#8892a3"; c.font="12.5px 'Segoe UI',sans-serif"; c.textAlign="left";
+  c.fillText("在自己屋里算术：零成本　　碰主人的东西：出来一趟很贵", 26, 26);
+  c.fillStyle="#4cc08a"; c.font="600 13.5px 'Segoe UI',sans-serif";
+  c.fillText("干完这批活要出门 "+Math.round(r.trips)+" 次", 26, H-16);
+  c.fillStyle="#e0a54a";
+  c.fillText("总耗时 "+r.grand.toLocaleString()+"　（全关时 "+OFF_TOTAL.toLocaleString()+"）", 160, H-16);
+}
+
+/* ══════════ 数字面板 ══════════ */
+$("#btnData").onclick = () => {
+  const box=$("#dataBox"); box.classList.toggle("on");
+  const r=calc3();
+  box.innerHTML = `
+    <div>场景一：4 核机器，三个服务需求 2.5 + 2.4 + 0.8 = 5.7 核 → 存在争抢</div>
+    <div>　分配 = min( 4 × 自己的优先级 ÷ 优先级之和 , 自己的需求 , 自己的硬上限 )</div>
+    <div>　Linux 里的名字：cpu.weight（优先级）、cpu.max（硬上限）、throttled（被卡住）</div>
+    <div style="margin-top:12px">场景二：memory.max 就是那条红线，越线触发 OOM Killer</div>
+    <div>　当前已触发 ${oomCount} 次　限制 ${limit2} MB</div>
+    <div style="margin-top:12px">场景三：真实硬件上一次 VM Exit + VM Entry 约 1000～4000 个 CPU 周期</div>
+    <div>　本页把"一次算术"记作 1 个周期，"出一趟门"按 600～1800 计</div>\n    <div>　算术共 60 万次（普通计算，一次门都不出），出门 ${TOOLS.reduce((s,t)=>s+t.trips,0)} 次</div>
+    <div>　当前出门 ${Math.round(r.trips)} 次，总周期 ${r.grand.toLocaleString()}（全关 ${OFF_TOTAL.toLocaleString()}）</div>
+    <div style="margin-top:12px">这些数字是教学用的量级，不是真实跑分。真实数字取决于 CPU 型号和负载情况。</div>`;
+};
+
+drawW1(); drawTable(); drawGuest();
+window.addEventListener("resize", ()=>{ drawW1(); drawTable(); drawGuest(); });
+</script>
+</body>
+</html>

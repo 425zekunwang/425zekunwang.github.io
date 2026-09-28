@@ -27,6 +27,16 @@ const projects = [
     repo: SIMULATOR_REPO,
     icon: "ri:android-fill",
     tags: ["Android 逆向", "纯静态", "教学"],
+    external: true,
+  },
+  {
+    name: "知乎收藏 · 交互推演页面",
+    desc: "把收藏的长文里的机制做成能亲手拨参数的东西：大模型实验室、行列式实验室、乐理实验室、Linux 内核实验室、博弈场、Python 虚拟机模拟器…… 共 15 个单文件页面。",
+    href: "/zhihu/labs/",
+    repo: "",
+    icon: "lucide:flask-conical",
+    tags: ["可交互", "单文件", "零依赖"],
+    external: false,
   },
 ];
 ---
@@ -134,22 +144,24 @@ const projects = [
                   <div class="card-actions justify-end mt-4">
                     <a
                       href={project.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      target={project.external ? "_blank" : undefined}
+                      rel={project.external ? "noopener noreferrer" : undefined}
                       class="btn btn-primary btn-sm gap-2"
                     >
                       <Icon name="lucide:external-link" class="w-4 h-4" />
                       <span>打开</span>
                     </a>
-                    <a
-                      href={project.repo}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="btn btn-ghost btn-sm gap-2"
-                    >
-                      <Icon name="ri:github-line" class="w-4 h-4" />
-                      <span>源码</span>
-                    </a>
+                    {project.repo && (
+                      <a
+                        href={project.repo}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="btn btn-ghost btn-sm gap-2"
+                      >
+                        <Icon name="ri:github-line" class="w-4 h-4" />
+                        <span>源码</span>
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>

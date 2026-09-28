@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>控制台 · 反馈回路与势函数地形</title>
+<style>
+  :root{
+    --bg:#0b0e13; --panel:#141922; --panel2:#1b212c; --line:#28303e;
+    --fg:#e8ecf2; --dim:#8792a4; --cyan:#3fb6c8; --jade:#46c08a;
+    --red:#e05a5a; --gold:#d4a24c; --blue:#5b9bd5; --purple:#a97bd6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);line-height:1.72;
+    font-family:"Segoe UI","Microsoft YaHei",-apple-system,sans-serif}
+  .wrap{max-width:1120px;margin:0 auto;padding:30px 18px 80px}
+  button{font-family:inherit}
+  .hide{display:none !important}
+
+  h1{font-size:clamp(24px,3.8vw,34px);margin:0 0 8px}
+  .lede{color:var(--dim);font-size:16px;margin:0 0 22px;max-width:820px}
+
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+  .tab{background:var(--panel);border:1px solid var(--line);color:var(--dim);
+    padding:10px 18px;border-radius:10px;cursor:pointer;font-size:14.5px;transition:.14s}
+  .tab:hover{color:var(--fg);border-color:#3a4557}
+  .tab.on{background:var(--cyan);color:#04212a;border-color:var(--cyan);font-weight:700}
+
+  .lab{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:start}
+  @media(max-width:900px){.lab{grid-template-columns:1fr}}
+
+  .canvas-box{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  canvas{display:block;width:100%;touch-action:none}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .panel h3{margin:0 0 14px;font-size:12.5px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase}
+
+  .ctl{margin-bottom:16px}
+  .ctl .lab2{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:6px}
+  .ctl .lab2 span{color:var(--dim)}
+  .ctl .lab2 b{font-variant-numeric:tabular-nums;color:var(--fg)}
+  input[type=range]{width:100%;accent-color:var(--cyan)}
+  .seg{display:flex;gap:6px;margin-top:6px}
+  .seg button{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+    border-radius:8px;padding:8px;font-size:13.5px;cursor:pointer}
+  .seg button.on{background:var(--cyan);color:#04212a;border-color:var(--cyan);font-weight:600}
+
+  .readout{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.8px}
+  .readout:last-of-type{border-bottom:0}
+  .readout .k{color:var(--dim)}
+  .readout .v{font-variant-numeric:tabular-nums;font-weight:600}
+  .v.ok{color:var(--jade)} .v.bad{color:var(--red)} .v.warn{color:var(--gold)}
+
+  .btn{background:var(--panel2);color:var(--fg);border:1px solid var(--line);
+    border-radius:9px;padding:9px 14px;font-size:13.8px;cursor:pointer;transition:.14s}
+  .btn:hover{background:#242b39;border-color:#3d4759}
+  .btn.primary{background:var(--cyan);color:#04212a;border-color:var(--cyan);font-weight:700}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+  .task{background:linear-gradient(135deg,#0d1a1e,#141922);border:1px solid #1e3a42;
+    border-radius:13px;padding:18px 22px;margin-top:20px}
+  .task .k{font-size:11.5px;letter-spacing:.16em;color:var(--cyan);font-weight:700;text-transform:uppercase}
+  .task h3{margin:8px 0 8px;font-size:18px}
+  .task p{margin:0 0 10px;color:var(--dim);font-size:14.6px}
+  .task p:last-child{margin-bottom:0}
+  .verdict{margin-top:14px;font-weight:700;font-size:15px;min-height:24px}
+  .verdict.ok{color:var(--jade)} .verdict.no{color:var(--dim)}
+  .prog{display:flex;gap:6px;margin-top:12px}
+  .prog i{width:26px;height:5px;border-radius:3px;background:var(--line)}
+  .prog i.done{background:var(--jade)}
+  .prog i.now{background:var(--cyan)}
+
+  .note{background:#101820;border:1px solid var(--line);border-radius:11px;
+    padding:15px 19px;font-size:14.4px;color:var(--dim);margin-top:18px}
+  .note b{color:var(--fg)}
+  .quote{background:#12161c;border-left:3px solid var(--jade);border-radius:0 10px 10px 0;
+    padding:13px 17px;margin:13px 0;font-size:14.6px;color:#dfe6ee}
+  .quote .src{display:block;margin-top:8px;font-size:12.4px;color:var(--dim)}
+  code{background:#0a0d13;padding:2px 6px;border-radius:5px;font-size:13.4px;
+    font-family:"Cascadia Code",Consolas,monospace}
+  .foot{color:var(--dim);font-size:13px;margin-top:40px;border-top:1px solid var(--line);padding-top:18px}
+  .foot a{color:var(--blue);text-decoration:none}
+  .flash{position:absolute;left:50%;top:16px;transform:translateX(-50%);
+    background:rgba(224,90,90,.92);color:#fff;padding:7px 18px;border-radius:20px;
+    font-size:14px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none}
+  .flash.show{opacity:1}
+  .rel{position:relative}
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:99;display:flex;gap:16px;align-items:center;justify-content:space-between;padding:9px 18px;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid #2b3444;font-size:13.5px;font-family:'Segoe UI','Microsoft YaHei',sans-serif"><a href="/" style="color:#8b98a8;text-decoration:none">← wzk 的技术笔记</a><a href="/zhihu/labs/" style="color:#58a6ff;text-decoration:none">全部交互页面</a></div>
+<div class="wrap">
+
+<h1>控制台</h1>
+<p class="lede">
+  这本书的核心不是知识点，是<b>回路</b>。而回路没法靠读或看学会——你只能改一个参数，然后看系统怎么变。
+  下面两个模块都是可调的：<b>你能亲手把它弄坏。</b>
+</p>
+
+<div class="tabs">
+  <button class="tab on" data-m="0">① 反馈回路</button>
+  <button class="tab" data-m="1">② 势函数地形</button>
+</div>
+
+<!-- ═══════════ 模块 1 ═══════════ -->
+<div id="mod0">
+  <div class="lab">
+    <div class="rel">
+      <div class="canvas-box"><canvas id="cv1" height="380"></canvas></div>
+      <div class="flash" id="flash1"></div>
+    </div>
+
+    <div class="panel">
+      <h3>参数</h3>
+      <div class="ctl">
+        <div class="lab2"><span>增益 K · 纠偏力度</span><b id="vK">1.00</b></div>
+        <input type="range" id="rK" min="0.1" max="2.5" step="0.05" value="1.0">
+      </div>
+      <div class="ctl">
+        <div class="lab2"><span>阻尼 b · 吸收冲击的能力</span><b id="vB">0.00</b></div>
+        <input type="range" id="rB" min="0" max="0.8" step="0.01" value="0">
+      </div>
+      <div class="ctl">
+        <div class="lab2"><span>延迟 d · 反馈慢几拍</span><b id="vD">0</b></div>
+        <input type="range" id="rD" min="0" max="6" step="1" value="0">
+      </div>
+      <div class="ctl">
+        <div class="lab2"><span>反馈方向</span><b id="vDir">负反馈</b></div>
+        <div class="seg">
+          <button class="on" data-dir="neg">负反馈</button>
+          <button data-dir="pos">正反馈</button>
+        </div>
+      </div>
+      <div class="ctl" style="margin-bottom:8px">
+        <div class="lab2"><span>目标值</span><b id="vT">50</b></div>
+        <input type="range" id="rT" min="20" max="80" step="1" value="50">
+      </div>
+
+      <h3 style="margin-top:20px">状态</h3>
+      <div class="readout"><span class="k">当前值</span><span class="v" id="oX">20.0</span></div>
+      <div class="readout"><span class="k">目标差</span><span class="v" id="oErr">+30.0</span></div>
+      <div class="readout"><span class="k">近 150 拍振幅</span><span class="v" id="oAmp">0.0</span></div>
+      <div class="readout"><span class="k">判定</span><span class="v" id="oState">—</span></div>
+
+      <div class="row">
+        <button class="btn primary" id="bPlay">暂停</button>
+        <button class="btn" id="bReset">重置</button>
+        <button class="btn" id="bKick">施加扰动</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="task">
+    <div class="k">任务 <span id="t1n">1</span> / 4</div>
+    <h3 id="t1title"></h3>
+    <p id="t1desc"></p>
+    <div class="verdict no" id="t1verdict"></div>
+    <div class="prog" id="t1prog"></div>
+    <div class="row"><button class="btn" id="b1skip">换一个任务</button></div>
+  </div>
+
+  <div class="note" id="t1note"></div>
+</div>
+
+<!-- ═══════════ 模块 2 ═══════════ -->
+<div id="mod1" class="hide">
+  <div class="lab">
+    <div class="rel">
+      <div class="canvas-box"><canvas id="cv2" height="400"></canvas></div>
+      <div class="flash" id="flash2"></div>
+    </div>
+
+    <div class="panel">
+      <h3>条件</h3>
+      <div class="ctl">
+        <div class="lab2"><span>p · 两个状态的分隔度</span><b id="vP">2.00</b></div>
+        <input type="range" id="rP" min="0" max="2.6" step="0.02" value="2.0">
+      </div>
+      <div class="ctl">
+        <div class="lab2"><span>q · 外部推力</span><b id="vQ">0.00</b></div>
+        <input type="range" id="rQ" min="-1.6" max="1.6" step="0.01" value="0">
+      </div>
+
+      <h3 style="margin-top:20px">状态</h3>
+      <div class="readout"><span class="k">小球位置 x</span><span class="v" id="oX2">-1.41</span></div>
+      <div class="readout"><span class="k">稳态数量</span><span class="v" id="oWells">2</span></div>
+      <div class="readout"><span class="k">刚才这一次</span><span class="v" id="oKind">—</span></div>
+      <div class="readout"><span class="k">正向跳变于 q =</span><span class="v" id="oQF">未发生</span></div>
+      <div class="readout"><span class="k">反向跳变于 q =</span><span class="v" id="oQB">未发生</span></div>
+      <div class="readout"><span class="k">滞后宽度</span><span class="v warn" id="oHyst">—</span></div>
+
+      <div class="row">
+        <button class="btn" id="b2reset">重置小球</button>
+        <button class="btn" id="b2clear">清除记录</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="task">
+    <div class="k">任务 <span id="t2n">1</span> / 4</div>
+    <h3 id="t2title"></h3>
+    <p id="t2desc"></p>
+    <div class="verdict no" id="t2verdict"></div>
+    <div class="prog" id="t2prog"></div>
+    <div class="row"><button class="btn" id="b2skip">换一个任务</button></div>
+  </div>
+
+  <div class="note" id="t2note"></div>
+</div>
+
+<div class="foot">
+  模型说明：模块一用 <code>x(t+1) = x(t) + K·(目标 − x(t−d))</code>，正反馈取反号。模块二用势函数
+  <code>V(x) = x⁴/4 − (p/2)x² − q·x</code>，小球沿 <code>dx/dt = −V′(x)</code> 滚落，洼底即稳定态。
+  两个式子都是教科书里的标准形式，不是为演示效果编的。<br>
+  概念来源：《控制论与科学方法论》（金观涛、华国凡）第一章「控制和反馈」与第四章「质变的数学模型」。
+  本地文件：<code><a href="/blog/zhihu/opinion/cybernetics-and-scientific-methodology">如何评价《控制论与科学方法论》这本书？ 有类似或进阶版的书籍推荐吗？</a></code>
+</div>
+
+</div>
+
+<script>
+"use strict";
+const $ = (s) => document.querySelector(s);
+const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+const fx = (n,d=2) => (Math.round(n*Math.pow(10,d))/Math.pow(10,d)).toFixed(d);
+
+/* ══════════════════════════════════════════════════════════════
+   模块 1 · 反馈回路
+   ══════════════════════════════════════════════════════════════ */
+const M1 = {
+  target:50, x:20, v:0, K:1.0, b:0, d:0, dir:"neg", dt:0.15,
+  hist:[], samples:[], running:true, ticks:0, kicked:0,
+  yLo:-30, yHi:130,
+
+  reset(keepParams=true) {
+    if (!keepParams) { this.K=1.0; this.b=0; this.d=0; this.dir="neg"; this.target=50; }
+    this.x = 20; this.v = 0; this.hist = []; this.samples = []; this.ticks = 0;
+    this.yLo = -30; this.yHi = 130;
+    this.syncUI();
+  },
+  syncUI() {
+    $("#rK").value = this.K; $("#vK").textContent = fx(this.K);
+    $("#rB").value = this.b; $("#vB").textContent = fx(this.b);
+    $("#rD").value = this.d; $("#vD").textContent = this.d;
+    $("#rT").value = this.target; $("#vT").textContent = this.target;
+    $("#vDir").textContent = this.dir === "neg" ? "负反馈" : "正反馈";
+    document.querySelectorAll("[data-dir]").forEach(x =>
+      x.classList.toggle("on", x.dataset.dir === this.dir));
+  },
+  step() {
+    // 反馈依据：d 拍之前的自己；延迟就是"你依据的是过时信息"
+    const ref = this.hist.length > this.d ? this.hist[this.hist.length - 1 - this.d] : this.x;
+    const err = this.target - ref;
+    const sign = this.dir === "neg" ? 1 : -1;
+    // 二阶：加速度 = 纠偏力 − 阻尼
+    this.v += (this.K * err * sign - this.b * this.v) * this.dt;
+    this.x += this.v * this.dt;
+    if (!isFinite(this.x)) { this.x = this.yHi; this.v = 0; }
+    this.x = clamp(this.x, -400, 600);
+    this.hist.push(this.x);
+    if (this.hist.length > 900) this.hist.shift();
+    this.samples.push(this.x);
+    if (this.samples.length > 420) this.samples.shift();
+    this.ticks++;
+  },
+  classify() {
+    const s = this.samples;
+    if (s.length < 120) return { k:"观察中", amp:0, err:Math.abs(this.x-this.target) };
+    const w = s.slice(-150), p = s.slice(-300,-150);
+    const amp = Math.max(...w) - Math.min(...w);
+    const pamp = p.length > 20 ? Math.max(...p) - Math.min(...p) : amp;
+    const err = Math.abs(this.x - this.target);
+    // 已经跑飞：撞到钳位、或者离目标超过 300
+    if (Math.abs(this.x) > 300 || Math.abs(this.x - this.target) > 300)
+      return { k:"发散", amp, err, div:true };
+    if (amp > 240) return { k:"发散", amp, err, div:true };
+    if (amp < 2.5 && err < 6) return { k:"稳定", amp, err };
+    if (amp > pamp * 1.15 && pamp > 3) return { k:"发散", amp, err, div:true };
+    if (amp > 6) return { k: amp > pamp * 0.85 ? "持续震荡" : "衰减震荡", amp, err,
+                          osc: amp > pamp * 0.85 };
+    return { k:"过渡中", amp, err };
+  },
+  kick() {
+    this.v += (Math.random() < 0.5 ? -14 : 14) / this.dt * 0.5;
+    this.kicked++;
+  },
+
+  draw() {
+    const cv = $("#cv1"); if (!cv || !cv.clientWidth) return;
+    const dpr = window.devicePixelRatio||1;
+    const W = cv.clientWidth, H = 380;
+    cv.width = W*dpr; cv.height = H*dpr;
+    const c = cv.getContext("2d");
+    c.setTransform(dpr,0,0,dpr,0,0);
+    c.fillStyle = "#0a0d13"; c.fillRect(0,0,W,H);
+
+    // 自适应纵向范围
+    if (this.samples.length) {
+      const mn = Math.min(...this.samples), mx = Math.max(...this.samples);
+      const tLo = Math.min(mn, this.target) - 12, tHi = Math.max(mx, this.target) + 12;
+      this.yLo += (tLo - this.yLo) * 0.06;
+      this.yHi += (tHi - this.yHi) * 0.06;
+      if (this.yHi - this.yLo < 40) { const mid=(this.yHi+this.yLo)/2; this.yLo=mid-20; this.yHi=mid+20; }
+    }
+    const padL = 48, padR = 16, padT = 22, padB = 30;
+    const gw = W - padL - padR, gh = H - padT - padB;
+    const Y = (val) => padT + gh - (val - this.yLo)/(this.yHi - this.yLo)*gh;
+
+    c.strokeStyle = "#161c26"; c.lineWidth = 1;
+    const stepv = (this.yHi - this.yLo) / 6;
+    for (let i = 0; i <= 6; i++) {
+      const val = this.yLo + stepv*i;
+      const y = Math.round(Y(val)) + .5;
+      c.beginPath(); c.moveTo(padL, y); c.lineTo(W-padR, y); c.stroke();
+      c.fillStyle = "#5a6474"; c.font = "11.5px 'Segoe UI',sans-serif"; c.textAlign = "right";
+      c.fillText(Math.round(val), padL - 8, y + 4);
+    }
+    // 目标带 ±5%
+    const band = Math.max(2.5, Math.abs(this.target) * 0.05);
+    c.fillStyle = "rgba(70,192,138,.08)";
+    c.fillRect(padL, Y(this.target+band), gw, Y(this.target-band) - Y(this.target+band));
+    // 目标线
+    const ty = Math.round(Y(this.target)) + .5;
+    c.strokeStyle = "rgba(212,162,76,.8)"; c.lineWidth = 1.6; c.setLineDash([7,5]);
+    c.beginPath(); c.moveTo(padL, ty); c.lineTo(W-padR, ty); c.stroke();
+    c.setLineDash([]);
+    c.fillStyle = "#d4a24c"; c.font = "600 11.5px 'Segoe UI',sans-serif"; c.textAlign = "left";
+    c.fillText("目标 " + this.target, padL + 6, ty - 7);
+
+    // 曲线
+    const n = this.samples.length;
+    if (n > 1) {
+      const stepX = gw / Math.max(n - 1, 1);
+      c.beginPath();
+      this.samples.forEach((val, i) => {
+        const px = padL + i*stepX, py = clamp(Y(val), padT-40, padT+gh+40);
+        i ? c.lineTo(px, py) : c.moveTo(px, py);
+      });
+      const st = this.classify();
+      c.strokeStyle = st.k === "稳定" ? "#46c08a" : (st.div ? "#e05a5a" : "#3fb6c8");
+      c.lineWidth = 2.2; c.lineJoin = "round"; c.stroke();
+    }
+
+    // 当前点
+    const cy = clamp(Y(this.x), padT-40, padT+gh+40);
+    c.beginPath(); c.arc(padL + gw, cy, 5.5, 0, Math.PI*2);
+    c.fillStyle = "#e8ecf2"; c.fill();
+
+    // 参数牌
+    const bw = 104, bh = 58, bx = W - padR - bw - 6, by = padT + 4;
+    c.fillStyle = "rgba(20,25,34,.92)"; c.strokeStyle = "#28303e"; c.lineWidth = 1;
+    c.beginPath();
+    if (c.roundRect) c.roundRect(bx,by,bw,bh,8); else c.rect(bx,by,bw,bh);
+    c.fill(); c.stroke();
+    c.fillStyle = "#8792a4"; c.font = "11px 'Segoe UI',sans-serif"; c.textAlign = "left";
+    c.fillText("K = " + fx(this.K), bx+10, by+16);
+    c.fillText("b = " + fx(this.b), bx+10, by+30);
+    c.fillText("d = " + this.d, bx+10, by+44);
+    c.fillStyle = this.dir==="neg" ? "#46c08a" : "#e05a5a";
+    c.font = "600 11px 'Segoe UI',sans-serif";
+    c.fillText(this.dir==="neg" ? "负反馈" : "正反馈", bx+10, by+57);
+  },
+
+  render() {
+    const st = this.classify();
+    $("#oX").textContent = fx(this.x,1);
+    $("#oErr").textContent = (this.x - this.target >= 0 ? "+" : "") + fx(this.x - this.target,1);
+    $("#oAmp").textContent = fx(st.amp,1);
+    const el = $("#oState");
+    el.textContent = st.k;
+    el.className = "v " + (st.k==="稳定" ? "ok" : (st.div ? "bad" : (st.k.indexOf("震荡")>=0 ? "warn" : "")));
+    this.draw();
+    T1.check(st);
+  },
+
+  loop() {
+    if (this.running) { this.step(); this.render(); }
+    else requestAnimationFrame(() => this.loop());
+  },
+};
+
+/* ── 模块1 任务 ── */
+const T1 = {
+  idx:0, done:[false,false,false,false],
+  tasks:[
+    {
+      title:"先让它停下来",
+      desc:"现在阻尼 b = 0，系统会<b>永远荡下去</b>，怎么调增益都没用。想办法让它稳定到目标 ±5% 以内并且不再来回摆。",
+      setup(){ M1.K=1.0; M1.b=0; M1.d=0; M1.dir="neg"; M1.target=50; M1.reset(true); },
+      note:"<b>纯负反馈不等于稳定。</b>纠偏力把系统推向目标，但冲过头的势能没有被消耗掉，于是它又冲回来——这是一个没有摩擦的摆，会永远摆下去。<br><br>书里那句「反馈不要过度，纠偏不能太狠，否则系统会震荡甚至崩溃」，说的就是这件事。但更准确的说法是：<b>光有力度不够，系统还需要一个吸收冲击的东西。</b>",
+      test:(st)=> st.k==="稳定",
+      hint:"把阻尼 b 调大（0.08 以上就很明显）。",
+    },
+    {
+      title:"现在，故意让它一直荡",
+      desc:"反过来：调出一组参数，让系统<b>持续震荡但不发散</b>（判定显示「持续震荡」）。",
+      setup(){ M1.K=0.6; M1.b=0.2; M1.d=0; M1.dir="neg"; M1.target=50; M1.reset(true); },
+      note:"<b>无阻尼 = 能量守恒 = 永远荡下去。</b>这在物理上叫无阻尼振荡，在社会系统里就是「来回拉锯」：两个部门互相纠偏，谁都没有能力把冲突吸收掉，于是这件事永远在原地打转，谁也赢不了，但谁也没有崩。<br><br>注意：<b>持续震荡和发散是两回事。</b>前者是稳定的坏，后者是彻底的坏。",
+      test:(st)=> st.k==="持续震荡",
+      hint:"把阻尼 b 拉回 0。",
+    },
+    {
+      title:"这次把它弄坏",
+      desc:"让它<b>发散</b>：判定变成「发散」，曲线冲出画面。有两条路可走——加大延迟，或者把反馈方向切成正反馈。",
+      setup(){ M1.K=1.5; M1.b=0.3; M1.d=0; M1.dir="neg"; M1.target=50; M1.reset(true); },
+      note:"<b>两条路，两种坏法。</b><br><br>一条是<b>正反馈</b>：偏离被当成下一次偏离的燃料。书里的例子是军备竞赛和炸药爆炸——不是有人做错了什么，是回路本身的方向反了。<br><br>另一条更隐蔽：<b>延迟 + 增益</b>。你没有做错任何事，反馈方向也对，只是你依据的是过时的信息，而你的动作又足够大。等你发现的时候，系统已经冲出去了。",
+      test:(st)=> st.div === true,
+      hint:"把延迟 d 拉到 4 以上，或者把反馈方向切到「正反馈」。",
+    },
+    {
+      title:"延迟的代价：重新找平衡",
+      desc:"延迟锁定为 <b>d = 4</b>，不能再降。在这个前提下，找到一组能让系统<b>稳定</b>的（增益, 阻尼）。",
+      setup(){ M1.K=1.5; M1.b=0.2; M1.d=4; M1.dir="neg"; M1.target=50; M1.reset(true); },
+      note:"<b>你刚刚量出了一条真实的管理规律：延迟越大，需要的阻尼越大；而延迟和增益同时高，就无解。</b><br><br>实验数据大致是：d = 0 时阻尼 0.08 就够；d = 2 时增益 1.0 需要阻尼 0.4；d = 4 时增益 2.0 无论多大阻尼都发散。<br><br>所以当一个组织反馈很慢时，正确的做法不是「加大力度」，而是<b>要么缩短反馈链，要么先建立能吸收冲击的缓冲机制</b>——否则越用力，崩得越快。",
+      test:(st)=> M1.d===4 && st.k==="稳定",
+      hint:"把增益降到 0.5 左右，阻尼提到 0.4 以上。",
+    },
+  ],
+  render(){
+    const t = this.tasks[this.idx];
+    $("#t1n").textContent = this.idx+1;
+    $("#t1title").textContent = t.title;
+    $("#t1desc").innerHTML = t.desc;
+    $("#t1note").innerHTML = t.note;
+    $("#t1verdict").className = "verdict no";
+    $("#t1verdict").textContent = "调整右侧参数，系统会自动判定。";
+    $("#t1prog").innerHTML = this.tasks.map((_,i)=>
+      `<i class="${this.done[i]?'done':(i===this.idx?'now':'')}"></i>`).join("");
+  },
+  check(st){
+    if (this.done[this.idx]) return;
+    const t = this.tasks[this.idx];
+    if (t.test(st, this)) {
+      this.done[this.idx] = true;
+      $("#t1verdict").className = "verdict ok";
+      $("#t1verdict").textContent = "✓ 达成。看下面的解释。";
+      $("#t1note").innerHTML = t.note;
+      $("#t1prog").innerHTML = this.tasks.map((_,i)=>
+        `<i class="${this.done[i]?'done':(i===this.idx?'now':'')}"></i>`).join("");
+    } else {
+      $("#t1verdict").textContent = "还没达成 —— " + t.hint;
+    }
+  },
+  next(){
+    this.idx = (this.idx+1) % this.tasks.length;
+    this.tasks[this.idx].setup();
+    this.render();
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   模块 2 · 势函数地形
+   ══════════════════════════════════════════════════════════════ */
+const M2 = {
+  p:2.0, q:0.0, x:-1.414,
+  qForward:null, qBackward:null,
+  lastKind:"—", kindTimer:0, prevX:-1.414,
+  trace:[],
+
+  reset() { this.x = this.wells()[0] ?? -1.4; this.trace = []; },
+  clear() { this.qForward = null; this.qBackward = null; this.lastKind = "—"; this.trace = []; },
+  V(x) { return x*x*x*x/4 - this.p*x*x/2 - this.q*x; },
+  dV(x){ return x*x*x - this.p*x - this.q; },
+
+  wells() {
+    // V'(x)=0 的实根，排除极大值
+    const out = [];
+    for (let x = -3; x <= 3; x += 0.002) {
+      const a = this.dV(x - 0.002), b = this.dV(x);
+      if (a === 0 || (a < 0 && b >= 0) || (a > 0 && b <= 0)) {
+        const xx = x - 0.001;
+        if (3*xx*xx - this.p > 0) out.push(xx);   // V''>0 → 极小值
+      }
+    }
+    const merged = [];
+    out.forEach(v => { if (!merged.length || Math.abs(v - merged[merged.length-1]) > 0.05) merged.push(v); });
+    return merged;
+  },
+
+  step() {
+    const dt = 0.035;
+    const prev = this.x;
+    this.x += -this.dV(this.x) * dt;
+    this.x = clamp(this.x, -3, 3);
+    const jump = Math.abs(this.x - prev);
+    if (jump > 0.02) { this.lastKind = "突变"; this.kindTimer = 90; flash2("突变：旧洼消失了，小球跳到了另一个状态"); }
+    else if (jump > 0.0012) this.lastKind = "渐变";
+    if (this.kindTimer > 0) { this.kindTimer--; if (this.kindTimer === 0 && this.lastKind === "突变") this.lastKind = "—"; }
+    this.trace.push(this.x);
+    if (this.trace.length > 300) this.trace.shift();
+  },
+
+  setQ(v) {
+    const prevQ = this.q, prevX = this.x;
+    this.q = v;
+    // 检测跳变（跨过 x=0 且是突变）
+    const before = this.x;
+    for (let i=0;i<40;i++) this.step();
+    if (Math.abs(this.x - before) > 0.5 && Math.sign(before) !== Math.sign(this.x)) {
+      if (Math.sign(this.x) > 0 && this.qForward === null) { this.qForward = this.q; flash2(`正向跳变发生在 q = ${fx(this.q)}`); }
+      if (Math.sign(this.x) < 0 && this.qBackward === null) { this.qBackward = this.q; flash2(`反向跳变发生在 q = ${fx(this.q)}`); }
+    }
+  },
+
+  draw() {
+    const cv = $("#cv2"); if (!cv || !cv.clientWidth) return;
+    const dpr = window.devicePixelRatio||1;
+    const W = cv.clientWidth, H = 400;
+    cv.width = W*dpr; cv.height = H*dpr;
+    const c = cv.getContext("2d");
+    c.setTransform(dpr,0,0,dpr,0,0);
+    c.fillStyle = "#0a0d13"; c.fillRect(0,0,W,H);
+
+    const padL = 30, padR = 30, padT = 30, padB = 40;
+    const gw = W - padL - padR, gh = H - padT - padB;
+    const xMin = -3, xMax = 3;
+    let vMin = 1e9, vMax = -1e9;
+    const pts = [];
+    for (let i = 0; i <= 400; i++) {
+      const x = xMin + (xMax-xMin)*i/400;
+      const v = this.V(x);
+      pts.push([x, v]);
+      if (v < vMin) vMin = v;
+      if (v > vMax) vMax = v;
+    }
+    vMin -= 0.6; vMax = vMin + 8;
+    const X = (x) => padL + (x - xMin)/(xMax-xMin)*gw;
+    const Y = (v) => padT + gh - (v - vMin)/(vMax-vMin)*gh;
+
+    // 网格
+    c.strokeStyle = "#141a24"; c.lineWidth = 1;
+    for (let x = -3; x <= 3; x++) {
+      const px = Math.round(X(x)) + .5;
+      c.beginPath(); c.moveTo(px, padT); c.lineTo(px, padT+gh); c.stroke();
+    }
+    // 基线（x 轴）
+    const y0 = Math.round(Y(0)) + .5;
+    c.strokeStyle = "#28303e";
+    c.beginPath(); c.moveTo(padL, y0); c.lineTo(W-padR, y0); c.stroke();
+
+    // 势函数曲线（裁剪到绘图区内，陡壁自然冲出画面）
+    c.save();
+    c.beginPath(); c.rect(padL, padT, gw, gh); c.clip();
+    c.beginPath();
+    pts.forEach(([x,v],i)=>{ const px=X(x), py=Y(v); i?c.lineTo(px,py):c.moveTo(px,py); });
+    c.strokeStyle = "#5b9bd5"; c.lineWidth = 2.6; c.lineJoin = "round"; c.stroke();
+    c.restore();
+
+    // 洼底标记
+    const ws = this.wells();
+    ws.forEach(wx => {
+      const px = X(wx), py = Y(this.V(wx));
+      c.beginPath(); c.arc(px, py, 5, 0, Math.PI*2);
+      c.fillStyle = "rgba(70,192,138,.9)"; c.fill();
+      c.fillStyle = "#46c08a"; c.font = "600 11.5px 'Segoe UI',sans-serif"; c.textAlign = "center";
+      c.fillText(fx(wx), px, py + 20);
+    });
+
+    // 小球
+    const bx = X(this.x), by = Y(this.V(this.x));
+    c.beginPath(); c.arc(bx, by - 11, 10, 0, Math.PI*2);
+    const g = c.createRadialGradient(bx-3, by-14, 1, bx, by-11, 11);
+    g.addColorStop(0, "#fff2cf"); g.addColorStop(1, "#d4a24c");
+    c.fillStyle = g; c.fill();
+    c.strokeStyle = "rgba(0,0,0,.4)"; c.lineWidth = 1; c.stroke();
+
+    // 轨迹
+    if (this.trace.length > 1) {
+      const stepX = gw / 300;
+      const startI = 300 - this.trace.length;
+      c.beginPath();
+      this.trace.forEach((v,i)=>{
+        const px = padL + (startI+i)*stepX, py = Y(this.V(v)) - 11;
+        i?c.lineTo(px,py):c.moveTo(px,py);
+      });
+      c.strokeStyle = "rgba(212,162,76,.5)"; c.lineWidth = 1.6; c.stroke();
+    }
+
+    // 坐标说明
+    c.fillStyle = "#5a6474"; c.font = "11.5px 'Segoe UI',sans-serif"; c.textAlign = "left";
+    c.fillText("状态 x →", padL + 4, H - 14);
+    c.save(); c.translate(14, padT + 60); c.rotate(-Math.PI/2);
+    c.fillText("势能 V(x) →", 0, 0); c.restore();
+
+    // 滞后区间示意
+    if (this.qForward !== null && this.qBackward !== null) {
+      c.fillStyle = "#d4a24c"; c.font = "600 12.5px 'Segoe UI',sans-serif"; c.textAlign = "right";
+      c.fillText(`滞后宽度 ${fx(Math.abs(this.qForward - this.qBackward))}`, W - padR, padT + 16);
+    }
+  },
+
+  render() {
+    $("#vP").textContent = fx(this.p);
+    $("#vQ").textContent = fx(this.q);
+    $("#oX2").textContent = fx(this.x);
+    const ws = this.wells();
+    $("#oWells").textContent = ws.length + (ws.length === 1 ? "（已合并）" : "");
+    const k = $("#oKind");
+    k.textContent = this.lastKind;
+    k.className = "v " + (this.lastKind === "突变" ? "bad" : (this.lastKind === "渐变" ? "ok" : ""));
+    $("#oQF").textContent = this.qForward === null ? "未发生" : fx(this.qForward);
+    $("#oQB").textContent = this.qBackward === null ? "未发生" : fx(this.qBackward);
+    $("#oHyst").textContent = (this.qForward !== null && this.qBackward !== null)
+      ? fx(Math.abs(this.qForward - this.qBackward)) : "—";
+    this.draw();
+    T2.check(ws);
+  },
+
+  loop() {
+    this.step();
+    this.render();
+    requestAnimationFrame(() => this.loop());
+  },
+};
+
+let flashT = {};
+function flash2(msg) {
+  const el = $("#flash2"); if (!el) return;
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(flashT.f2);
+  flashT.f2 = setTimeout(()=>el.classList.remove("show"), 1400);
+}
+
+/* ── 模块2 任务 ── */
+const T2 = {
+  idx:0, done:[false,false,false,false],
+  tasks:[
+    {
+      title:"先看清地形",
+      desc:"蓝线是势能曲线，<b>洼底就是稳定态</b>，绿点是它。把两个参数都拖一遍，观察洼是怎么移动、怎么变浅的。",
+      setup(){ M2.p=2.0; M2.q=0; M2.reset(); M2.clear(); syncM2(); },
+      note:"<b>为什么用「洼」来定义稳定？</b>因为事物的状态总是自动趋向能量最低处。洼底就是那个最低点。洼越深，这个稳定态越难被推出去——这就是「这事很难改变」的几何含义。",
+      test:(ws)=> true,
+      hint:"随便拖拖 p 和 q 就算完成。",
+    },
+    {
+      title:"把小球弄到另一边",
+      desc:"现在小球在左边的洼里。只调 <b>q（外部推力）</b>，把它推到右边去。注意它是在哪一刻「跳」过去的。",
+      setup(){ M2.p=2.0; M2.q=0; M2.reset(); M2.clear(); syncM2(); },
+      note:"<b>它不会慢慢挪过去，而是突然跳过去。</b>因为只要左边的洼还存在，小球就还会被拉回去；只有当 q 大到把左边的洼彻底抹平，它才无路可走，掉进另一边的洼。这就是突变——旧状态的稳定结构消失的那一刻。",
+      test:(ws)=> M2.qForward !== null || M2.x > 0.5,
+      hint:"把 q 往正方向拖，大约到 1.0 以上。",
+    },
+    {
+      title:"让一个稳定态彻底消失",
+      desc:"把 <b>p 一路拉到 0</b>。两个洼会先互相靠拢，然后在 p = 0 处合成一个——原来的两个稳定态，现在只剩一个了。",
+      setup(){ M2.p=2.0; M2.q=0; M2.reset(); M2.clear(); syncM2(); },
+      note:"<b>稳定态不是永恒的，它可以被条件取消。</b>注意它消失的方式：不是把球从洼 A 搬到洼 B，而是让洼 A 本身不再存在。书里那句「系统从一种稳态结构向另一种稳态结构的演化」，说的就是这件事。<br><br>改习惯最难的地方也在这里——你要改的往往不是行为，是<b>让旧行为得以稳定的那些条件</b>。条件还在，洼就还在，球早晚滚回去。",
+      test:(ws)=> ws.length <= 1,
+      hint:"把 p 拖到 0。",
+    },
+    {
+      title:"矫枉必须过正：量出滞后",
+      desc:"先让小球跳到右边（记录正向跳变的 q），再让它跳回左边（记录反向跳变的 q）。两个 q 值<b>不会相同</b>——它们的差就是「滞后宽度」。",
+      setup(){ M2.p=2.0; M2.q=0; M2.reset(); M2.clear(); syncM2(); },
+      note:"<b>这就是「矫枉必须过正」的数学形态。</b>你把球推过去用的力，和把它推回来用的力，不是同一个数；中间那段差值，就是系统对你的「记忆」。书里的说法是：飞跃的关节点是一个区域，不是一个点——所以在关节点附近，同样的条件可能得到完全不同的结果。<br><br>生活含义：<b>一旦某个状态已经稳定下来，把它改回去所需的力度，总是大于当初把它推过去所需的力度。</b>这不是你意志力不够，是地形的性质。",
+      test:(ws)=> M2.qForward !== null && M2.qBackward !== null,
+      hint:"先往正方向拖到底，再往负方向拖到底。",
+    },
+  ],
+  render(){
+    const t = this.tasks[this.idx];
+    $("#t2n").textContent = this.idx+1;
+    $("#t2title").textContent = t.title;
+    $("#t2desc").innerHTML = t.desc;
+    $("#t2note").innerHTML = t.note;
+    $("#t2verdict").className = "verdict no";
+    $("#t2verdict").textContent = "拖动左侧参数，达成后会自动判定。";
+    $("#t2prog").innerHTML = this.tasks.map((_,i)=>
+      `<i class="${this.done[i]?'done':(i===this.idx?'now':'')}"></i>`).join("");
+  },
+  check(ws){
+    if (this.done[this.idx]) return;
+    const t = this.tasks[this.idx];
+    if (t.test(ws, this)) {
+      this.done[this.idx] = true;
+      $("#t2verdict").className = "verdict ok";
+      $("#t2verdict").textContent = "✓ 达成。看下面的解释。";
+      $("#t2note").innerHTML = t.note;
+      $("#t2prog").innerHTML = this.tasks.map((_,i)=>
+        `<i class="${this.done[i]?'done':(i===this.idx?'now':'')}"></i>`).join("");
+    } else {
+      $("#t2verdict").textContent = "还没达成 —— " + t.hint;
+    }
+  },
+  next(){
+    this.idx = (this.idx+1) % this.tasks.length;
+    this.tasks[this.idx].setup();
+    this.render();
+  },
+};
+
+function syncM2(){
+  $("#rP").value = M2.p; $("#rQ").value = M2.q;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   绑定
+   ══════════════════════════════════════════════════════════════ */
+$("#rK").oninput = e => { M1.K = parseFloat(e.target.value); $("#vK").textContent = fx(M1.K); T1.check(M1.classify()); };
+$("#rB").oninput = e => { M1.b = parseFloat(e.target.value); $("#vB").textContent = fx(M1.b); T1.check(M1.classify()); };
+$("#rD").oninput = e => { M1.d = parseInt(e.target.value,10); $("#vD").textContent = M1.d; T1.check(M1.classify()); };
+$("#rT").oninput = e => { M1.target = parseInt(e.target.value,10); $("#vT").textContent = M1.target; T1.check(M1.classify()); };
+document.querySelectorAll("[data-dir]").forEach(b => b.onclick = () => {
+  M1.dir = b.dataset.dir; M1.syncUI();
+  document.querySelectorAll("[data-dir]").forEach(x => x.classList.toggle("on", x === b));
+});
+$("#bPlay").onclick = (e) => { M1.running = !M1.running; e.target.textContent = M1.running ? "暂停" : "继续"; };
+$("#bReset").onclick = () => M1.reset(true);
+$("#bKick").onclick = () => M1.kick();
+$("#b1skip").onclick = () => T1.next();
+
+$("#rP").oninput = e => { M2.p = parseFloat(e.target.value); $("#vP").textContent = fx(M2.p); };
+$("#rQ").oninput = e => { M2.setQ(parseFloat(e.target.value)); };
+$("#b2reset").onclick = () => M2.reset();
+$("#b2clear").onclick = () => M2.clear();
+$("#b2skip").onclick = () => T2.next();
+
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x === t));
+  const m = t.dataset.m;
+  $("#mod0").classList.toggle("hide", m !== "0");
+  $("#mod1").classList.toggle("hide", m !== "1");
+});
+
+/* ══════════════════════════════════════════════════════════════
+   启动
+   ══════════════════════════════════════════════════════════════ */
+T1.tasks[0].setup();
+T1.render();
+T2.tasks[0].setup();
+T2.render();
+M1.loop();
+M2.loop();
+</script>
+</body>
+</html>

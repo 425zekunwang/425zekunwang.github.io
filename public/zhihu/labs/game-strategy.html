@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>博弈场 · 承诺、耐心与可否认性</title>
+<style>
+  :root{
+    --bg:#0b0d12; --panel:#151922; --panel2:#1c212c; --line:#2a3140;
+    --fg:#e8ecf2; --dim:#8b95a7; --gold:#d4a24c; --jade:#46c08a;
+    --red:#e05a5a; --blue:#5b9bd5; --purple:#a97bd6; --warn:#e0a13c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);
+    font-family:"Segoe UI","Microsoft YaHei",-apple-system,sans-serif;line-height:1.7}
+  button{font-family:inherit}
+  .wrap{max-width:1000px;margin:0 auto;padding:28px 18px 70px}
+
+  /* ── 顶栏 ── */
+  .hud{display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:12px 18px;margin-bottom:22px}
+  .hud .lvl{font-weight:700;font-size:15px;color:var(--gold)}
+  .hud .lvl small{color:var(--dim);font-weight:400;margin-left:6px;font-size:13px}
+  .hud .spacer{flex:1}
+  .hud .stat{font-size:13.5px;color:var(--dim)}
+  .hud .stat b{color:var(--fg);font-variant-numeric:tabular-nums}
+  .hud .stat b.up{color:var(--jade)} .hud .stat b.dn{color:var(--red)}
+
+  /* ── 通用 ── */
+  h1{font-size:clamp(26px,4.4vw,40px);margin:0 0 10px;letter-spacing:.01em}
+  h2{font-size:21px;margin:0 0 6px}
+  .sub{color:var(--dim);font-size:15px;margin:0 0 22px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px}
+  .btn{background:var(--panel2);color:var(--fg);border:1px solid var(--line);
+    border-radius:10px;padding:12px 18px;font-size:14.5px;cursor:pointer;transition:.14s;text-align:left}
+  .btn:hover:not(:disabled){background:#242b39;border-color:#3d4759;transform:translateY(-1px)}
+  .btn:disabled{opacity:.35;cursor:not-allowed}
+  .btn.primary{background:var(--gold);color:#1a1206;border-color:var(--gold);font-weight:700}
+  .btn.primary:hover{background:#e0b05c}
+  .btn .t{display:block;font-weight:600;margin-bottom:3px}
+  .btn .d{display:block;font-size:12.8px;color:var(--dim);line-height:1.5}
+  .btn.primary .d{color:#4a370f}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+
+  /* ── 条 ── */
+  .bar{height:10px;background:#0d1017;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+  .bar i{display:block;height:100%;transition:width .35s ease}
+  .b-jade i{background:linear-gradient(90deg,#2e7d5c,#46c08a)}
+  .b-red i{background:linear-gradient(90deg,#8c3232,#e05a5a)}
+  .b-gold i{background:linear-gradient(90deg,#8a6a2a,#d4a24c)}
+  .b-blue i{background:linear-gradient(90deg,#33608c,#5b9bd5)}
+  .b-purple i{background:linear-gradient(90deg,#6b4a94,#a97bd6)}
+  .meter{margin-bottom:14px}
+  .meter .lab{display:flex;justify-content:space-between;font-size:13px;color:var(--dim);margin-bottom:5px}
+  .meter .lab b{color:var(--fg);font-variant-numeric:tabular-nums}
+
+  /* ── 日志 ── */
+  .log{background:#0a0d13;border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;height:190px;overflow-y:auto;font-size:13.8px;line-height:1.65}
+  .log div{margin-bottom:7px;color:var(--dim)}
+  .log div:last-child{margin-bottom:0}
+  .log .you{color:var(--blue)}
+  .log .foe{color:var(--red)}
+  .log .ok{color:var(--jade)}
+  .log .warn{color:var(--warn)}
+  .log .big{color:var(--fg);font-weight:600}
+
+  /* ── 关卡1 画布 ── */
+  #road, #net{display:block;width:100%;border-radius:12px;background:#0a0d13;border:1px solid var(--line)}
+  .cars{display:flex;justify-content:space-between;font-size:13px;color:var(--dim);margin-top:10px}
+  .tell{font-size:13.5px;padding:9px 14px;border-radius:9px;background:#151922;
+    border:1px solid var(--line);margin-top:12px;min-height:40px}
+  .tell b{color:var(--warn)}
+
+  /* ── 卡片网格 ── */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:760px){.grid2,.grid3{grid-template-columns:1fr}}
+
+  .npc{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:13px 15px}
+  .npc .n{font-weight:600;font-size:14.5px;margin-bottom:8px}
+  .npc.hurt{border-color:#5a2f2f}
+  .npc.good{border-color:#2f5a45}
+
+  .lesson{background:linear-gradient(135deg,#1a1608,#151922);border:1px solid #4a3c16;
+    border-radius:14px;padding:22px 26px}
+  .lesson .k{font-size:12px;letter-spacing:.16em;color:var(--gold);font-weight:700;text-transform:uppercase}
+  .lesson h3{margin:8px 0 12px;font-size:20px}
+  .lesson p{margin:0 0 10px;color:#cfd6e0;font-size:15px}
+  .lesson p:last-child{margin-bottom:0}
+  .lesson .from{font-size:13px;color:var(--dim);border-top:1px solid #3a3018;padding-top:12px;margin-top:14px}
+
+  .quote{background:#12161c;border-left:3px solid var(--jade);border-radius:0 10px 10px 0;
+    padding:13px 17px;margin:12px 0;font-size:14.6px;color:#dfe6ee}
+  .quote .src{display:block;margin-top:8px;font-size:12.4px;color:var(--dim)}
+
+  .cards{display:grid;gap:10px;margin-top:16px}
+  .pcard{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--gold);
+    border-radius:0 10px 10px 0;padding:12px 16px;font-size:14.3px}
+  .pcard b{color:var(--gold)}
+  .pcard.locked{border-left-color:var(--line);opacity:.4}
+
+  .rank{text-align:center;padding:26px 0}
+  .rank .big{font-size:52px;font-weight:800;color:var(--gold);line-height:1.1}
+  .rank .lbl{color:var(--dim);font-size:14px;margin-top:6px}
+
+  .foot{color:var(--dim);font-size:13px;margin-top:34px;border-top:1px solid var(--line);padding-top:18px}
+  .foot a{color:var(--blue);text-decoration:none}
+  .hide{display:none !important}
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:99;display:flex;gap:16px;align-items:center;justify-content:space-between;padding:9px 18px;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid #2b3444;font-size:13.5px;font-family:'Segoe UI','Microsoft YaHei',sans-serif"><a href="/" style="color:#8b98a8;text-decoration:none">← wzk 的技术笔记</a><a href="/zhihu/labs/" style="color:#58a6ff;text-decoration:none">全部交互页面</a></div>
+<div class="wrap">
+
+<div class="hud hide" id="hud">
+  <div class="lvl" id="hudLvl">第 1 关<small id="hudName"></small></div>
+  <div class="spacer"></div>
+  <div id="hudStats" style="display:flex;gap:18px;flex-wrap:wrap"></div>
+</div>
+
+<!-- ═══ 标题 ═══ -->
+<div id="scTitle">
+  <h1>博弈场</h1>
+  <p class="sub" style="font-size:16.5px;max-width:720px">
+    一场关于承诺、耐心与可否认性的游戏。<br>
+    四个关卡，每一关拆开这篇文章里的一个机制——前两关你是被算计的一方，第三关换你做局，第四关再回到防守。
+  </p>
+
+  <div class="panel">
+    <h2 style="font-size:17px">规则</h2>
+    <ul style="color:var(--dim);font-size:14.6px;margin:10px 0 0;padding-left:20px">
+      <li>每关独立结算。通关会解锁一张<b style="color:var(--gold)">原则卡</b>。</li>
+      <li>四关的分数累加，最后给出总评价。</li>
+      <li>任何一关失败，都可以原地重试——数值不会崩，重试无惩罚。</li>
+    </ul>
+    <div class="row" style="margin-top:20px">
+      <button class="btn primary" onclick="startLevel(0)" style="min-width:180px">
+        <span class="t">开始</span><span class="d">从第一关「懦夫博弈」开始</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="quote" style="margin-top:24px">
+    这篇文章真正的主张：<b>值得学的是它的"冷"，不是它的"坏"</b>。冷静、读人、控制信息、软硬切换、长期布局、不被道德绑架——这些可以留；欺骗、恶意三角化、把人一律工具化——这些要舍。
+    <span class="src">来源：知乎《如何提高自己的博弈能力？》，作者 好猛 · <a href="https://www.zhihu.com/question/29628866/answer/2053863581855266132" target="_blank" rel="noopener" style="color:var(--blue)">原文</a></span>
+  </div>
+</div>
+
+<!-- ═══ 关卡 ═══ -->
+<div id="scPlay" class="hide"></div>
+
+<!-- ═══ 结算（单关） ═══ -->
+<div id="scDebrief" class="hide"></div>
+
+<!-- ═══ 总结算 ═══ -->
+<div id="scEnd" class="hide"></div>
+
+<div class="foot">
+  概念来源：知乎《如何提高自己的博弈能力？》（作者 好猛）——谢林的承诺与自缚手脚、卡斯《有限的游戏和无限的游戏》、马基雅维利主义的软硬切换与三角化、以及文中给出的六条反制路径。游戏机制为本地自行实现。<br>
+  本地文件：<code><a href="/blog/zhihu/opinion/improve-your-game-theory-skills">如何提高自己的博弈能力？</a></code>
+</div>
+
+</div>
+
+<script>
+"use strict";
+const $ = (s) => document.querySelector(s);
+const show = (id) => {
+  ["#scTitle","#scPlay","#scDebrief","#scEnd"].forEach(s => $(s).classList.add("hide"));
+  $(id).classList.remove("hide");
+};
+const rnd = (a,b) => a + Math.random()*(b-a);
+const clamp = (v,a,b) => Math.min(b, Math.max(a,v));
+const fx = (n,d=1) => (Math.round(n*Math.pow(10,d))/Math.pow(10,d)).toFixed(d);
+
+const G = { level:0, scores:[], cards:[] };
+
+const LEVELS = [
+  { name:"懦夫博弈", sub:"承诺的可信度" },
+  { name:"牌桌",     sub:"有限与无限的游戏" },
+  { name:"采集与收割", sub:"软硬切换" },
+  { name:"可否认性",  sub:"三角化与六条反制" },
+];
+
+function setHud(extra) {
+  $("#hudLvl").innerHTML = `第 ${G.level+1} 关<small>${LEVELS[G.level].name} · ${LEVELS[G.level].sub}</small>`;
+  $("#hudStats").innerHTML = extra || "";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   第 1 关 · 懦夫博弈
+   ══════════════════════════════════════════════════════════════ */
+const L1 = {
+  foes: [
+    { name:"老陈", tag:"理性型", resolve:0.50, fold:0.30, insight:0.45,
+      blurb:"做生意的人，算得清代价。真让他相信你不会转，他就转。" },
+    { name:"强哥", tag:"面子型", resolve:0.72, fold:0.35, insight:0.65,
+      blurb:"极重面子，当众认输比撞车还难受。嘴上威胁对他没用。" },
+    { name:"阿鬼", tag:"疯子型", resolve:null, fold:1.0, insight:0.88,
+      blurb:"不在乎输赢也不在乎命。你卸不卸方向盘，他可能连看都不看。" },
+  ],
+  round:0, gap:100, step:0,
+  commit:0,        // 对手感知到的承诺度
+  real:false,      // 是否真的卸了方向盘
+  bluffed:false,
+  turned:false,
+  resolved:false,
+  hisResolve:0,
+  score:0,
+  log:[], tell:"",
+  busy:false,
+
+  start() {
+    this.round = 0; this.score = 0;
+    this.render(); this.beginFoe();
+  },
+  beginFoe() {
+    this.gap = 100; this.step = 0; this.commit = 0;
+    this.real = false; this.bluffed = false; this.turned = false; this.resolved = false;
+    this.log = [];
+    const f = this.foes[this.round];
+    // 他的决心：理性型/面子型固定，疯子型每次随机——因为他的行为本来就不可预测
+    this.hisResolve = f.resolve !== null ? f.resolve + rnd(-0.05, 0.05) : rnd(0.45, 1.35);
+    this.push(`<span class="big">第 ${this.round+1} 场 · 对手「${f.name}」（${f.tag}）</span>`);
+    this.push(f.blurb);
+    this.tell = "对方正常行驶，看不出打算。";
+    this.render(); this.drawRoad();
+  },
+  push(html) { this.log.push(html); },
+
+  act(kind) {
+    if (this.busy || this.turned || this.resolved || this.step >= 3) return;
+    const f = this.foes[this.round];
+    if (kind === "turn") {
+      this.turned = true;
+      this.push(`<span class="you">你打了方向盘。</span>`);
+      this.push(`<span class="foe">${f.name} 直冲而过。</span> <span class="warn">这一局你认输。</span>`);
+      this.score -= 1;
+      this.finishFoe();
+      return;
+    }
+    if (kind === "real") {
+      if (this.real) return;
+      this.real = true; this.commit = 1.0;
+      this.push(`<span class="you">你当着 ${f.name} 的面，把方向盘卸下来扔出了窗外。</span>`);
+      this.push(`<span class="warn">你已经不可能转向了。</span>`);
+    } else if (kind === "bluff") {
+      this.bluffed = true; this.commit = Math.max(this.commit, 0.62);
+      this.push(`<span class="you">你做了个卸方向盘的动作，摆出一副不要命的样子。</span>`);
+    } else {
+      this.push(`<span class="you">你握紧方向盘，继续直行。</span>`);
+    }
+    this.busy = true;
+    this.stepForward();
+  },
+
+  stepForward() {
+    const f = this.foes[this.round];
+    // 虚张声势有被看穿的概率
+    if (this.bluffed && !this.real) {
+      if (Math.random() < f.insight) {
+        this.bluffed = false; this.commit = 0.15;
+        this.push(`<span class="foe">${f.name} 盯着你的手看了两秒——他看出你方向盘还在。</span>`);
+      }
+    }
+    // 对手的"摇摆"提示：数值上是他当前决心与你承诺的差
+    const eff = this.real ? 1.0 : this.commit;
+    const d = this.hisResolve - eff;
+    const drunk = this.foes[this.round].resolve === null;   // 疯子型
+    if (drunk) {
+      this.tell = Math.random() < 0.5
+        ? `<b>${f.name} 连看都没看你一眼</b>，油门没松。`
+        : `${f.name} 的目光在你身上停了一下，但看不出是犹豫还是别的。`;
+    } else if (this.real && d > 0.35) {
+      this.tell = `<b>${f.name} 的车速明显掉了</b>——他在重新计算。`;
+    } else if (d <= 0.08) {
+      this.tell = `<b>${f.name} 的车头轻微偏了一下</b>——他在犹豫。`;
+    } else if (d <= 0.32) {
+      this.tell = `${f.name} 没有减速，但你看到他握方向盘的手很紧。`;
+    } else {
+      this.tell = `${f.name} 保持直线，姿态很稳。`;
+    }
+
+    this.step++;
+    this.gap = [100, 55, 22, 0][this.step];
+    this.drawRoad();
+    this.render();
+    this.busy = false;
+    if (this.step >= 3) this.resolve();
+  },
+
+  resolve() {
+    const f = this.foes[this.round];
+    const eff = this.real ? 1.0 : this.commit;
+    // 真正不可逆的信号会让理性对手重新估算；对疯子型几乎没用
+    const hisFinal = eff >= 0.99 ? this.hisResolve * f.fold : this.hisResolve;
+    this.resolved = true;
+
+    if (eff > hisFinal) {
+      this.push(`<span class="foe">${f.name} 转向了。</span> <span class="ok">你赢了这一局。</span>`);
+      this.score += 2;
+    } else if (this.real) {
+      this.push(`<span class="foe">${f.name} 没有转。</span> <span class="warn">你卸了方向盘，只能直直撞上去。</span>`);
+      this.score -= 3;
+    } else if (this.turned) {
+      this.score -= 1;
+    } else {
+      this.push(`<span class="foe">${f.name} 没有转。</span> <span class="warn">你在最后一刻转向了，但已经太晚——你既丢了面子，也没赢。</span>`);
+      this.score -= 2;
+    }
+    if (f.resolve === null) this.push(`<span style="color:var(--dim)">（${f.name} 这一场的决心值：${fx(this.hisResolve,2)}——每次都不同）</span>`);
+    this.finishFoe();
+  },
+
+  finishFoe() {
+    this.render();
+    setTimeout(() => {
+      this.round++;
+      if (this.round < this.foes.length) this.beginFoe();
+      else this.end();
+    }, 1400);
+  },
+
+  end() {
+    const pass = this.score >= 2;
+    G.scores[0] = this.score;
+    debrief({
+      level: 0, score: this.score, pass,
+      title: "承诺的价值，来自它的不可逆",
+      body: [
+        "把方向盘卸下来之所以有用，不是因为你更狠，而是因为<b>这个动作不可撤销</b>。对手一旦确认你不可能转向，他要做的选择就从「赌你敢不敢」变成了「我要不要撞」——压力被完整地转移给了他。",
+        "<b>虚张声势是另一回事。</b>它便宜、可逆、随时能收回，所以也就随时可能被看穿。老陈和强哥可能被骗过去，但在洞察力更高的对手面前，它只是把自己的底牌多暴露了一次。",
+        "<b>注意阿鬼那一场。</b>他是唯一一个你算不出来的对手：他的决心每次都不一样，而且你卸不卸方向盘对他几乎没影响。对他，承诺不是策略，是赌博——而且你押上的是自己。",
+        "这就是文中那句「自缚手脚反而是一种力量」的完整代价：<b>它只对会算这笔账的人有效</b>。遇上真的不在乎的人，承诺换不来任何东西，只会让你连退的机会都没有。",
+      ],
+      quote: { text:"在博弈里，\"自缚手脚\"反而是一种力量，\"显得不理性\"反而是一种高级的理性。", src:"知乎《如何提高自己的博弈能力？》· 好猛" },
+      card: "把退路焊死，才有资格谈条件。但先确认对方真的会算这笔账。",
+    });
+  },
+
+  drawRoad() {
+    const cv = $("#road"); if (!cv) return;
+    const dpr = window.devicePixelRatio || 1;
+    const W = cv.clientWidth, H = 150;
+    cv.width = W*dpr; cv.height = H*dpr;
+    const c = cv.getContext("2d");
+    c.setTransform(dpr,0,0,dpr,0,0);
+    c.clearRect(0,0,W,H);
+
+    // 路面
+    c.strokeStyle = "#1c2230"; c.lineWidth = 2;
+    c.setLineDash([14,12]);
+    c.beginPath(); c.moveTo(0,H/2); c.lineTo(W,H/2); c.stroke();
+    c.setLineDash([]);
+
+    const t = 1 - this.gap/100;          // 0 → 1
+    const mid = W/2;
+    const myX = 40 + (mid - 60 - 40) * t;
+    const foX = W - 40 - (W - 40 - (mid + 60)) * t;
+
+    const car = (x, y, color, label, flip, committed) => {
+      c.save(); c.translate(x,y);
+      c.fillStyle = color;
+      c.beginPath();
+      if (flip) { c.moveTo(20,0); c.lineTo(-12,-11); c.lineTo(-12,11); }
+      else { c.moveTo(-20,0); c.lineTo(12,-11); c.lineTo(12,11); }
+      c.closePath(); c.fill();
+      if (committed) {
+        c.strokeStyle = "#e0a13c"; c.lineWidth = 2.5;
+        c.beginPath(); c.arc(0,0,22,0,Math.PI*2); c.stroke();
+      }
+      c.fillStyle = "#8b95a7"; c.font = "600 12px 'Segoe UI',sans-serif";
+      c.textAlign = "center";
+      c.fillText(label, 0, 34);
+      if (committed) { c.fillStyle = "#e0a13c"; c.fillText("方向盘已卸", 0, 50); }
+      c.restore();
+    };
+    car(myX, H/2 - 30, "#5b9bd5", "你", false, this.real);
+    const f = this.foes[this.round];
+    car(foX, H/2 + 30, "#e05a5a", f ? f.name : "", true, false);
+  },
+
+  render() {
+    setHud(`<div class="stat">本关得分 <b class="${this.score>=0?'up':'dn'}">${this.score>=0?'+':''}${this.score}</b></div>
+            <div class="stat">第 <b>${this.round+1}</b>/3 场</div>
+            <div class="stat">距离 <b>${Math.round(this.gap)}</b> m</div>`);
+    const f = this.foes[this.round];
+    const canReal = !this.real;
+    $("#scPlay").innerHTML = `
+      <h2>第 ${this.round+1} 场 · ${f.name} <span style="color:var(--gold);font-size:14px">（${f.tag}）</span></h2>
+      <p class="sub">两车相向。先转向的一方算输。</p>
+      <canvas id="road" height="150"></canvas>
+      <div class="tell">${this.tell}</div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn" style="flex:1;min-width:150px" onclick="L1.act('keep')" ${this.turned?'disabled':''}>
+          <span class="t">继续直行</span><span class="d">不变更承诺，观察对方</span></button>
+        <button class="btn" style="flex:1;min-width:150px" onclick="L1.act('bluff')" ${this.turned?'disabled':''}>
+          <span class="t">虚张声势</span><span class="d">装出不要命的样子 · 可能被看穿</span></button>
+        <button class="btn" style="flex:1;min-width:150px" onclick="L1.act('real')" ${(!canReal||this.turned)?'disabled':''}>
+          <span class="t">当众卸下方向盘</span><span class="d">真正不可逆 · 之后你也不能再转</span></button>
+        <button class="btn" style="flex:1;min-width:150px" onclick="L1.act('turn')" ${this.turned?'disabled':''}>
+          <span class="t">转向认输</span><span class="d">保住车，输掉这一局</span></button>
+      </div>
+      <div class="log" id="l1log" style="margin-top:16px"></div>`;
+    const el = $("#l1log");
+    el.innerHTML = this.log.map(l => `<div>${l}</div>`).join("");
+    el.scrollTop = el.scrollHeight;
+    this.drawRoad();
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   第 2 关 · 牌桌
+   ══════════════════════════════════════════════════════════════ */
+const L2 = {
+  TOTAL: 10, TARGET: 16,
+  r:0, pts:0, table:6, log:[], over:false,
+
+  start() {
+    this.r = 0; this.pts = 0; this.table = 6; this.log = []; this.over = false;
+    this.push(`<span class="big">你坐上了牌桌。</span>桌上还有四个人，其中两个你以后还会遇到。`);
+    this.push(`牌桌分代表"别人还愿不愿意跟你玩"。它降到 0，你就再也上不了桌。`);
+    this.render();
+  },
+  push(h){ this.log.push(h); },
+  isBigRound(){ return this.r === 2 || this.r === 5 || this.r === 8; },   // 0-indexed：第3、6、9回合
+
+  act(kind) {
+    if (this.over) return;
+    const big = this.isBigRound();
+    if (kind === "allin") {
+      if (big) { this.pts += 6; this.table -= 2.4; this.push(`第 ${this.r+1} 回合 · 大机会：<span class="you">你全力吃下这一局。</span> <span class="ok">+6 分</span>，但桌上有人记住了。 <span class="warn">牌桌 -2.4</span>`); }
+      else { this.pts += 3; this.table -= 1.6; this.push(`第 ${this.r+1} 回合 · <span class="you">你全力争胜。</span> <span class="ok">+3 分</span> <span class="warn">牌桌 -1.6</span>`); }
+    } else if (kind === "yield") {
+      this.table += 0.9;
+      if (big) this.push(`第 ${this.r+1} 回合 · 大机会：<span class="you">你让了。</span> 别人拿走了这局。 <span class="ok">牌桌 +0.9</span>`);
+      else this.push(`第 ${this.r+1} 回合 · <span class="you">你让了一步。</span> <span class="ok">牌桌 +0.9</span> <span class="dim" style="color:var(--dim)">这一局没得分</span>`);
+    } else {
+      this.pts += 0.5; this.table += 0.2;
+      this.push(`第 ${this.r+1} 回合 · <span class="you">你观望。</span> 拿到一点边角收益 <span class="ok">+0.5 分</span>`);
+    }
+    this.r++;
+    if (this.table <= 0) { this.over = true; this.push(`<span class="foe">牌桌分归零——没人再叫你了。</span>`); this.render(); return setTimeout(()=>this.end(),900); }
+    if (this.r >= this.TOTAL) { this.over = true; this.push(`<span class="big">十回合结束。</span>`); this.render(); return setTimeout(()=>this.end(),900); }
+    this.render();
+  },
+
+  end() {
+    const pass = this.pts >= this.TARGET && this.table > 0;
+    G.scores[1] = this.table > 0 ? Math.round(this.pts*10)/10 : 0;
+    debrief({
+      level:1, score:this.table > 0 ? Math.round(this.pts*10)/10 : 0, pass,
+      title:"把每一次交锋都当成有限游戏来打，就是最大的破绽",
+      body:[
+        this.table <= 0
+          ? `你在第 <b>${this.r}</b> 回合就被踢出了牌桌，最终 <b>${fx(this.pts)}</b> 分。<b>出局即失败</b>——分数再高也没用，因为你已经没有下一局了。`
+          : `目标 ${this.TARGET} 分。你拿到 <b>${fx(this.pts)}</b> 分，牌桌分收在 <b>${fx(this.table)}</b>。`,
+        "这一关的陷阱在于：<b>「全力争胜」在单局里永远是最高收益</b>，但它同时在扣牌桌分。如果你每局都全力，前几局分数会很漂亮，然后你会突然发现自己被踢出局——而剩下的回合你一分也拿不到。",
+        "大机会只对牌桌分足够高的人开放。这就是「无限游戏」的实际含义：<b>赢的方式是永远留在牌桌上</b>，所以有时候要心甘情愿地输掉眼前这一局。",
+        "文中那句「哪些局值得拼尽全力赢，哪些局值得优雅地、故意地输」，在这一关是可以被算出来的。",
+      ],
+      quote:{ text:"真正的高手玩的是无限游戏。他能心甘情愿地输掉这一局……他争的是\"永远有得玩\"的那个位置。", src:"知乎《如何提高自己的博弈能力？》· 好猛" },
+      card:"先问这一局值不值得赢，再决定要不要赢。",
+    });
+  },
+
+  render() {
+    setHud(`<div class="stat">本局分 <b class="${this.pts>=0?'up':''}">${fx(this.pts)}</b> / ${this.TARGET}</div>
+            <div class="stat">牌桌分 <b class="${this.table<3?'dn':'up'}">${fx(this.table)}</b></div>
+            <div class="stat">回合 <b>${Math.min(this.r+1,this.TOTAL)}</b>/${this.TOTAL}</div>`);
+    const big = this.isBigRound() && !this.over;
+    $("#scPlay").innerHTML = `
+      <h2>第 ${this.r+1} 回合 ${big?'<span style="color:var(--gold);font-size:14px">★ 大机会</span>':''}</h2>
+      <p class="sub">${big ? "这一局桌上押了很重的东西——但只有牌桌分够高的人才有资格参与。" : "一局普通的交锋。"}</p>
+      <div class="panel" style="margin-bottom:16px">
+        <div class="meter"><div class="lab"><span>牌桌分（别人还愿不愿意跟你玩）</span><b>${fx(this.table)}</b></div>
+          <div class="bar b-gold"><i style="width:${clamp(this.table/12*100,0,100)}%"></i></div></div>
+        <div class="meter" style="margin-bottom:0"><div class="lab"><span>本局分</span><b>${fx(this.pts)} / ${this.TARGET}</b></div>
+          <div class="bar b-jade"><i style="width:${clamp(this.pts/this.TARGET*100,0,100)}%"></i></div></div>
+      </div>
+      <div class="row">
+        <button class="btn" style="flex:1;min-width:180px" onclick="L2.act('allin')" ${this.over?'disabled':''}>
+          <span class="t">全力争胜</span><span class="d">${big?'本局 +6 分':'本局 +3 分'} · 牌桌 ${big?'-2.4':'-1.6'}</span></button>
+        <button class="btn" style="flex:1;min-width:180px" onclick="L2.act('yield')" ${this.over?'disabled':''}>
+          <span class="t">让一步</span><span class="d">本局不得分 · 牌桌 +0.9</span></button>
+        <button class="btn" style="flex:1;min-width:180px" onclick="L2.act('observe')" ${this.over?'disabled':''}>
+          <span class="t">观望</span><span class="d">本局 +0.5 · 牌桌 +0.2</span></button>
+      </div>
+      <div class="log" style="margin-top:16px" id="l2log"></div>`;
+    const el = $("#l2log");
+    el.innerHTML = this.log.map(l=>`<div>${l}</div>`).join("");
+    el.scrollTop = el.scrollHeight;
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   第 3 关 · 采集与收割（你做局）
+   ══════════════════════════════════════════════════════════════ */
+const L3 = {
+  TURNS: 12, GOAL: 8,
+  t:0, info:0, alert:0, concede:0, lastKind:null, sameCount:0, log:[], over:false,
+
+  ACTIONS: {
+    warm:    { label:"共情与夸赞",        kind:"soft",   info:+7,  alert:+4,  ced:0.20, d:"软。让对方放松，同时观察他的反应" },
+    vuln:    { label:"暴露一点无害的脆弱", kind:"soft",   info:+13, alert:+7,  ced:0.50, d:"软。交出一个不值钱的秘密，换信任" },
+    probe:   { label:"套话",              kind:"recon",  info:+10, alert:+5,  ced:0,    d:"侦察。摸他的底线、需求、替代方案" },
+    deadline:{ label:"设最后期限",        kind:"hard",   info:0,   alert:+18, ced:0,    d:"硬。威力取决于你掌握的信息" },
+    squeeze: { label:"卡住资源",          kind:"hard",   info:0,   alert:+24, ced:0,    d:"硬。更狠，也更容易被记住" },
+    retreat: { label:"收手缓和",          kind:"other",  info:0,   alert:-20, ced:0,    d:"降温。什么都不推进，但把警觉压下去" },
+  },
+
+  start() {
+    Object.assign(this, { t:0, info:0, alert:0, concede:0, lastKind:null, sameCount:0, log:[], over:false });
+    this.push(`<span class="big">这一关换你做局。</span>`);
+    this.push(`对方是一个和你合作了半年的合伙人。你要让他主动让出一些东西——而你<b>不能直接开口要</b>。`);
+    this.push(`他手里有底线，你手里什么都没有。先把信息做出来。`);
+    this.render();
+  },
+  push(h){ this.log.push(h); },
+
+  act(key) {
+    if (this.over) return;
+    const a = this.ACTIONS[key];
+    // 可预测性惩罚：连续两次同类，效果打折
+    const cat = a.kind === "hard" ? "hard" : (a.kind === "soft" ? "soft" : a.kind);
+    let mult = 1;
+    if (cat === this.lastKind && (cat === "hard" || cat === "soft")) {
+      this.sameCount++;
+      mult = Math.pow(0.55, this.sameCount);
+    } else { this.sameCount = 0; }
+    this.lastKind = cat;
+
+    let ced = 0;
+    if (a.kind === "hard") {
+      const base = key === "squeeze" ? 4.5 : 3.0;
+      ced = (0.15 + this.info/100 * base) * mult;
+      this.concede += ced;
+    } else if (a.ced) {
+      ced = a.ced * mult;
+      this.concede += ced;
+    }
+    this.info = clamp(this.info + a.info, 0, 100);
+    this.alert = clamp(this.alert + a.alert, 0, 100);
+
+    let line = `<span class="you">${a.label}</span>`;
+    if (mult < 1) line += ` <span class="warn">——他预判了你（效果 ×${fx(mult,2)}）</span>`;
+    const bits = [];
+    if (a.info) bits.push(`信息 +${a.info}`);
+    if (ced) bits.push(`让步 +${fx(ced,2)}`);
+    if (a.alert) bits.push(`警觉 ${a.alert>0?'+':''}${a.alert}`);
+    if (bits.length) line += ` <span style="color:var(--dim)">（${bits.join(" · ")}）</span>`;
+    this.push(line);
+
+    if (this.alert >= 100) { this.over = true; this.push(`<span class="foe">他的警觉到了顶——他意识到你在做局。</span> 合作当场终止。`); this.render(); return setTimeout(()=>this.end(),900); }
+    this.t++;
+    if (this.concede >= this.GOAL) { this.over = true; this.push(`<span class="ok">他让出了你要的东西。</span> 而且到最后都没弄清自己是怎么让的。`); this.render(); return setTimeout(()=>this.end(),900); }
+    if (this.t >= this.TURNS) { this.over = true; this.render(); return setTimeout(()=>this.end(),900); }
+    this.render();
+  },
+
+  end() {
+    const pass = this.concede >= this.GOAL;
+    G.scores[2] = pass ? Math.round(this.concede*10)/10 : 0;
+    debrief({
+      level:2, score:pass?Math.round(this.concede*10)/10:0, pass, scoreLabel:"让步值",
+      title:"软的阶段用来采集，硬的阶段用来兑现",
+      body:[
+        `目标：让对方让出 <b>${this.GOAL}</b>。你拿到 <b>${fx(this.concede,2)}</b>，最终警觉 <b>${Math.round(this.alert)}</b>。/100`,
+        "这一关的核心是<b>顺序</b>。硬的威力完全取决于信息量：信息为 0 时，「卡住资源」只能榨出 0.15；信息满了，同样一招能拿到 4.65。所以先软后硬是数学上的最优解，不只是修辞。",
+        "<b>但软本身也在涨警觉。</b>共情、夸赞、暴露脆弱——每一次都在让他觉得舒服，也都在让他更靠近「这人怎么这么热情」的疑问。",
+        "还有一个反直觉的机制：<b>连续用同一类手段，效果会指数衰减</b>。这就是文中说的「只会一味硬或一味软的人，因为可预测，所以容易被破解」。真正的难缠在于能随意切换。",
+        "最后看一眼你的警觉值。如果它逼近 100，说明这套打法离暴露只有一步——而文中列的第一条失效条件就是：<b>它高度依赖信息不对称，一旦你识破了他的套路，他的力量便会急剧衰减</b>。",
+      ],
+      quote:{ text:"软的阶段用来采集信息，硬的阶段用来兑现收割你，这两套策略要能随意的切换，这才共同构成了真正的难缠。", src:"知乎《如何提高自己的博弈能力？》· 好猛" },
+      card:"手里没信息的时候，任何施压都只是表态。",
+    });
+  },
+
+  render() {
+    setHud(`<div class="stat">让步 <b class="up">${fx(this.concede,2)}</b> / ${this.GOAL}</div>
+            <div class="stat">信息 <b>${Math.round(this.info)}</b></div>
+            <div class="stat">警觉 <b class="${this.alert>70?'dn':''}">${Math.round(this.alert)}</b></div>
+            <div class="stat">回合 <b>${this.t}</b>/${this.TURNS}</div>`);
+    const infoFull = Math.round(this.info/100*4.5*100)/100;
+    $("#scPlay").innerHTML = `
+      <h2>第 ${this.t+1} 回合 · 你做局</h2>
+      <p class="sub">软的手段涨信息也涨警觉；硬的手段兑现让步，威力取决于信息。</p>
+      <div class="panel" style="margin-bottom:16px">
+        <div class="meter"><div class="lab"><span>信息优势（决定硬的威力）</span><b>${Math.round(this.info)}</b></div>
+          <div class="bar b-blue"><i style="width:${this.info}%"></i></div></div>
+        <div class="meter" style="margin-bottom:0"><div class="lab"><span>对方警觉（满 100 即识破）</span><b>${Math.round(this.alert)}</b></div>
+          <div class="bar b-red"><i style="width:${this.alert}%"></i></div></div>
+        <div style="font-size:13px;color:var(--dim);margin-top:12px">
+          按当前信息量，「卡住资源」一次可榨出约 <b style="color:var(--gold)">${fx(0.15 + this.info/100*4.5, 2)}</b> 让步。
+        </div>
+      </div>
+      <div class="grid3">
+        ${Object.entries(this.ACTIONS).map(([k,a])=>`
+          <button class="btn" onclick="L3.act('${k}')" ${this.over?'disabled':''}>
+            <span class="t">${a.label}</span><span class="d">${a.d}</span></button>`).join("")}
+      </div>
+      <div class="log" style="margin-top:16px" id="l3log"></div>`;
+    const el = $("#l3log");
+    el.innerHTML = this.log.map(l=>`<div>${l}</div>`).join("");
+    el.scrollTop = el.scrollHeight;
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   第 4 关 · 可否认性
+   ══════════════════════════════════════════════════════════════ */
+const L4 = {
+  TURNS: 9, DENY0: 100,
+  NPC: [
+    { id:0, name:"阿哲", role:"同级同事", trust:60 },
+    { id:1, name:"小敏", role:"多年朋友", trust:60 },
+    { id:2, name:"王总", role:"你的上级", trust:60 },
+  ],
+  t:0, deny:100, info:0, log:[], over:false, npc:[],
+
+  start() {
+    this.t=0; this.deny=100; this.info=0; this.log=[]; this.over=false;
+    this.npc = this.NPC.map(n=>({...n}));
+    this.push(`<span class="big">有个人正在你周围做局。</span>`);
+    this.push(`他不和你正面冲突。他分别找阿哲、小敏、王总，对每个人说不同版本的话，同时把自己包装成居中调停的好人。`);
+    this.push(`你的目标不是赢他，是<b>把他的可否认空间压到 0</b>——让他没地方退。`);
+    this.render();
+  },
+  push(h){ this.log.push(h); },
+
+  act(key) {
+    if (this.over) return;
+    const alive = this.npc.filter(n=>n.trust>0);
+    let line = "";
+    if (key === "press") {
+      const power = 5 + this.info * 0.22;
+      this.deny -= power; this.info += 8;
+      line = `<span class="you">你追问他："你具体指什么后果？"</span> 他含糊了一下。 <span class="ok">可否认 -${fx(power)}</span>`;
+      if (this.info < 30) line += ` <span class="warn">（信息不足，他没被逼到墙角）</span>`;
+    } else if (key === "solo") {
+      const t = alive[Math.floor(Math.random()*alive.length)] || this.npc[0];
+      t.trust = clamp(t.trust + 14, 0, 100); this.info += 14;
+      line = `<span class="you">你单独找了 ${t.name} 聊。</span> <span class="ok">${t.name} 信任 +14 · 信息 +14</span>`;
+    } else if (key === "table3") {
+      if (this.info < 25) { line = `<span class="warn">你想把三方叫到一起，但你手里的信息还不足以支撑一场对质——话会被他轻轻拨开。</span>`; }
+      else {
+        this.deny -= 24; this.info += 8;
+        this.npc.forEach(n=>{ if(n.trust>0) n.trust = clamp(n.trust+6,0,100); });
+        line = `<span class="you">你把三方叫到了一张桌子上。</span> <span class="ok">可否认 -24 · 所有人的信任 +6</span> <span style="color:var(--dim)">（三方同场是他最怕的场面）</span>`;
+      }
+    } else if (key === "record") {
+      this.deny -= 14; this.info += 8;
+      line = `<span class="you">你把他说的每句话都写进邮件，抄送了相关的人。</span> <span class="ok">可否认 -14 · 信息 +8</span>`;
+    } else {
+      this.deny += 6;
+      this.npc.forEach(n=>{ if(n.trust>0) n.trust = clamp(n.trust-6,0,100); });
+      line = `<span class="you">你没有回应。</span> <span class="foe">他继续说话。可否认 +6 · 所有人信任 -6</span>`;
+    }
+    this.push(line);
+
+    // 对手回合
+    const foe = this.foeTurn();
+    if (foe) this.push(foe);
+
+    this.t++;
+    const isolated = this.npc.every(n => n.trust <= 15);
+    if (isolated) { this.over = true; this.push(`<span class="foe">所有人都开始躲着你。你被孤立了。</span>`); this.render(); return setTimeout(()=>this.end(),900); }
+    if (this.deny <= 0) { this.over = true; this.push(`<span class="ok">他的可否认空间归零。他说的每一句话现在都能被对上——他退无可退。</span>`); this.render(); return setTimeout(()=>this.end(),900); }
+    if (this.t >= this.TURNS) { this.over = true; this.render(); return setTimeout(()=>this.end(),900); }
+    this.render();
+  },
+
+  foeTurn() {
+    const alive = this.npc.filter(n=>n.trust>0);
+    if (!alive.length) return null;
+    const roll = Math.random();
+    if (roll < 0.45) {
+      const t = alive[Math.floor(Math.random()*alive.length)];
+      t.trust = clamp(t.trust-12,0,100);
+      return `<span class="foe">他私下对 ${t.name} 说了一句"我也是为你好"。</span> <span class="warn">${t.name} 信任 -12</span>`;
+    }
+    if (roll < 0.75) {
+      this.npc.forEach(n=>{ if(n.trust>0) n.trust = clamp(n.trust-3,0,100); });
+      this.deny += 3;
+      return `<span class="foe">他在群里把自己写成了唯一在收拾局面的人。</span> <span class="warn">所有人信任 -3 · 可否认 +3</span>`;
+    }
+    const t = alive[Math.floor(Math.random()*alive.length)];
+    t.trust = clamp(t.trust-8,0,100); this.info = clamp(this.info-5,0,100);
+    return `<span class="foe">他借 ${t.name} 的口，把一句攻击递到了你面前。</span> <span class="warn">${t.name} 信任 -8 · 你的信息 -5</span>`;
+  },
+
+  end() {
+    const pass = this.deny <= 0;
+    G.scores[3] = pass ? Math.round((this.TURNS - this.t + 1) * 4) : 0;
+    const avgTrust = Math.round(this.npc.reduce((s,n)=>s+n.trust,0)/3);
+    debrief({
+      level:3, score:G.scores[3], pass, scoreLabel:"剩余回合奖励",
+      title:"不要和他比阴狠，去拆掉他赖以运转的条件",
+      body:[
+        pass
+          ? `你在第 <b>${this.t}</b> 回合把他的可否认空间压到了 0。三人平均信任收在 <b>${avgTrust}</b>。`
+          : `回合用完了。可否认空间还剩 <b>${Math.round(this.deny)}</b>，三人平均信任 <b>${avgTrust}</b>。`,
+        "这一关的四个动作，对应的正是文中六条反制路径里的四条：<b>「要求具体化」</b>（他说\"你最好想清楚\"，你就问\"你具体指什么后果\"）、<b>「建立记录」</b>（能落文字就不止于口头）、<b>「拒绝三角化」</b>（\"具体是谁，我们一起当面谈\"）、以及<b>经营你自己的关系</b>。",
+        "<b>三方同场是最强的一招，但它需要前置条件。</b>你手上没信息的时候硬叫对质，只会被他一句「你想多了」拨开——这正是可否认性语言的用法：话说得让你有压力，却不构成任何可指证的把柄。",
+        "还有一条没被做成按钮，但最根本：<b>持续经营你的退路、削减对他的依赖</b>。你越是不需要他，他就越无从控制你。",
+      ],
+      quote:{ text:"它惧怕透明，因为它的手段大多必须在灰色地带运行，所以当事情被拉到明面上，形成文字、确立规则、第三方在场、要求明确承诺，他的操作空间会被大幅压缩。", src:"知乎《如何提高自己的博弈能力？》· 好猛" },
+      card:"把他拖到明面上。文字、规则、第三方在场——灰色地带一消失，他就没有力气了。",
+    });
+  },
+
+  drawNet() {
+    const cv = $("#net"); if (!cv) return;
+    const W = cv.clientWidth;
+    if (!W) return;                       // 布局尚未完成，等下一帧
+    const dpr = window.devicePixelRatio||1;
+    const H = 250;
+    cv.width = W*dpr; cv.height = H*dpr;
+    const c = cv.getContext("2d");
+    c.setTransform(dpr,0,0,dpr,0,0);
+    c.clearRect(0,0,W,H);
+
+    const cx = W/2;
+    const spread = Math.min(150, W*0.30);
+    const nodes = [
+      { x:cx,       y:40,     label:"你",  trust:100, me:true },
+      { x:cx-spread, y:H-70,  label:this.npc[0].name, trust:this.npc[0].trust },
+      { x:cx,        y:H-46,  label:this.npc[1].name, trust:this.npc[1].trust },
+      { x:cx+spread, y:H-70,  label:this.npc[2].name, trust:this.npc[2].trust },
+    ];
+    const cy = H*0.52;
+
+    // 连线
+    nodes.slice(1).forEach(n=>{
+      c.strokeStyle = n.trust>50 ? "#2f5a45" : (n.trust>15 ? "#5a4a2f" : "#5a2f2f");
+      c.lineWidth = 1.5 + n.trust/50;
+      c.beginPath(); c.moveTo(cx, 40+16); c.lineTo(n.x, n.y-16); c.stroke();
+      c.beginPath(); c.moveTo(cx, cy+26); c.lineTo(n.x, n.y-16); c.stroke();
+    });
+    // 中间那个"他"
+    c.fillStyle = "rgba(224,90,90," + clamp(this.deny/140,0.12,0.85) + ")";
+    c.beginPath(); c.arc(cx, cy, 26, 0, Math.PI*2); c.fill();
+    c.fillStyle = "#e8ecf2"; c.font = "600 12px 'Segoe UI',sans-serif"; c.textAlign="center";
+    c.fillText("他", cx, cy+4);
+
+    nodes.forEach(n=>{
+      const r = n.me ? 17 : 14;
+      c.beginPath(); c.arc(n.x, n.y, r, 0, Math.PI*2);
+      c.fillStyle = n.me ? "#5b9bd5" : (n.trust>50?"#46c08a":(n.trust>15?"#e0a13c":"#e05a5a"));
+      c.fill();
+      c.fillStyle = "#c8d0dc"; c.font = "600 12.5px 'Segoe UI',sans-serif"; c.textAlign="center";
+      c.fillText(n.label, n.x, n.y + r + 16);
+      if (!n.me) { c.fillStyle="#8b95a7"; c.font="11.5px 'Segoe UI',sans-serif"; c.fillText(Math.round(n.trust), n.x, n.y+4); }
+    });
+  },
+
+  render() {
+    setHud(`<div class="stat">可否认空间 <b class="${this.deny<40?'up':''}">${Math.round(this.deny)}</b></div>
+            <div class="stat">信息 <b>${Math.round(this.info)}</b></div>
+            <div class="stat">回合 <b>${this.t}</b>/${this.TURNS}</div>`);
+    $("#scPlay").innerHTML = `
+      <h2>第 ${this.t+1} 回合 · 拆条件</h2>
+      <p class="sub">别和他比阴狠。去拆掉他能躲的那些空间。</p>
+      <canvas id="net" height="250"></canvas>
+      <div class="panel" style="margin:14px 0 16px">
+        <div class="meter"><div class="lab"><span>他的可否认空间（降到 0 你就赢）</span><b>${Math.round(this.deny)}</b></div>
+          <div class="bar b-red"><i style="width:${clamp(this.deny,0,100)}%"></i></div></div>
+        <div class="meter" style="margin-bottom:0"><div class="lab"><span>你掌握的信息（决定追问与对质的威力）</span><b>${Math.round(this.info)}</b></div>
+          <div class="bar b-blue"><i style="width:${this.info}%"></i></div></div>
+      </div>
+      <div class="grid2">
+        <button class="btn" onclick="L4.act('press')" ${this.over?'disabled':''}>
+          <span class="t">追问具体化</span><span class="d">"你具体指什么后果？" —— 把暗示翻译成明示</span></button>
+        <button class="btn" onclick="L4.act('record')" ${this.over?'disabled':''}>
+          <span class="t">要求写下来</span><span class="d">发邮件、留记录 —— 压缩他的可否认空间</span></button>
+        <button class="btn" onclick="L4.act('solo')" ${this.over?'disabled':''}>
+          <span class="t">单独经营关系</span><span class="d">私下找一个人谈 —— 涨信任、涨信息</span></button>
+        <button class="btn" onclick="L4.act('table3')" ${this.over?'disabled':''}>
+          <span class="t">要求三方同场</span><span class="d">"具体是谁，我们一起当面谈" · 需要信息 ≥ 25</span></button>
+        <button class="btn" style="grid-column:1/-1" onclick="L4.act('ignore')" ${this.over?'disabled':''}>
+          <span class="t">按兵不动</span><span class="d">什么都不做 —— 他继续说话</span></button>
+      </div>
+      <div class="log" style="margin-top:16px" id="l4log"></div>`;
+    const el = $("#l4log");
+    el.innerHTML = this.log.map(l=>`<div>${l}</div>`).join("");
+    el.scrollTop = el.scrollHeight;
+    requestAnimationFrame(() => this.drawNet());
+  },
+};
+
+const RUNNERS = [L1, L2, L3, L4];
+
+/* ══════════════════════════════════════════════════════════════
+   流程
+   ══════════════════════════════════════════════════════════════ */
+function startLevel(i) {
+  G.level = i;
+  $("#hud").classList.remove("hide");
+  show("#scPlay");
+  RUNNERS[i].start();
+  window.scrollTo(0,0);
+}
+
+function debrief(d) {
+  show("#scDebrief");
+  $("#hud").classList.add("hide");
+  if (d.pass && d.card && !G.cards.includes(d.card)) G.cards.push(d.card);
+  const last = d.level === 3;
+  $("#scDebrief").innerHTML = `
+    <div class="lesson">
+      <div class="k">第 ${d.level+1} 关 · ${LEVELS[d.level].name} ${d.pass?'<span style="color:var(--jade)">通过</span>':'<span style="color:var(--red)">未通过</span>'}</div>
+      <h3>${d.title}</h3>
+      <div style="display:flex;gap:26px;margin:16px 0 18px;flex-wrap:wrap">
+        <div><div style="font-size:12.5px;color:var(--dim)">${d.scoreLabel||"本关得分"}</div>
+          <div style="font-size:30px;font-weight:700;color:${d.pass?'var(--jade)':'var(--red)'}">${d.score}</div></div>
+      </div>
+      ${d.body.map(p=>`<p>${p}</p>`).join("")}
+      ${d.quote?`<div class="quote">${d.quote.text}<span class="src">${d.quote.src}</span></div>`:""}
+      ${d.pass&&d.card?`<div class="pcard" style="margin-top:18px"><b>原则卡已解锁 · </b>${d.card}</div>`:""}
+      <div class="row" style="margin-top:22px">
+        <button class="btn primary" style="min-width:170px" onclick="${last?'showEnd()':'startLevel('+(d.level+1)+')'}">
+          <span class="t">${last?'查看总评价':'进入下一关'}</span>
+          <span class="d">${last?'':'第 '+(d.level+2)+' 关 · '+LEVELS[d.level+1].name}</span></button>
+        <button class="btn" onclick="startLevel(${d.level})">
+          <span class="t">重玩本关</span><span class="d">无惩罚，分数会覆盖</span></button>
+      </div>
+    </div>`;
+  window.scrollTo(0,0);
+}
+
+function showEnd() {
+  show("#scEnd");
+  $("#hud").classList.add("hide");
+  const total = Math.round(G.scores.reduce((a,b)=>a+(b||0),0) * 10) / 10;
+  const passed = G.scores.filter(s => (s||0) > 0).length;
+  const rank = (passed === 4 && total >= 28) ? { t:"看得懂权力，也没被它腐蚀", c:"var(--jade)", d:"四关全过，而且每一关都拿到了不错的余量。" }
+             : passed >= 3 ? { t:"学会了冷静，还没学会耐心", c:"var(--gold)", d:"你能识破套路，但在节奏与取舍上还有失手。" }
+             : passed >= 2 ? { t:"开始看得见牌桌了", c:"var(--blue)", d:"你已经在计算，而不是只靠反应。" }
+             : { t:"还在用情绪打牌", c:"var(--red)", d:"普通人往往败于一个「急」字。" };
+  $("#scEnd").innerHTML = `
+    <div class="panel">
+      <div class="rank">
+        <div class="big" style="color:${rank.c}">${total}</div>
+        <div class="lbl">总分 · 四关通过 ${passed}/4</div>
+        <div style="margin-top:16px;font-size:19px;font-weight:600;color:${rank.c}">${rank.t}</div>
+        <div style="color:var(--dim);font-size:14px;margin-top:6px">${rank.d}</div>
+      </div>
+      <div style="display:grid;gap:8px;margin-top:10px">
+        ${LEVELS.map((l,i)=>`<div style="display:flex;justify-content:space-between;font-size:14.3px;
+          padding:9px 14px;background:var(--panel2);border-radius:9px;border:1px solid var(--line)">
+          <span>第 ${i+1} 关 · ${l.name}</span>
+          <b style="color:${(G.scores[i]||0)>0?'var(--jade)':'var(--red)'}">${G.scores[i]??0}</b></div>`).join("")}
+      </div>
+      <h2 style="margin-top:26px;font-size:17px">已解锁的原则卡</h2>
+      <div class="cards">
+        ${G.cards.length ? G.cards.map(c=>`<div class="pcard">${c}</div>`).join("")
+          : `<div class="pcard locked">没有解锁任何原则卡——四关都失败了。</div>`}
+      </div>
+      <div class="quote" style="margin-top:24px">
+        成熟的策略能力，落在"看得懂权力、却不被权力腐蚀"这一句上：学它的冷静，舍它的阴毒；学它的耐心，舍它的无底线；学它的建模能力，舍它的反社会底色。
+        <span class="src">知乎《如何提高自己的博弈能力？》· 好猛</span>
+      </div>
+      <div class="row" style="margin-top:22px">
+        <button class="btn primary" style="min-width:170px" onclick="resetAll()">
+          <span class="t">从头再来</span><span class="d">清空分数与原则卡</span></button>
+      </div>
+    </div>`;
+  window.scrollTo(0,0);
+}
+
+function resetAll() {
+  G.scores = []; G.cards = [];
+  show("#scTitle");
+  $("#hud").classList.add("hide");
+  window.scrollTo(0,0);
+}
+
+// 让旧的渲染循环不残留
+window.addEventListener("resize", () => {
+  if (!$("#scPlay").classList.contains("hide")) {
+    if (G.level === 0) L1.drawRoad();
+    if (G.level === 3) L4.drawNet();
+  }
+});
+</script>
+</body>
+</html>

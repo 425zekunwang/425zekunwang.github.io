@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一个音里，藏着什么 · 乐理入门</title>
+<style>
+  :root{
+    --bg:#0a0c11; --panel:#131820; --panel2:#1a212b; --line:#252d3a;
+    --fg:#e9edf3; --dim:#8892a3; --warm:#e0a54a; --jade:#4cc08a;
+    --blue:#5b9bd5; --purple:#a97bd6; --rose:#e07a7a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);
+    font-family:"Segoe UI","Microsoft YaHei",-apple-system,sans-serif;
+    line-height:1.78;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:44px 22px 100px}
+  button{font-family:inherit}
+
+  h1{font-size:clamp(28px,5vw,42px);margin:0 0 14px;letter-spacing:-.01em;line-height:1.25}
+  .sub{color:var(--dim);font-size:17px;margin:0 0 46px;max-width:620px}
+
+  .step{margin-bottom:76px}
+  .stephead{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+  .stepno{font-size:12.5px;color:var(--warm);letter-spacing:.22em;font-weight:700;flex:none}
+  .steptitle{font-size:23px;font-weight:600;line-height:1.4}
+  .stepdesc{color:var(--dim);font-size:16px;margin:0 0 24px;max-width:640px}
+  .stepdesc b{color:#cfd6e0}
+
+  .bigbtn{display:block;width:100%;padding:36px 30px;border-radius:20px;
+    background:linear-gradient(135deg,#2a1f0d,#191a20);border:1px solid #4a3a18;
+    color:var(--fg);font-size:20px;cursor:pointer;transition:.2s;text-align:center;
+    font-weight:600}
+  .bigbtn:hover{border-color:var(--warm);transform:translateY(-2px)}
+  .bigbtn small{display:block;font-size:13.5px;font-weight:400;color:var(--dim);margin-top:8px}
+  .bigbtn.pulse{animation:pulse 2.4s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,165,74,0)}50%{box-shadow:0 0 0 16px rgba(224,165,74,.06)}}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px 26px}
+  canvas{display:block;width:100%}
+
+  .slider{margin:24px 0 6px}
+  .slider input{width:100%;height:8px;-webkit-appearance:none;appearance:none;
+    background:#1e2530;border-radius:6px;outline:none}
+  .slider input::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:30px;height:30px;border-radius:50%;background:var(--warm);cursor:pointer;
+    border:4px solid #0a0c11;box-shadow:0 0 0 2px var(--warm)}
+  .slider input::-moz-range-thumb{width:30px;height:30px;border-radius:50%;
+    background:var(--warm);cursor:pointer;border:4px solid #0a0c11}
+  .sliderlabels{display:flex;justify-content:space-between;font-size:13px;
+    color:var(--dim);margin-top:12px;gap:12px;text-align:center}
+  .sliderlabels span{flex:1}
+
+  .reveal{background:linear-gradient(135deg,#12241a,#131820);border:1px solid #23503a;
+    border-radius:16px;padding:24px 28px;margin-top:26px;
+    opacity:0;transform:translateY(12px);transition:.6s;pointer-events:none;max-height:0;overflow:hidden}
+  .reveal.on{opacity:1;transform:none;pointer-events:auto;max-height:3000px}
+  .reveal h4{margin:0 0 14px;font-size:19px;color:var(--jade)}
+  .reveal p{margin:0 0 13px;font-size:15.8px;color:#cfd6e0}
+  .reveal p:last-child{margin-bottom:0}
+  .reveal b{color:#fff}
+
+  .term{background:#101720;border:1px solid #2a3444;border-left:3px solid var(--blue);
+    border-radius:0 12px 12px 0;padding:15px 20px;margin-top:18px}
+  .term .t{font-size:11.5px;letter-spacing:.18em;color:var(--blue);
+    text-transform:uppercase;font-weight:700;margin-bottom:8px}
+  .term p{margin:0 0 8px;font-size:15px;color:#cfd6e0}
+  .term p:last-child{margin-bottom:0}
+  .term .name{color:var(--warm);font-weight:600}
+  .term.alt{border-left-color:var(--rose)}
+  .term.alt .t{color:var(--rose)}
+  .term.alt .name{color:#f0a0a0}
+
+  .notes{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:26px 0 6px}
+  .note{width:66px;height:66px;border-radius:18px;display:flex;align-items:center;
+    justify-content:center;font-size:23px;font-weight:700;
+    opacity:0;transform:scale(.4);transition:.5s cubic-bezier(.2,1.4,.5,1)}
+  .note.on{opacity:1;transform:none}
+  .notelabel{text-align:center;font-size:13.5px;color:var(--dim);margin-top:16px}
+
+  .hint{font-size:15px;color:var(--warm);margin-top:16px;min-height:24px;font-weight:500}
+  .toggle{background:none;border:1px solid var(--line);color:var(--dim);
+    border-radius:9px;padding:7px 15px;font-size:13px;cursor:pointer;margin-top:20px}
+  .toggle:hover{color:var(--fg);border-color:#3a4553}
+  .data{display:none;margin-top:16px;background:#0b1017;border:1px solid var(--line);
+    border-radius:12px;padding:16px 20px;font-size:13.4px;color:var(--dim);
+    font-family:"Cascadia Code",Consolas,monospace;line-height:2}
+  .data.on{display:block}
+
+  .foot{color:var(--dim);font-size:13.5px;margin-top:64px;border-top:1px solid var(--line);
+    padding-top:24px;line-height:1.85}
+  .foot b{color:var(--fg)}
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:99;display:flex;gap:16px;align-items:center;justify-content:space-between;padding:9px 18px;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid #2b3444;font-size:13.5px;font-family:'Segoe UI','Microsoft YaHei',sans-serif"><a href="/" style="color:#8b98a8;text-decoration:none">← wzk 的技术笔记</a><a href="/zhihu/labs/" style="color:#58a6ff;text-decoration:none">全部交互页面</a></div>
+<div class="wrap">
+
+<h1>一个音里，藏着什么</h1>
+<p class="sub">
+  不需要任何乐理基础。你只要会按按钮、会拖滑块。<br>
+  下面三件事，每一件都先让你听见，再告诉你是怎么回事。
+</p>
+
+<!-- ═══════ 第一步 ═══════ -->
+<div class="step" id="s1">
+  <div class="stephead"><span class="stepno">第 一 步</span><span class="steptitle">敲一个音，然后拆开它</span></div>
+  <p class="stepdesc">
+    你按下一个琴键，听到的是<b>一个</b>音，还是<b>很多个</b>音？<br>先听听看。
+  </p>
+
+  <button class="bigbtn pulse" id="btn1">
+    ▶ 按下去，听一个音
+    <small>（会出声。先把系统音量调小一点）</small>
+  </button>
+
+  <div id="stage1" style="display:none;margin-top:34px">
+    <div class="card">
+      <canvas id="cv1" height="270"></canvas>
+      <div class="slider">
+        <input type="range" id="r1" min="0" max="100" step="1" value="0">
+        <div class="sliderlabels"><span>完整的一个音</span><span>← 往右拖，把它拆开 →</span><span>拆到底</span></div>
+      </div>
+      <div class="hint" id="hint1">现在你听到的是一个干净的、单薄的声音。</div>
+    </div>
+
+    <div class="reveal" id="rev1">
+      <h4>你刚刚做了什么</h4>
+      <p>任何一根弦振动的时候，<b>不是整根弦在一起动</b>。它同时在以一半、三分之一、四分之一……的长度各自振动。画面上那几条虚线，就是它在第 2、3、4、5、6 段上的振动。</p>
+      <p>每一种振动都发出一个自己的音。它们同时响，你听起来却像「一个音」——因为你的耳朵把它们打包了。</p>
+      <p>现在把这六个音里重复的名字去掉：</p>
+      <div class="notes" id="notes1"></div>
+      <div class="notelabel">C · E · G</div>
+      <p style="margin-top:20px">这是一个 <b>大三和弦</b>。</p>
+      <p><b>它不是谁发明的，也没有被写进任何规则里。</b>它就躺在每一个音的内部。你按下的任何一个琴键，里面都装着一个大三和弦。</p>
+      <div class="term">
+        <div class="t">刚刚那些东西的名字</div>
+        <p>弦上多出来的那些振动，中文叫 <span class="name">泛音</span>；最原始的那个音叫 <span class="name">基音</span>。</p>
+        <p>六个泛音连起来是 C-C-G-C-E-G，去掉重复就是 C-E-G。这个「藏在音里面的大三和弦」，是后面一切和声的地基。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ 第二步 ═══════ -->
+<div class="step" id="s2" style="display:none">
+  <div class="stephead"><span class="stepno">第 二 步</span><span class="steptitle">让两个音一起响</span></div>
+  <p class="stepdesc">
+    有的两个音一起响，听起来像<b>一个更厚的声音</b>。<br>
+    有的两个音一起响，听起来像<b>两个声音在互相刮</b>。<br>
+    拖动滑块慢慢走一遍，自己找：哪几个位置最「顺」？
+  </p>
+
+  <div class="card">
+    <canvas id="cv2" height="300"></canvas>
+    <div class="slider">
+      <input type="range" id="r2" min="0" max="1200" step="1" value="0">
+      <div class="sliderlabels"><span>同一个音</span><span>← 第二个音往上走 →</span><span>高八度</span></div>
+    </div>
+    <div class="hint" id="hint2">两个音完全一样，听起来就是一个音。</div>
+    <div class="notes" id="found2" style="justify-content:flex-start;margin-top:20px;gap:8px"></div>
+  </div>
+
+  <div class="reveal" id="rev2">
+    <h4>你刚才在找什么</h4>
+    <p>两个音能不能「贴合」，取决于一件很朴素的事：<b>它们的波峰会不会经常撞在一起。</b></p>
+    <p>撞得越整齐，听起来越融合、越干净。撞得越乱，听起来越紧张、越刺耳。看画面上的绿线——那就是两个波峰撞上的时刻。</p>
+    <p>你已经找到了几个特别顺的位置。它们有一个共同点：两个音的频率比，是<b>两个很小的整数之比</b>。</p>
+    <div id="ratios2" style="margin:18px 0"></div>
+    <div class="term">
+      <div class="t">这几个位置的名字</div>
+      <p><span class="name">纯八度</span>（2:1）、<span class="name">纯五度</span>（3:2）、<span class="name">纯四度</span>（4:3）、<span class="name">大三度</span>（5:4）、<span class="name">大六度</span>（5:3）。</p>
+      <p>比例里的数字越小，听起来越干净。2:1 几乎是一个音，3:2 就是最「厚实」的那个——中世纪的合唱最早只唱平行五度，不是因为规则允许，是因为当时只有它听起来干净。</p>
+    </div>
+    <div class="term alt">
+      <div class="t">顺便解开一个你可能听过的说法</div>
+      <p>有人说「三全音是最不协和的音程」。但如果你拖到那一段仔细听，会发现它<b>不算最难听</b>——真正难听的是紧挨着的那些位置。</p>
+      <p>为什么会这样？因为「难听」有两个来源：一层是<b>物理上的</b>（波峰撞得乱不乱），一层是<b>文化上的</b>（这个音在你的音乐传统里有没有位置）。三全音在物理上还过得去，但它在几百年的西方音乐里被当成「不稳定」的象征，所以听惯了的人对它会有额外的反应。</p>
+      <p>这条界线很重要：<b>协和与不协和不是一道分界线，是一条渐变的带子</b>，左半边由物理决定，右半边混进了文化。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ 第三步 ═══════ -->
+<div class="step" id="s3" style="display:none">
+  <div class="stephead"><span class="stepno">第 三 步</span><span class="steptitle">一个让所有调音师绝望的除法</span></div>
+  <p class="stepdesc">
+    现在你已经知道「纯五度」最好听。那就用纯五度来定音吧——<br>
+    沿着纯五度往上走 12 次，按道理应该刚好回到出发的那个音（高几个八度）。<br>
+    <b>但它回不去。</b>下面这个圈就是原因。
+  </p>
+
+  <div class="card">
+    <canvas id="cv3" height="330"></canvas>
+    <button class="bigbtn" id="btn3" style="padding:20px;font-size:16.5px;margin-top:12px">
+      ▶ 沿着这个圈弹一遍，注意最后一个音
+    </button>
+    <div class="hint" id="hint3"></div>
+  </div>
+
+  <div class="reveal" id="rev3">
+    <h4>那最后一下，就是两千年的问题</h4>
+    <p>沿着纯五度走 12 次，它<b>本该</b>回到起点——结果差了那么一小截。这一小截，管着整部西方音乐史。</p>
+    <p>现在你必须做一个选择。<b>没有「都要」这个选项</b>——这一小截缺口必须有人承担。拖这个滑块，看它被摊到哪里去：</p>
+    <div class="slider">
+      <input type="range" id="r3" min="0" max="100" step="1" value="0">
+      <div class="sliderlabels">
+        <span>追求纯净<br><span style="font-size:11.5px">但只有 C 调好听</span></span>
+        <span>← 你的取舍 →</span>
+        <span>平均分摊<br><span style="font-size:11.5px">哪个调都能弹</span></span>
+      </div>
+    </div>
+    <canvas id="cv3b" height="180" style="margin-top:10px"></canvas>
+    <button class="bigbtn" id="btn3b" style="padding:18px;font-size:16px;margin-top:10px">
+      ▶ 用这个设置，弹 C 大调和 F♯ 大调，对比一下
+    </button>
+    <div class="hint" id="hint3b"></div>
+    <div class="term" style="margin-top:24px">
+      <div class="t">你刚才做的这个选择叫什么</div>
+      <p>滑块在最左边 = <span class="name">纯律</span>。它让最简单的几个音程完美纯净，代价是<b>只能在少数几个调里转</b>，换到远处的调就刺耳。</p>
+      <p>滑块在最右边 = <span class="name">十二平均律</span>。它把那一小截缺口<b>平均摊到每一个音上</b>——没有任何一个调是完美的，但每一个调都能用。</p>
+      <p>今天你听到的钢琴、吉他、所有键盘乐器，用的都是右边这个。巴赫能写一整套 24 个调各一首的前奏曲与赋格，<b>不是因为他等到了完美的乐器，是因为他接受了普遍的不完美。</b></p>
+    </div>
+    <div class="term alt">
+      <div class="t">一个副作用</div>
+      <p>你的耳朵已经被平均律训练了一百多年。如果现在弹一个真正纯净的大三度给你听，你可能会觉得它「太空了」"好像少了点什么"。</p>
+      <p>少掉的那个东西，本来就是一个瑕疵。你只是听习惯了。</p>
+    </div>
+  </div>
+</div>
+
+<button class="toggle" id="btnData">显示所有数字（不看也能懂）</button>
+<div class="data" id="dataBox"></div>
+
+<div class="foot">
+  这一页只讲了三个概念。它们来自你收藏的三篇乐理长文：
+  <b><a href="/blog/zhihu/tech/music-theory-in-10-minutes">十分钟带你入门乐理</a></b>、<b>十万字乐理读本（上）</b>的第 1.2、1.4、6.2 节、<b>读本（下）</b>。
+  <br>没讲的还有很多——记谱、节奏、曲式、对位、爵士和声、中国律学——都在那三篇里。
+</div>
+
+</div>
+
+<script>
+"use strict";
+const $=(s)=>document.querySelector(s);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+
+/* ══════════ 音频 ══════════ */
+let AC=null;
+function audio(){
+  if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)();
+  if(AC.state==="suspended") AC.resume();
+  return AC;
+}
+function makeVoice(f0,n){
+  const c=audio();
+  const master=c.createGain(); master.gain.value=0; master.connect(c.destination);
+  const osc=[], gain=[];
+  for(let k=1;k<=n;k++){
+    const o=c.createOscillator(); o.type="sine"; o.frequency.value=f0*k;
+    const g=c.createGain(); g.gain.value=0;
+    o.connect(g); g.connect(master); o.start();
+    osc.push(o); gain.push(g);
+  }
+  return { master, osc, gain, n };
+}
+function setVoice(v,amps,vol){
+  if(!v) return;
+  const c=audio(), t=c.currentTime;
+  for(let i=0;i<v.n;i++) v.gain[i].gain.setTargetAtTime((amps[i]||0)*vol, t, 0.025);
+  v.master.gain.setTargetAtTime(1, t, 0.025);
+}
+function beep(f, at, dur, vol){
+  const c=audio();
+  const o=c.createOscillator(); o.type="sine"; o.frequency.value=f;
+  const g=c.createGain(); g.gain.value=0;
+  o.connect(g); g.connect(c.destination);
+  g.gain.setValueAtTime(0,at);
+  g.gain.linearRampToValueAtTime(vol||0.26,at+0.02);
+  g.gain.setValueAtTime(vol||0.26,at+dur-0.07);
+  g.gain.linearRampToValueAtTime(0,at+dur);
+  o.start(at); o.stop(at+dur+0.02);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   第一步
+   ══════════════════════════════════════════════════════════════ */
+const F0=261.63;
+const HARM_COL=["#e0a54a","#5b9bd5","#a97bd6","#4cc08a","#e07a7a","#5bc0c0","#c0a05b","#8892a3"];
+let V1=null, r1=0;
+
+function ampsFromSlider(p,n){
+  const a=[];
+  for(let k=1;k<=n;k++){
+    const start=(k-1)*13;
+    a.push(clamp((p-start)/13,0,1)/k);       // 越高的泛音越轻，这是物理规律
+  }
+  return a;
+}
+$("#btn1").onclick = () => {
+  audio();
+  $("#btn1").style.display="none";
+  $("#stage1").style.display="block";
+  if(!V1) V1=makeVoice(F0,8);
+  setVoice(V1, ampsFromSlider(r1,8), 0.5);
+  loop1();
+};
+$("#r1").oninput = e => {
+  r1=+e.target.value;
+  setVoice(V1, ampsFromSlider(r1,8), 0.5);
+  const shown=Math.floor(r1/13);
+  const hints=[
+    "现在你听到的是一个干净的、单薄的声音。",
+    "多了一层：高八度的自己。听起来还是「一个音」，只是亮了点。",
+    "又多了纯五度。它开始有「厚度」了。",
+    "再叠一个高八度。",
+    "大三度进来了——声音开始变「暖」。",
+    "前六个都到齐了。看上面那六个音的名字。",
+    "继续拖，会进来更多、更弱的泛音——它们负责「音色」的细节。",
+  ];
+  $("#hint1").textContent = hints[clamp(shown,0,6)];
+  if(r1>=62 && !$("#rev1").classList.contains("on")){
+    $("#rev1").classList.add("on");
+    $("#notes1").innerHTML=["C","E","G"].map((n,i)=>
+      `<div class="note" style="background:${HARM_COL[i*2]}1e;border:2px solid ${HARM_COL[i*2]};color:${HARM_COL[i*2]};transition-delay:${i*0.14}s">${n}</div>`).join("");
+    setTimeout(()=>document.querySelectorAll("#notes1 .note").forEach(x=>x.classList.add("on")),30);
+    setTimeout(()=>revealStep(2), 900);
+  }
+};
+function loop1(){
+  drawString();
+  if($("#stage1").style.display!=="none") requestAnimationFrame(loop1);
+}
+function drawString(){
+  const cv=$("#cv1"); if(!cv||!cv.clientWidth) return;
+  const dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=270;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+  c.fillStyle="#0b0f15"; c.fillRect(0,0,W,H);
+
+  const amps=ampsFromSlider(r1,8);
+  const x0=46, x1=W-46, midY=H/2, A=clamp(H*0.28,50,74);
+  const t=performance.now()/1000, N=280;
+
+  // 弦的两端
+  c.fillStyle="#232b36";
+  c.fillRect(x0-14, midY-50, 9, 100);
+  c.fillRect(x1+5, midY-50, 9, 100);
+
+  // 各泛音的驻波
+  let seg=0;
+  for(let k=2;k<=6;k++){
+    if(amps[k-1]<0.03) continue;
+    seg++;
+    c.beginPath();
+    for(let i=0;i<=N;i++){
+      const u=i/N;
+      const y=midY - Math.sin(k*Math.PI*u)*A*amps[k-1]*3.2*Math.cos(2*Math.PI*k*0.55*t);
+      i?c.lineTo(x0+u*(x1-x0), y):c.moveTo(x0+u*(x1-x0), y);
+    }
+    c.strokeStyle=HARM_COL[k-1]+"55"; c.lineWidth=1.6; c.stroke();
+    c.fillStyle=HARM_COL[k-1]+"cc"; c.font="600 11.5px 'Segoe UI',sans-serif"; c.textAlign="center";
+    c.fillText(k+" 段", x0+(k-0.5)*((x1-x0)/6), H-18);
+  }
+  // 合成弦形
+  c.beginPath();
+  for(let i=0;i<=N;i++){
+    const u=i/N;
+    let y=0;
+    for(let k=1;k<=8;k++) y += Math.sin(k*Math.PI*u)*amps[k-1]*3.2*Math.cos(2*Math.PI*k*0.55*t);
+    const px=x0+u*(x1-x0), py=midY-y*A;
+    i?c.lineTo(px,py):c.moveTo(px,py);
+  }
+  c.strokeStyle="#e0a54a"; c.lineWidth=3.2; c.lineJoin="round"; c.stroke();
+
+  c.strokeStyle="#1c242e"; c.lineWidth=1;
+  c.beginPath(); c.moveTo(x0,midY); c.lineTo(x1,midY); c.stroke();
+  c.textAlign="left"; c.fillStyle="#5a6474"; c.font="12px 'Segoe UI',sans-serif";
+  c.fillText("这根弦同时在好几个段数上振动 —— 每一段都发出一个自己的音", x0, 24);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   第二步
+   ══════════════════════════════════════════════════════════════ */
+const CONSONANT=[
+  {cents:0,label:"同一个音",ratio:"1:1"},
+  {cents:386,label:"大三度",ratio:"5:4"},
+  {cents:498,label:"纯四度",ratio:"4:3"},
+  {cents:702,label:"纯五度",ratio:"3:2"},
+  {cents:884,label:"大六度",ratio:"5:3"},
+  {cents:1200,label:"纯八度",ratio:"2:1"},
+];
+let V2a=null,V2b=null,cents2=0,found=[];
+
+/* 逐步揭示：第一步的结论出现后，才放出第二步 */
+function revealStep(n){
+  const el=$("#s"+n); if(!el || el.style.display!=="none") return;
+  el.style.display="block";
+  requestAnimationFrame(()=>{
+    if(n===2) drawTwo();
+    if(n===3){ drawCircle(); drawBlend(); }
+    setTimeout(()=>el.scrollIntoView({behavior:"smooth",block:"start"}), 120);
+  });
+}
+function playTwo(){
+  audio();
+  const f2=F0*Math.pow(2,cents2/1200);
+  if(!V2a){ V2a=makeVoice(F0,1); V2b=makeVoice(f2,1); }
+  V2b.osc[0].frequency.setTargetAtTime(f2,audio().currentTime,0.03);
+  setVoice(V2a,[1],0.30); setVoice(V2b,[1],0.30);
+}
+$("#r2").oninput = e => {
+  cents2=+e.target.value;
+  playTwo();
+  // 人话：两个音的波峰每秒错开几次
+  const f2=F0*Math.pow(2,cents2/1200);
+  let best=null;
+  for(let i=1;i<=8;i++) for(let j=1;j<=8;j++){
+    const d=Math.abs(F0*i-f2*j);
+    if(d>0.4&&d<60){ if(best===null||d<best) best=d; }
+  }
+  $("#hint2").textContent = best===null
+    ? "波峰几乎每次都撞在一起 —— 听起来像一个更厚的声音。"
+    : `两个音的波峰每秒钟错开约 ${best.toFixed(1)} 次。次数越少越「顺」，越多越「刮」。`;
+  let added=false;
+  for(const cn of CONSONANT){
+    if(Math.abs(cents2-cn.cents)<=16 && !found.includes(cn.label)){ found.push(cn.label); added=true; }
+  }
+  if(added){
+    $("#found2").innerHTML = CONSONANT.filter(z=>found.includes(z.label)).map(z=>
+      `<span style="padding:6px 13px;border-radius:20px;background:#12241a;border:1px solid #23503a;color:#4cc08a;font-size:13.5px">${z.label} ${z.ratio}</span>`).join("");
+  }
+  if(found.length>=4 && !$("#rev2").classList.contains("on")){
+    $("#rev2").classList.add("on");
+    $("#ratios2").innerHTML = CONSONANT.map(cn=>{
+      const hit=found.includes(cn.label);
+      return `<div style="display:flex;justify-content:space-between;padding:9px 15px;margin-bottom:7px;
+        border-radius:9px;background:${hit?"#12241a":"#101720"};border:1px solid ${hit?"#23503a":"#252d3a"};font-size:15px">
+        <span style="color:${hit?"#4cc08a":"#8892a3"}">${cn.label}</span>
+        <span style="font-variant-numeric:tabular-nums;color:${hit?"#e0a54a":"#5a6474"}">${cn.ratio}</span></div>`;
+    }).join("");
+    setTimeout(()=>revealStep(3), 900);
+  }
+  drawTwo();
+};
+function drawTwo(){
+  const cv=$("#cv2"); if(!cv||!cv.clientWidth) return;
+  const dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=300;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+  c.fillStyle="#0b0f15"; c.fillRect(0,0,W,H);
+  const x0=30,x1=W-30,gw=x1-x0;
+  const f2=F0*Math.pow(2,cents2/1200);
+  const ratio=f2/F0;
+  const cyc=Math.min(9,Math.max(2.5,ratio*3.2));
+  const A=32;
+  const wave=(y,f,col,label)=>{
+    c.beginPath();
+    for(let i=0;i<=320;i++){
+      const u=i/320;
+      const yv=y-Math.sin(u*Math.PI*2*cyc*f/F0)*A;
+      i?c.lineTo(x0+u*gw,yv):c.moveTo(x0+u*gw,yv);
+    }
+    c.strokeStyle=col; c.lineWidth=2.4; c.stroke();
+    c.fillStyle=col; c.font="600 12.5px 'Segoe UI',sans-serif"; c.textAlign="left";
+    c.fillText(label,x0+4,y-A-9);
+  };
+  wave(72,F0,"#5b9bd5","第一个音");
+  wave(158,f2,"#a97bd6","第二个音");
+  // 波峰撞上的竖线
+  c.strokeStyle="rgba(76,192,138,.55)"; c.lineWidth=1.3;
+  for(let n=0;n<=200;n++){
+    const u=n/200;
+    const a=Math.sin(u*Math.PI*2*cyc), b=Math.sin(u*Math.PI*2*cyc*ratio);
+    if(a>0.99&&b>0.99){ const x=x0+u*gw; c.beginPath(); c.moveTo(x,34); c.lineTo(x,214); c.stroke(); }
+  }
+  // 叠加
+  c.beginPath();
+  for(let i=0;i<=320;i++){
+    const u=i/320;
+    const yv=262-(Math.sin(u*Math.PI*2*cyc)+Math.sin(u*Math.PI*2*cyc*ratio))*18;
+    i?c.lineTo(x0+u*gw,yv):c.moveTo(x0+u*gw,yv);
+  }
+  c.strokeStyle="#e0a54a"; c.lineWidth=2.6; c.stroke();
+  c.fillStyle="#5a6474"; c.font="12px 'Segoe UI',sans-serif"; c.textAlign="left";
+  c.fillText("底下那条 = 两个音叠在一起　绿线 = 两个波峰撞上的时刻", x0+4, 22);
+  c.textAlign="right"; c.fillStyle="#8892a3";
+  c.fillText(ratio<1.001?"同一个音":(ratio.toFixed(4)+" : 1"), x1-4, 22);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   第三步
+   ══════════════════════════════════════════════════════════════ */
+const COMMA=1200*Math.log2(Math.pow(1.5,12))-8400;
+let blend=0, V3=null;
+
+$("#btn3").onclick = () => {
+  audio();
+  if(!V3) V3=makeVoice(F0,1);
+  const c=audio(), t0=c.currentTime+0.05;
+  const seq=[]; let cur=1;
+  for(let n=0;n<12;n++){ cur*=1.5; while(cur>=2) cur/=2; seq.push(F0*cur); }
+  seq.push(F0*2);
+  seq.forEach((f,i)=> beep(f, t0+i*0.40, 0.34, 0.26));
+  $("#hint3").innerHTML = "最后一个音，本该和第一个音是同一个音（只是<b>高一个八度</b>）。听出来了吗？";
+  setTimeout(()=>{ if(!$("#rev3").classList.contains("on")) $("#rev3").classList.add("on"); }, seq.length*400+250);
+};
+$("#r3").oninput = e => {
+  blend=+e.target.value;
+  drawBlend();
+  const gap=COMMA*(1-blend/100);
+  $("#hint3b").textContent = gap<0.5
+    ? "现在是平均律：所有调都能弹，但没有一个调是纯净的。"
+    : `还有 ${gap.toFixed(1)} 音分的缺口没被摊掉 —— 它就是纯净度的来源，也是转调的障碍。`;
+};
+$("#btn3b").onclick = () => {
+  audio();
+  const c=audio(), t0=c.currentTime+0.05;
+  const thirdC=400-(400-386.31)*(1-blend/100);
+  const fifthC=700+(701.955-700)*(1-blend/100);
+  const rootFs=369.99;
+  const chord=(freqs,at,dur)=>{
+    freqs.forEach(f=>{
+      const o=c.createOscillator(); o.type="sine"; o.frequency.value=f;
+      const g=c.createGain(); g.gain.value=0;
+      o.connect(g); g.connect(c.destination);
+      g.gain.setValueAtTime(0,at);
+      g.gain.linearRampToValueAtTime(0.14,at+0.04);
+      g.gain.setValueAtTime(0.14,at+dur-0.18);
+      g.gain.linearRampToValueAtTime(0,at+dur);
+      o.start(at); o.stop(at+dur+0.02);
+    });
+  };
+  chord([F0, F0*Math.pow(2,thirdC/1200), F0*Math.pow(2,fifthC/1200)], t0, 1.5);
+  chord([rootFs, rootFs*Math.pow(2,thirdC/1200), rootFs*Math.pow(2,fifthC/1200)], t0+1.7, 1.5);
+  $("#hint3b").innerHTML = "先听 <b>C 大调</b>的三和弦，隔一下再听 <b>F♯ 大调</b>的三和弦。";
+};
+
+function drawCircle(){
+  const cv=$("#cv3"); if(!cv||!cv.clientWidth) return;
+  const dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=330;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+  c.fillStyle="#0b0f15"; c.fillRect(0,0,W,H);
+  const cx=W/2, cy=H/2+8, R=Math.min(W*0.5,H*0.40);
+  const steps=12, SPAN=Math.PI*2*0.90;
+  c.fillStyle="#8892a3"; c.font="12.5px 'Segoe UI',sans-serif"; c.textAlign="left";
+  c.fillText("沿纯五度往上走 12 次，理论上应该正好回到起点", 16, 22);
+
+  // 已走的弧
+  for(let n=1;n<=steps;n++){
+    c.beginPath();
+    c.arc(cx,cy,R, -Math.PI/2+(n-1)/steps*SPAN, -Math.PI/2+n/steps*SPAN);
+    c.strokeStyle = n===steps ? "#4cc08a" : "#39424f";
+    c.lineWidth = n===steps ? 3 : 2;
+    c.stroke();
+  }
+  // 缺口
+  c.beginPath();
+  c.arc(cx,cy,R, -Math.PI/2+SPAN, -Math.PI/2+Math.PI*2);
+  c.strokeStyle="#e07a7a"; c.lineWidth=3; c.stroke();
+
+  for(let n=0;n<=steps;n++){
+    const a=-Math.PI/2+n/steps*SPAN;
+    const x=cx+Math.cos(a)*R, y=cy+Math.sin(a)*R;
+    c.beginPath(); c.arc(x,y,n===steps?7:4.5,0,Math.PI*2);
+    c.fillStyle=n===steps?"#4cc08a":"#5a6474"; c.fill();
+    if(n%3===0&&n<steps){
+      c.fillStyle="#5a6474"; c.font="11.5px 'Segoe UI',sans-serif"; c.textAlign="center";
+      c.fillText(n, cx+Math.cos(a)*(R+20), cy+Math.sin(a)*(R+20)+4);
+    }
+  }
+  // 起点标记
+  const sx=cx, sy=cy-R;
+  c.beginPath(); c.arc(sx,sy,8,0,Math.PI*2);
+  c.strokeStyle="#e0a54a"; c.lineWidth=2; c.stroke();
+  c.fillStyle="#e0a54a"; c.font="600 12px 'Segoe UI',sans-serif"; c.textAlign="center";
+  c.fillText("出发", sx, sy-14);
+
+  const ga=-Math.PI/2+SPAN;
+  c.fillStyle="#e07a7a"; c.font="600 13px 'Segoe UI',sans-serif"; c.textAlign="left";
+  c.fillText("← 最后一脚踩空了", cx+Math.cos(ga)*(R+6), cy+Math.sin(ga)*(R+6)+26);
+  c.fillStyle="#8892a3"; c.font="12.5px 'Segoe UI',sans-serif";
+  c.fillText("12 个纯五度", 16, H-14);
+  c.textAlign="right"; c.fillStyle="#e07a7a";
+  c.fillText("永远合不上这一小截", W-16, H-14);
+}
+function drawBlend(){
+  const cv=$("#cv3b"); if(!cv||!cv.clientWidth) return;
+  const dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=180;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+  c.fillStyle="#0f141b"; c.fillRect(0,0,W,H);
+  const dev=400-(400-386.31)*(1-blend/100);
+  const p5dev=(701.955-700)*(1-blend/100);
+  c.fillStyle="#8892a3"; c.font="12.5px 'Segoe UI',sans-serif"; c.textAlign="left";
+  c.fillText("这一小截缺口，被摊到了每个音上。下面是摊的结果：", 14, 22);
+  const rows=[
+    {n:"大三度", v:400-dev, max:16, unit:"音分的偏差"},
+    {n:"纯五度", v:p5dev, max:16, unit:"音分的偏差"},
+    {n:"其余十个音", v:(400-dev)*0.5, max:16, unit:"音分的偏差"},
+  ];
+  rows.forEach((r,i)=>{
+    const y=42+i*42;
+    c.fillStyle="#8892a3"; c.font="13.5px 'Segoe UI',sans-serif"; c.textAlign="left";
+    c.fillText(r.n, 14, y+17);
+    c.fillStyle="#141a22"; c.fillRect(120, y, W-300, 24);
+    const col = r.v>9 ? "#e07a7a" : (r.v>2.5 ? "#e0a54a" : "#4cc08a");
+    c.fillStyle=col; c.fillRect(120, y, (W-300)*clamp(r.v/r.max,0,1), 24);
+    c.fillStyle=col; c.font="600 13px 'Segoe UI',sans-serif"; c.textAlign="right";
+    c.fillText(r.v<0.4?"几乎纯净":(r.v.toFixed(1)+" "+r.unit), W-14, y+17);
+  });
+}
+
+/* ══════════ 数字面板 ══════════ */
+$("#btnData").onclick = () => {
+  const box=$("#dataBox");
+  box.classList.toggle("on");
+  box.innerHTML = `
+    <div>基音 ${F0.toFixed(1)} Hz　前六个泛音：${[1,2,3,4,5,6].map(k=>(F0*k).toFixed(0)).join(" / ")} Hz</div>
+    <div>音名 C C G C E G　→　去重 = C E G = 大三和弦</div>
+    <div style="margin-top:12px">一个八度 = 1200 音分，平均律把它等分成 12 份，每份 100 音分</div>
+    <div>纯五度 3:2 实际 = ${(1200*Math.log2(1.5)).toFixed(2)} 音分（平均律给 700，差 ${(1200*Math.log2(1.5)-700).toFixed(2)}）</div>
+    <div>纯律大三度 5:4 实际 = ${(1200*Math.log2(1.25)).toFixed(2)} 音分（平均律给 400，差 ${(400-1200*Math.log2(1.25)).toFixed(2)}）</div>
+    <div style="margin-top:12px">12 个纯五度 = ${(1200*Math.log2(Math.pow(1.5,12))).toFixed(2)} 音分　7 个八度 = 8400 音分</div>
+    <div>缺口（毕达哥拉斯音差）= <span style="color:#e07a7a">${COMMA.toFixed(2)} 音分</span></div>
+    <div style="margin-top:12px">这些数字只在你想核对的时候有用。不理解它们，也不影响你刚才听到的东西。</div>`;
+};
+
+drawString(); drawTwo(); drawCircle(); drawBlend();
+window.addEventListener("resize", ()=>{ drawString(); drawTwo(); drawCircle(); drawBlend(); });
+</script>
+</body>
+</html>

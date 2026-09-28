@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一篇一千字的答案，为什么读不懂 · 《空之境界》文学性之争</title>
+<style>
+  :root{
+    --bg:#0d0c0a; --panel:#161512; --panel2:#1e1c18; --line:#2f2b24;
+    --fg:#eae5dc; --dim:#938b7d; --gold:#c9a227; --jade:#5f9e6e;
+    --rose:#b8503f; --blue:#5b7f9b; --purple:#8f7bb0; --ink:#3a342b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);
+    font-family:"Songti SC","SimSun","Segoe UI","Microsoft YaHei",serif;
+    line-height:1.85;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:44px 22px 100px}
+  button{font-family:inherit}
+  .hide{display:none !important}
+  .sans{font-family:"Segoe UI","Microsoft YaHei",-apple-system,sans-serif}
+
+  h1{font-size:clamp(26px,4.2vw,38px);margin:0 0 14px;line-height:1.35;letter-spacing:.02em}
+  .lede{color:var(--dim);font-size:16px;margin:0 0 10px;max-width:680px;
+    font-family:"Segoe UI","Microsoft YaHei",sans-serif;line-height:1.8}
+  .meta{font-size:13px;color:var(--dim);margin-bottom:40px;
+    font-family:"Segoe UI","Microsoft YaHei",sans-serif}
+  .meta a{color:var(--blue);text-decoration:none}
+
+  h2{font-size:23px;margin:0 0 6px;letter-spacing:.03em}
+  h2 .n{color:var(--gold);font-size:14px;letter-spacing:.2em;display:block;
+    margin-bottom:8px;font-family:"Segoe UI","Microsoft YaHei",sans-serif;font-weight:700}
+  .sec{margin-bottom:72px}
+  .sec>.sub{color:var(--dim);font-size:15.5px;margin:0 0 26px;max-width:660px;
+    font-family:"Segoe UI","Microsoft YaHei",sans-serif}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 26px}
+  .btn{background:var(--panel2);color:var(--fg);border:1px solid var(--line);
+    border-radius:9px;padding:9px 16px;font-size:14px;cursor:pointer;transition:.14s;
+    font-family:"Segoe UI","Microsoft YaHei",sans-serif}
+  .btn:hover{background:#292520;border-color:#443c31}
+  .btn.primary{background:var(--gold);color:#1a1408;border-color:var(--gold);font-weight:700}
+  .btn.small{padding:6px 12px;font-size:12.8px}
+  .row{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;align-items:center}
+
+  /* 原文 */
+  .orig{background:#121110;border:1px solid var(--line);border-radius:14px;
+    padding:26px 30px;font-size:16.5px;line-height:2.05}
+  .orig p{margin:0 0 16px}
+  .orig p:last-child{margin-bottom:0}
+  .t{color:var(--gold);border-bottom:1px dashed var(--gold);cursor:pointer;
+    transition:.15s;padding-bottom:1px}
+  .t:hover{background:rgba(201,162,39,.16)}
+  .t.on{background:rgba(201,162,39,.26);border-bottom-style:solid}
+
+  .gloss{background:linear-gradient(135deg,#1c1a12,#161512);border:1px solid #453c1c;
+    border-radius:12px;padding:20px 24px;margin-top:18px;min-height:120px;
+    font-family:"Segoe UI","Microsoft YaHei",sans-serif}
+  .gloss .w{font-size:19px;color:var(--gold);font-weight:700;margin-bottom:4px;
+    font-family:"Songti SC","SimSun",serif}
+  .gloss .one{font-size:14px;color:var(--dim);margin-bottom:12px}
+  .gloss p{margin:0 0 10px;font-size:15px;color:#d5cfc4;line-height:1.8}
+  .gloss p:last-child{margin-bottom:0}
+  .gloss .warn{color:var(--rose);font-size:14px;margin-top:10px;
+    border-top:1px solid var(--line);padding-top:10px}
+
+  /* 对照 */
+  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.cmp{grid-template-columns:1fr}}
+  .col{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px}
+  .col.a{border-top:3px solid var(--jade)}
+  .col.b{border-top:3px solid var(--purple)}
+  .col h3{margin:0 0 4px;font-size:19px}
+  .col .tag{font-size:12.5px;color:var(--dim);margin-bottom:16px;
+    font-family:"Segoe UI","Microsoft YaHei",sans-serif}
+  .stage{border-left:2px solid var(--line);padding:0 0 16px 16px;margin-left:6px;
+    position:relative;cursor:pointer;transition:.15s}
+  .stage:last-child{padding-bottom:0}
+  .stage:hover{border-left-color:var(--gold)}
+  .stage.on{border-left-color:var(--gold)}
+  .stage::before{content:"";position:absolute;left:-6px;top:8px;width:10px;height:10px;
+    border-radius:50%;background:var(--line);transition:.15s}
+  .stage.on::before{background:var(--gold);box-shadow:0 0 0 3px rgba(201,162,39,.2)}
+  .stage .yr{font-size:12.5px;color:var(--gold);letter-spacing:.08em;
+    font-family:"Segoe UI","Microsoft YaHei",sans-serif;font-weight:700}
+  .stage .nm{font-size:15.5px;margin:2px 0 4px}
+  .stage .dt{font-size:13.8px;color:var(--dim);line-height:1.7;
+    font-family:"Segoe UI","Microsoft YaHei",sans-serif}
+
+  /* 人物 */
+  .people{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+  .person{background:var(--panel2);border:1px solid var(--line);border-radius:11px;
+    padding:14px 16px;cursor:pointer;transition:.15s}
+  .person:hover{border-color:var(--gold)}
+  .person.on{border-color:var(--gold);background:#221f18}
+  .person .nm{font-size:16px;font-weight:600;margin-bottom:2px}
+  .person .rl{font-size:12.5px;color:var(--dim);
+    font-family:"Segoe UI","Microsoft YaHei",sans-serif}
+
+  /* 期货 */
+  .fut{background:#121110;border:1px solid var(--line);border-radius:14px;
+    padding:24px 28px;font-family:"Segoe UI","Microsoft YaHei",sans-serif}
+  .contract{border:1px dashed #55492a;border-radius:11px;padding:18px 22px;
+    background:linear-gradient(135deg,#1c1a12,#141310)}
+  .contract .k{font-size:11.5px;letter-spacing:.2em;color:var(--gold);font-weight:700}
+  .contract .body{font-size:15.5px;margin-top:10px;line-height:1.85;color:#ddd6ca}
+  .timeline{margin-top:22px}
+  .tick{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--line);
+    opacity:0;transform:translateX(-8px);transition:.5s}
+  .tick.on{opacity:1;transform:none}
+  .tick .y{flex:none;width:64px;color:var(--gold);font-weight:700;font-size:14px;
+    font-variant-numeric:tabular-nums}
+  .tick .c{font-size:14.6px;color:#cdc7bc;line-height:1.75}
+  .verdict-box{background:linear-gradient(135deg,#1b1410,#141210);border:1px solid #4a3524;
+    border-radius:12px;padding:22px 26px;margin-top:22px;
+    opacity:0;transform:translateY(10px);transition:.6s;pointer-events:none}
+  .verdict-box.on{opacity:1;transform:none;pointer-events:auto}
+  .verdict-box .q{font-size:19px;color:var(--gold);font-family:"Songti SC","SimSun",serif;
+    line-height:1.9}
+
+  .note{background:#111110;border:1px solid var(--line);border-radius:12px;
+    padding:18px 22px;font-size:14.6px;color:var(--dim);margin-top:18px;
+    font-family:"Segoe UI","Microsoft YaHei",sans-serif;line-height:1.85}
+  .note b{color:#d5cfc4}
+  .note .hl{color:var(--gold);font-weight:600}
+  .quote{background:#121110;border-left:3px solid var(--jade);border-radius:0 10px 10px 0;
+    padding:14px 20px;margin:16px 0;font-size:15.5px;color:#d5cfc4;line-height:1.9}
+  .quote .src{display:block;margin-top:8px;font-size:12.5px;color:var(--dim);
+    font-family:"Segoe UI","Microsoft YaHei",sans-serif}
+  .foot{color:var(--dim);font-size:13.5px;margin-top:50px;border-top:1px solid var(--line);
+    padding-top:22px;font-family:"Segoe UI","Microsoft YaHei",sans-serif;line-height:1.9}
+  .foot a{color:var(--blue);text-decoration:none}
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:99;display:flex;gap:16px;align-items:center;justify-content:space-between;padding:9px 18px;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid #2b3444;font-size:13.5px;font-family:'Segoe UI','Microsoft YaHei',sans-serif"><a href="/" style="color:#8b98a8;text-decoration:none">← wzk 的技术笔记</a><a href="/zhihu/labs/" style="color:#58a6ff;text-decoration:none">全部交互页面</a></div>
+<div class="wrap">
+
+<h1>一篇一千字的答案，为什么读不懂</h1>
+<p class="lede">
+  这篇知乎回答只有 1029 个字，但它在一句话里塞进了 <b>六朝乐府</b>、<b>正始玄学</b>、<b>骈文</b>、<b>名士清谈</b> 四个中国文学史典故，
+  后面还有一段 2000 年代日本文坛的往事。<br>
+  这些都不在高中语文范围内。这一页把它们全部拆开。
+</p>
+<p class="meta">
+  原文：<a href="https://www.zhihu.com/question/303078317/answer/2083667897881192289" target="_blank">
+  《空之境界是否含有文学性？》— 作者 话痨</a>　·　赞同 76　·　2026-09-16
+</p>
+
+<!-- ═══════ 零 ═══════ -->
+<div class="sec">
+  <h2><span class="n">第 零 步</span>先给你一把钥匙</h2>
+  <p class="sub">下面是原文全文。<b>金色带下划线的词</b>，点一下就有解释。读完这一节，你就能顺畅地读完原文了。</p>
+
+  <div class="orig" id="orig"></div>
+  <div class="gloss" id="gloss">
+    <div class="w">点上面任意一个金色词</div>
+    <div class="one">这一页要做的，就是把这类词一个个讲清楚。</div>
+    <p>原文的难，不在于它用了多少生僻字，而在于它<b>默认你熟悉一整套中国文学史的常识</b>——知道「乐府」和「玄学」分别代表哪两种命运。而这恰恰是全文唯一的论证工具。</p>
+  </div>
+</div>
+
+<!-- ═══════ 一 ═══════ -->
+<div class="sec">
+  <h2><span class="n">第 一 步</span>整篇文章，其实只讲了一个对比</h2>
+  <p class="sub">
+    作者用的是两个历史比喻。搞懂这两者的差别，全文就通了。<br>
+    点开下面每一条，看看这两种「留下来」到底哪里不一样。
+  </p>
+
+  <div class="cmp">
+    <div class="col a">
+      <h3>乐府</h3>
+      <div class="tag">作者用它代表：<b>成功的那种结局</b></div>
+      <div id="stageA"></div>
+    </div>
+    <div class="col b">
+      <h3>正始玄学</h3>
+      <div class="tag">作者用它代表：<b>实际发生的那种结局</b></div>
+      <div id="stageB"></div>
+    </div>
+  </div>
+
+  <div class="gloss" id="cmpnote" style="margin-top:18px">
+    <div class="w">两种「留下来」的区别</div>
+    <div class="one">这是理解全文的关键，值得慢慢看</div>
+    <p>点开左边任意一条，或者直接读这段话：</p>
+    <p><b>乐府留下的是「作品」。</b>它出身很低——本来是民间随口唱的歌。但有人把它们收集起来、记录下来，后来的人一代代地读它、学它、模仿它。
+    于是它变成了「文学」，今天还在中学课本里。<b>它的载体是文本，它的归宿是被当作经典来研读。</b></p>
+    <p><b>正始玄学留下的是「词汇」。</b>它出身很高——是一群最聪明的人在讨论最抽象的问题。它热闹了大约十年，然后被政治事件打断，人散了。
+    但它发明的那些词（有无、本末、体用）没有消失，它们钻进了后来的佛教思想和宋明理学里，成了别人学问的一部分。
+    <b>它的载体是概念，它的归宿是被吸收进别的体系。</b></p>
+    <p style="color:var(--gold)">作者的意思是：<b>「渗入后世」和「成为经典」是两件完全不同的事。</b>
+    前者是影响力，后者是地位。一样东西可以影响很大，却始终没能在文学史上占一个正座。</p>
+  </div>
+</div>
+
+<!-- ═══════ 二 ═══════ -->
+<div class="sec">
+  <h2><span class="n">第 二 步</span>这个比喻，是在说日本的一件真事</h2>
+  <p class="sub">
+    原文第 3 到第 6 段讲的是 2003—2005 年前后，日本出现过一个圈子，他们认真地在赌一件事。
+    点下面的人名，看他/她是谁、在这场赌局里站什么位置。
+  </p>
+
+  <div class="people" id="people"></div>
+  <div class="gloss" id="pnote" style="margin-top:18px">
+    <div class="w">他们赌的是什么</div>
+    <div class="one">原文第 4、5 段</div>
+    <p>当时有一批人相信：<b>漫画、动画、游戏、轻小说里，正在长出新的讲故事的方法</b>，而这些方法可能会取代战后的「纯文学」，成为下一代日本文学的主流。</p>
+    <p>他们的底气来自一个历史类比（原文第 5 段）：明治时代有自然主义，战后有私小说和纯文学，<b>那么平成末期，也许就轮到动画、游戏、轻小说了。</b>
+    每一代文学都需要一个新的来源，他们觉得自己正站在那个来源上。</p>
+    <p>原文第 6 段那句「他们自己恐怕觉得正在等待的是乐府诗」——意思是：<b>他们以为自己正在见证一种出身低、但终将成为正典的新文学。</b>
+    就像当年那些民间歌谣一样。</p>
+    <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:14px">
+      <p><b>关于《Faust》这本杂志，有一个外行常搞错的地方：</b>它虽然被广义归入轻小说杂志，但它其实是讲谈社文艺志《メフィスト》的派生，
+      主编是太田克史，执笔者的作品和同时代的轻小说差别很大——所以他们当时另立了一个名字叫「新伝綺」。
+      <b>换句话说，把《Faust》系作家一律叫「轻小说作家」，正是那批人当年想摆脱的分类。</b></p>
+      <p style="color:var(--dim)">另外，这本杂志 2003 年 9 月创刊，一直出到 2011 年 9 月的 Vol.8。所以原文说的那个「窗口」（2003—2005）
+      比杂志本身结束得早得多——场子还在，但那股劲已经过去了。</p>
+     </div>
+     <p class="warn">这是全文的转折点。接下来的话是：结果不是。</p>
+  </div>
+</div>
+
+<!-- ═══════ 三 ═══════ -->
+<div class="sec">
+  <h2><span class="n">第 三 步</span>最后一击：为什么作者要说「期货」</h2>
+  <p class="sub">
+    原文最后一句是全文的杀招，但它用了一个金融词。先把这个词讲清楚，你就明白作者在骂什么。
+  </p>
+
+  <div class="fut">
+    <div class="contract">
+      <div class="k">先解释这个词</div>
+      <div class="body">
+        <b>期货</b>是一份合同：<b>现在</b>约定好，<b>将来</b>某个时间，用某个价格交割某样东西。<br>
+        它的特点是——<b>签的时候东西还没到手，价值完全取决于未来会不会兑现。</b>
+      </div>
+    </div>
+
+    <p style="margin:22px 0 6px;font-size:15.2px;color:#d5cfc4;line-height:1.85">
+      作者说，那些批评家和粉丝做的，本质上就是<b>替一部作品签了一份期货合约</b>。合约的内容是：
+    </p>
+
+    <div class="contract" style="border-color:#5a3a2a">
+      <div class="k" style="color:var(--rose)">那 份 合 约</div>
+      <div class="body">
+        「这部作品<b>将来一定会被经典化</b>。后世的读者会通过它来认识我们这个时代。」<br>
+        <span style="color:var(--dim);font-size:14px">—— 签于 2000 年代，交割日：未定</span>
+      </div>
+    </div>
+
+    <div class="row">
+      <button class="btn primary" id="bsign">▶ 签下这份合约，然后快进到交割日</button>
+      <button class="btn" id="breset">重来</button>
+    </div>
+
+    <div class="timeline" id="timeline"></div>
+    <div class="verdict-box" id="vbox">
+      <div class="k" style="font-size:11.5px;letter-spacing:.2em;color:var(--gold);font-weight:700;margin-bottom:10px">交 割 日</div>
+      <div class="q">「嗯，写得不错的青春幻想小说。」</div>
+      <p style="font-size:15px;color:#cdc7bc;margin:16px 0 0;line-height:1.85">
+        这就是原文结尾那句话的意思——<b>「思想不是期货市场，后世没有义务交割。」</b>
+      </p>
+      <p style="font-size:15px;color:#cdc7bc;margin:12px 0 0;line-height:1.85">
+        你可以现在就给一部作品发一张「未来经典」的凭证，但<b>兑不兑现，取决于后人愿不愿意接</b>。
+        而后人没有这个义务。他们只会说：嗯，写得不错的青春幻想小说。
+      </p>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>为什么这个比喻狠。</b>「期货」这个词把两件事分开了：<span class="hl">评价</span>和<span class="hl">兑现</span>。
+    前一代人可以尽情地给出一部作品很高的评价——那是他们的自由；但评价能不能变成文学史上的实际位置，是下一代人说了算的。<br><br>
+    作者用这个词，是在提醒：<b>把「我们这一代人觉得它很深刻」直接等同于「它在文学史上会有位置」，中间跳了一步。</b>
+    那一步不由发凭证的人决定。
+  </div>
+</div>
+
+<!-- ═══════ 四 ═══════ -->
+<div class="sec">
+  <h2><span class="n">第 四 步</span>作者的判断，和他的边界</h2>
+  <p class="sub">读完上面四步，你应该能自己判断哪些是史实、哪些是作者的观点了。</p>
+
+  <div class="note">
+    <b>原文里属于「事实陈述」的部分：</b><br>
+    · 2003—2005 年《Faust》杂志周围聚集了那批作家和批评家（可查证）<br>
+    · 他们确实一度被当成一个横跨纯文学、推理、轻小说、美少女游戏的新现象（可查证）<br>
+    · 《空之境界》最初是同人作品，后来由讲谈社商业出版（可查证）<br>
+    · 今天二次元作品里普遍存在「第二层世界」「属性化能力」「参数化世界观」这类设定（可以自己观察）
+  </div>
+
+  <div class="note" style="border-color:#4a3524">
+    <b style="color:var(--gold)">属于「作者判断」的部分（不是定论）：</b><br>
+    · 「《空之境界》是一部被错误当成商业作品保存下来的玄学时代文本」——这是作者给它的定性<br>
+    · 「大部分人赋予它的哲学深度，高度依赖当时那整套话语共同体」——这是在解释一部作品的价值来源，属于文学社会学的判断，可以争论<br>
+    · 「窗口关闭以前授予的文学史地位，被粉丝全部继承下来」——这是对粉丝心态的描述<br>
+    · 整篇的核心判断：那次尝试「留下的是正始玄学而不是乐府」——<b>这个判断本身就需要时间才能验证</b>，作者是在 2026 年做的评估，不是历史已经给出的结论
+  </div>
+
+  <div class="quote">
+    也就是说，这篇答案本身也是一份「评价」。它做的是把前一代人签下的期货合约拿出来，说：这份合约我看是要违约的。
+    <span class="src">—— 这一句是这一页的解读，不是原文</span>
+  </div>
+
+  <div class="note">
+    <b>还有一个容易被忽略的细节：</b>原文第 2 段说奈须蘑菇「靠空之境界的写作经验作为游戏剧本家，对大部分剧本家实现了降维打击」。
+    「降维打击」是个网络流行语，意思是<b>用高出一个维度的能力去碾压对手</b>，出自科幻小说《三体》。
+    作者用在这里是<b>褒义</b>——他承认奈须蘑菇的写作能力在游戏剧本行业里是碾压级别的。<br><br>
+    这一点很重要：<b>这篇答案并不是在贬低这部作品。</b>它最后给的原话是「写得不错的青春幻想小说」——
+    「不错」两个字是认真的。作者反对的不是作品本身，而是<b>把作品抬到它承受不起的历史位置上</b>这件事。
+  </div>
+</div>
+
+<div class="foot">
+  原文：知乎《空之境界是否含有文学性？》，作者「话痨」，赞同 76，2026-09-16。
+  <a href="https://www.zhihu.com/question/303078317/answer/2083667897881192289" target="_blank">查看原文 →</a><br>
+  这一页的定位是<b>导读</b>：它把原文里默认你懂的背景知识补上，并且把事实和观点分开标注。
+  它<b>不代替</b>原文，也不评价作者的对错——那需要你自己读完原文再判断。
+  <br><br>
+  <b>史实核对说明：</b>这一页的史实部分逐条核对过，来源包括日文维基百科（经 Weblio 辞書镜像读取）、
+  国立国会图书馆书目、东京都立图书馆书目、讲谈社官网等。其中「正始」年号（240—249）、
+  高平陵之变（249 年正月）、王弼生卒（226—249）、竹林七贤名单、《空之境界》讲谈社版年份（2004 年 6 月）、
+  东浩纪《动物化的后现代》（2001 年）几项已确证。
+  <br><br>
+  <b>两处按考证结果做了修正：</b>①《Faust》并非 2000 年代中后期停刊，而是出到 2011 年 9 月的 Vol.8——
+  这个纠正反而让原文更有力：那个「窗口」比杂志本身结束得早得多；
+  ②舞城王太郎、佐藤友哉、西尾维新三人的<b>具体出道年份未能找到可核验来源</b>，
+  因此只保留「梅菲斯特奖出身」这一确证信息，删去了年份。
+  裴頠《崇有论》与郭象「自生自化」未做原文级核验，此处仅按通行说法概述。
+</div>
+
+</div>
+
+<script>
+"use strict";
+const $=(s)=>document.querySelector(s);
+const $$=(s)=>[...document.querySelectorAll(s)];
+const esc=(s)=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* ══════════════════════════════════════════════════════════════
+   术语表
+   ══════════════════════════════════════════════════════════════ */
+const TERMS = {
+  "零年代": {
+    one:"2000—2009 年这十年",
+    body:["日本习惯把十年叫「○年代」。零年代就是 2000 到 2009 年，也就是《空之境界》被商业出版、那批人最活跃的时期。",
+          "今天回头看，「零年代」在日本常被当成一个特殊的时段——那时纸媒还没倒，网络刚开始，亚文化和纯文学还有机会坐在同一张桌子上。"]
+  },
+  "六朝": {
+    one:"公元 222—589 年，先后定都南方的六个政权",
+    body:["指三国时的吴，加上东晋、宋、齐、梁、陈。它们都建都建康（今南京），所以也叫「六朝」。",
+          "这是中国文学史上一个大转向的时期：文学开始被当成一件独立的事情来做，而不是政治的附庸。讲究辞藻、对仗、声律的风气就是这时候起来的。",
+          "「六朝」在文学史上常常带着一点贬义——华丽、空洞、形式大于内容。但它的形式探索确实影响了后来的唐诗。"]
+  },
+  "乐府": {
+    one:"本来是汉代的官署，后来变成一种诗体的名字",
+    body:["「乐府」最早是一个官署的名字（秦代已有，汉武帝时大规模扩充）。它的工作是到各地采集民间歌谣、配上音乐，给宫廷用。",
+          "后来，这些被采集来的民歌本身成了文学。它们出身很低——是老百姓随口唱的，语言直白，不讲究。但因为被收集、被记录下来，一代代人读它、学它、仿写它，它就成了「乐府诗」。",
+          "今天你中学课本里的《孔雀东南飞》《木兰诗》，就是乐府。",
+          "所以「乐府」这个词在原文里的意义是：<b>一种出身低、但最终被公认为「文学」的东西</b>。这正是那批日本作家希望轻小说变成的样子。"],
+    warn:"容易搞混：乐府不是「一个人写的作品」，而是「一类东西的命运」。作者用的是它的命运，不是它的内容。"
+  },
+  "骈文": {
+    one:"六朝盛行的一种极度讲究形式的文体",
+    body:["骈的意思是「两匹马并排」。骈文要求句子两两相对——字数、词性、平仄都要对得上，还要用典故。",
+          "它是六朝文学的代表，也是后来被批评得最厉害的文体：形式太完美，内容反而被架空了。唐代韩愈搞「古文运动」，反对的就是它。",
+          "原文把它和乐府并列，是在说那批人想要的那种「新形式」——一种高度自觉、有技法门槛、能被后世当成文学来研究的东西。"]
+  },
+  "正始": {
+    one:"公元 240—249 年，魏国皇帝曹芳的年号",
+    body:["「正始」是魏帝曹芳的第一个年号，240—249 年，一共只有十年。249 年四月改元嘉平，所以这一年既是正始十年、也是嘉平元年。但它在中国思想史上是一个标志性的时间点。",
+          "这十年里，洛阳的一批贵族知识分子集中讨论了一批很抽象的问题，形成了一股思潮，后世叫「正始玄学」。",
+          "这十年结束的方式很惨：公元 249 年发生高平陵之变，司马懿发动政变，把当时的执政者曹爽一党全部清除，玄学圈子里的核心人物何晏也在其中被杀。这股思潮从此失去了它的政治土壤。"]
+  },
+  "玄学": {
+    one:"魏晋时期用老庄思想重新解释世界的一股哲学思潮",
+    body:["「玄」出自《老子》的「玄之又玄，众妙之门」。玄学的核心经典是三部：《老子》《庄子》《周易》，合称「三玄」。",
+          "它讨论的问题非常抽象：世界的本原是「有」还是「无」？现象和本体是什么关系？语言能不能表达真正的意思？",
+          "代表人物：何晏、王弼主张「以无为本」（王弼注《老子》和《周易》，二十四岁就死了）；裴頠写《崇有论》反对他们；郭象注《庄子》，主张万物自生自化。",
+          "它热闹的时间不长，但它发明的词——有无、本末、体用、言意——后来被佛教思想和宋明理学大量吸收。<b>这是原文最看重的一点：玄学本门没有传下来，但它的词汇活在别人的学问里。</b>"]
+  },
+  "有无本末": {
+    one:"玄学最核心的一组概念对",
+    body:["「有无」：世界背后到底是「有」（实在）还是「无」（空无）？何晏、王弼认为「无」是根本。",
+          "「本末」：哪个是根本，哪个是枝节？比如「名教」（社会规范）和「自然」（人的本性），哪个是本？",
+          "原文用「一时名士竞谈有无本末」来形容那个时代的思想密度——<b>所有人都在讨论最根本的问题</b>。",
+          "重点在下一句：这么高密度的一场讨论，「时代一过，学统骤散」。"]
+  },
+  "学统": {
+    one:"一门学问被后人一代代持续传承下去的那条线",
+    body:["「统」是脉络、传承的意思。学统指的是：一门学问有没有形成一条被后人接着做下去的线。",
+          "有学统，意味着后世的学者会把它当作一门正经学问来研究、注释、发展。比如儒学有学统，训诂有学统。",
+          "原文说玄学「学统骤散」，是一句很重的判断：<b>它没有形成这样一条线。</b>它的讨论散掉了，只留下一些词。",
+          "这个词是全文的枢纽。作者拿它来对比乐府——乐府是有「学统」的，因为后世一直有人在研究乐府诗。"]
+  },
+  "名士": {
+    one:"魏晋时期有声望、有学识、以清谈著称的知识分子",
+    body:["名士不只是「有名的人」。它是一个特定的历史身份：出身士族、有学识、以谈论玄理和品评人物为风尚。",
+          "最有名的群体是「竹林七贤」：嵇康、阮籍、山涛、向秀、刘伶、王戎、阮咸。<b>但要注意：这是后世的追认标签，不是他们当时真的结了个社</b>——七人并未同时聚会，大约到四世纪才被这样合称；而且他们多数是有官职的人（山涛、王戎甚至官至三公），并不是不入仕的隐士。",
+          "名士这个词带有一种特定的姿态：洒脱、不守礼法、看重精神气质。原文说玄学留下的除了词汇，还有「姿态」——指的就是这个。"]
+  },
+  "清谈": {
+    one:"魏晋名士之间的一种辩论风气",
+    body:["清谈不是闲聊。它是一种有规则的思想辩论，通常两人对答，围绕玄学命题展开，讲究辞锋和义理。",
+          "它是那个时代最高级的智力活动，也是名士身份的象征。",
+          "原文说「名士竞谈」，指的就是这个场面：<b>全社会最聪明的人都在讨论最抽象的问题。</b>"]
+  },
+  "风流": {
+    one:"这里不是今天的意思",
+    body:["今天说「风流」多半指男女关系。但在魏晋的语境里，「风流」指的是<b>风气流派、精神气度、一时的人物之盛</b>。",
+          "「风流震动天下」是说：这批人的风采和气派震动了整个时代。这是褒义。",
+          "原文用这个词，是在承认那个时代的辉煌——他不是在说玄学很虚，而是说它<b>曾经真的极盛过</b>。"],
+    warn:"这是全文最容易读错的一个词。它决定了这句话是褒是贬——答案是褒。"
+  },
+  "降维打击": {
+    one:"网络流行语：用高出一个维度的能力碾压对手",
+    body:["出自刘慈欣的科幻小说《三体》：高维文明对低维文明的攻击，对方毫无还手之力。",
+          "原文用它形容奈须蘑菇写游戏剧本的能力——<b>这是夸奖</b>，说他从小说写作带来的能力，在游戏剧本行业里是碾压级别的。",
+          "在原文的论证里，这一点其实很重要：它说明作者并不否认奈须蘑菇的才华。他反对的是别的东西。"],
+    warn:"不要把它理解成贬义。它在原文里是正面评价。"
+  },
+  "纯文学": {
+    one:"日本（以及很多国家）出版界的一个分类：严肃文学",
+    body:["和它相对的是「大众文学」。出版社、评奖、书评版面长期把文学分成这两块：纯文学追求艺术性，大众文学追求好看。",
+          "这条界线在日本特别森严。纯文学作家和推理、科幻、轻小说作家常常不在同一个评价体系里。",
+          "原文说的「取代战后纯文学」，指的是<b>打破这条界线</b>——让来自亚文化的东西成为新的严肃文学。"]
+  },
+  "推理": {
+    one:"日本的「ミステリ」，即侦探/推理小说",
+    body:["在日本，推理小说是一个有独立传统和评价体系的类别，地位介于纯文学和大众文学之间。",
+          "原文说那批人横跨「纯文学—推理—轻小说—美少女游戏」，是在强调他们<b>跨越了本来互不相通的几个圈子</b>。",
+          "笠井洁本人就是推理作家兼批评家，正好站在这个交叉点上。"]
+  },
+  "轻小说": {
+    one:"ライトノベル，日本的一个出版类别：面向青少年的、带插图的通俗小说",
+    body:["特点是：读者以中学生到大学生为主，通常有动漫风格插图，语言轻快，系列化出版。",
+          "它长期被认为是「低门槛」的读物，在文学评价体系里位置很低——<b>这正是原文里「乐府」这个比喻的落点</b>：出身低，但有没有可能成为正典？",
+          "《空之境界》后来常被归入轻小说，但它最初是同人志，并不属于这个出版类别。"]
+  },
+  "美少女游戏": {
+    one:"ギャルゲー，以与女性角色互动为核心的游戏，很多是视觉小说形式",
+    body:["这类游戏以文字叙事为主，玩家通过选择推动剧情。它和视觉小说（ビジュアルノベル）有很大重叠。",
+          "奈须蘑菇和他的公司 TYPE-MOON 正是从这一类作品起家的。原文提到它，是为了说明那批人的来源有多「低」——<b>从文学评价的角度看，这是最底层的位置。</b>"]
+  },
+  "自然主义": {
+    one:"日本明治末期的文学流派",
+    body:["受法国自然主义影响，主张像科学一样客观地描写现实，尤其是人的生物性和生活环境。",
+          "代表作家有岛崎藤村、田山花袋等人。它确立了日本近代文学「写实、内向、解剖自我」的基本倾向。",
+          "原文把它列为日本文学的「第一代」：明治有自然主义。"]
+  },
+  "私小说": {
+    one:"日本大正—昭和时期形成的一种小说形式：把作者自己的经历直接写成小说",
+    body:["特点是：以作者本人的生活为素材，不加虚构，坦白地暴露自己的内心，尤其是软弱和羞耻的部分。",
+          "它长期被当作日本「纯文学」的正宗。原文说「战后有私小说和纯文学」，指的就是这一脉。",
+          "原文的文学史叙述是：明治有自然主义 → 战后有私小说 → <b>那下一个呢？</b>"]
+  },
+  "平成": {
+    one:"日本年号，1989—2019 年",
+    body:["原文说「平成末期」，指的是 2010 年代前后。",
+          "那正是轻小说、动画、手游规模急剧膨胀的时期——所以那批人才会觉得，新的文学形式就要从这里出来了。"]
+  }
+};
+
+/* ══════════════════════════════════════════════════════════════
+   原文（术语高亮）
+   ══════════════════════════════════════════════════════════════ */
+const PARAS = [
+  "空之境界今天主要的吹捧话术，来自[零年代]日本批评家原想使轻小说文学成为[六朝]之[乐府]，为后世另开文章一统；但它留下的却更像[正始][玄学]，一时[名士]竞谈[有无本末]，[风流]震动天下，而时代一过，[学统]骤散，只余其词汇、姿态与趣味渗入后世。",
+  "这对作者奈绪蘑菇本人其实是不幸和幸运的，他本身是有机会凭借空之境界跻身文学圈，但也意外造成这部作品在小圈子有邪教式的高评价，同时他也靠着空镜写作的经验作为游戏剧本家，对大部分剧本家实现了[降维打击]。",
+  "2003—2005 年《Faust》周围聚集的舞城王太郎、佐藤友哉、西尾维新、奈须蘑菇，以及东浩纪、笠井洁等批评者，确实一度被当成一个横跨「[纯文学]—[推理]—[轻小说]—[美少女游戏]」的新文艺现象。",
+  "他们想证明的是，漫画、动画、游戏、轻小说所孕育出来的新叙事结构，可能取代战后[纯文学]，成为下一代日本文学的中心形式。",
+  "当时隐隐存在一种非常雄心勃勃的文学史叙述：明治有[自然主义]，战后有[私小说]和[纯文学]，那么[平成]末期，也许会从动画、游戏、轻小说中诞生下一种日本文学。",
+  "他们自己恐怕觉得正在等待的是[乐府]诗，结果留下来的更像[正始][玄学]。曾经思想密度极高、名士辈出、满世界谈「有无」「本末」「言意」，一度仿佛新的文明范式就要从这里出来了。然后历史突然转弯了。",
+  "今天动画、手游、视觉小说、异世界、网文里面到处都是当年那套东西，都市日常下面存在第二层世界；人物具有「属性」与规则化能力；世界观可以像游戏系统一样参数化；角色具有某种「起源」「能力」「概念」。它们从革命性的思想变成了日常化的修辞资源。",
+  "他们希望像六朝[骈文]、[乐府]那样创造一种后来仍会被当作「文学」的新形式，结果更像[正始][玄学]：但那个宏大自我理解迅速消失了，但它制造的概念、趣味和思维习惯渗入了后来的文化。",
+  "空之境界其实是一本被错误当成商业作品，保存下来的玄学时代文本。大部分人赋予它的「哲学深度」，其实高度依赖当时那整套话语共同体，它恰好诞生在一个日本批评界曾认真相信「下一代严肃文学将从二次元中诞生」的短暂历史窗口。这个窗口很快关闭了，但窗口关闭以前授予空之境界的文学史地位，却被粉丝全部继承下来。",
+  "某一代读者和批评家把作品当作未来必然被经典化的文本，提前授予它认识我们时代的资格。一旦评价什么，世纪末都市青年主体危机的一种文学表达，作品实际上背负的是一个非常大的历史判断，也就是假设后人可以通过这些评价我们的时代，但思想不是期货市场，后世没有义务交割，只会评价：嗯，写得不错的青春幻想小说。"
+];
+let curTerm = null;
+function renderOrig(){
+  $("#orig").innerHTML = PARAS.map(p=>{
+    const html = esc(p).replace(/\[([^\]]+)\]/g, (m,name)=>
+      `<span class="t" data-t="${name}">${name}</span>`);
+    return `<p>${html}</p>`;
+  }).join("");
+  $$("#orig .t").forEach(el=>el.onclick=()=>showTerm(el.dataset.t, el));
+}
+function showTerm(name, el){
+  const t = TERMS[name];
+  $$("#orig .t").forEach(x=>x.classList.remove("on"));
+  if(el) el.classList.add("on");
+  if(!t){ return; }
+  curTerm = name;
+  $("#gloss").innerHTML =
+    `<div class="w">${name}</div><div class="one">${t.one}</div>` +
+    t.body.map(p=>`<p>${p}</p>`).join("") +
+    (t.warn ? `<div class="warn">⚠ ${t.warn}</div>` : "");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   两条命运线
+   ══════════════════════════════════════════════════════════════ */
+const STAGE_A = [
+  {yr:"西汉", nm:"本来是一个官署", dt:"「乐府」这个机构秦代就有了，汉武帝时被大规模扩充：派人到各地采集民间歌谣，配上音乐给宫廷用。它最初的职能是收集，不是创作。"},
+  {yr:"汉魏", nm:"采集来的歌，自己变成了文学", dt:"这些民歌语言直白、感情真挚，和文人写的赋、颂完全不同。人们开始把它们当作品来读——出身最低的东西，反而最有生命力。"},
+  {yr:"六朝", nm:"成为一种被不断仿写的诗体", dt:"「乐府」从一个机构的名称，变成了一个诗体的名称。文人也开始写乐府，借古题写新事。它有了技法、有了传统、有了师承。"},
+  {yr:"唐", nm:"大诗人也写乐府", dt:"李白、杜甫、白居易都写乐府。白居易还发起「新乐府运动」，明确主张用它来干预现实。到这一步，它已经完全进入主流。"},
+  {yr:"今天", nm:"进了中学课本", dt:"《孔雀东南飞》《木兰诗》是必读篇目。没有人再问「乐府算不算文学」——这个问题已经不需要问了。"}
+];
+const STAGE_B = [
+  {yr:"240—249", nm:"十年极盛", dt:"正始年间，洛阳的名士集中讨论有无、本末、言意这些最抽象的问题。思想密度极高，参与者是当时最聪明的一批人。"},
+  {yr:"249", nm:"历史突然转弯", dt:"高平陵之变（249 年正月）。司马懿趁曹芳和曹爽兄弟出城祭扫高平陵之机发动政变，曹爽一党被族诛，玄学圈的核心人物何晏同时被杀。这股思潮从此失去了它的政治土壤。"},
+  {yr:"之后数十年", nm:"人散了", dt:"名士们或被杀、或退隐、或转向。讨论没有停，但那个「共同体」散了。没有一个机构、一条师承把它接住。"},
+  {yr:"东晋南朝", nm:"词汇钻进了佛教", dt:"玄学讨论的那套词——有无、本末、言意——正好能被用来翻译和解释佛教般若学。于是它们成了佛学的一部分。"},
+  {yr:"宋明", nm:"又钻进了理学", dt:"「体用」「本末」成了宋明理学的核心范畴。但这些词活在新学问里，玄学本身并没有作为一门学问被传下去。"}
+];
+function renderStages(box, arr, other){
+  $(box).innerHTML = arr.map((s,i)=>
+    `<div class="stage" data-c="${box}" data-i="${i}">
+      <div class="yr">${s.yr}</div>
+      <div class="nm">${s.nm}</div>
+      <div class="dt">${s.dt}</div>
+    </div>`).join("");
+  $$(`${box} .stage`).forEach(el=>el.onclick=()=>{
+    const isOn = el.classList.contains("on");
+    $$(`${box} .stage`).forEach(x=>x.classList.remove("on"));
+    if(!isOn) el.classList.add("on");
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   人物
+   ══════════════════════════════════════════════════════════════ */
+const PEOPLE = [
+  {nm:"奈须蘑菇", rl:"《空之境界》作者 · TYPE-MOON", pos:"被评价的对象",
+   body:"写《空之境界》的时候他还是同人作者。这部作品最早是 1998 年 10 月到 1999 年 3 月连载在他和武内崇的同人社团「竹帚」的网站上（当时叫《空の境界式》），随后以同人志形式出版（1998—2001 年间在同人展会上分册发行），2004 年 6 月由讲谈社商业出版。后来他成立 TYPE-MOON，做出《月姬》《Fate/stay night》，成为游戏行业最成功的剧本家之一。原文说他「不幸和幸运」：差点进文学圈，结果在游戏圈封神。"},
+  {nm:"舞城王太郎", rl:"小说家 · 梅菲斯特奖出身", pos:"那个圈子里的作家",
+   body:"梅菲斯特奖出身（获奖作品《烟、土或食物》），文风暴烈、口语化。他是《Faust》杂志的常驻执笔之一，被视为那批「越界」作家的一员。"},
+  {nm:"佐藤友哉", rl:"小说家", pos:"那个圈子里的作家",
+   body:"同样出身梅菲斯特奖（获奖作品《フリッカー式》），作品带有强烈的亚文化色彩和元小说倾向。他和舞城王太郎是《Faust》最核心的两位作者。"},
+  {nm:"西尾维新", rl:"小说家", pos:"那个圈子里最商业成功的一位",
+   body:"同样是梅菲斯特奖出身（获奖作品《斩首循环》），后来写出「戏言系列」和「物语系列」，成为日本最畅销的轻小说作家之一。他的走红方式，恰好说明那批人最后是<b>在商业上成功了，而不是在文学史上</b>。"},
+  {nm:"东浩纪", rl:"批评家 · 《动物化的后现代》作者", pos:"为这次尝试提供理论的人",
+   body:"2001 年由讲谈社出版《动物化的后现代——从御宅族看日本社会》。通行的概括是：御宅族的消费从「物语消费」转向了「数据库消费」——作品的意义不再来自完整的故事，而来自可供组合的要素。他为「漫画动画游戏会孕育新叙事」这个判断提供了理论基础。（具体论点请以原书为准。）"},
+  {nm:"笠井洁", rl:"批评家 · 推理作家", pos:"站在推理与亚文化的交叉点",
+   body:"本人写推理小说，同时做文学批评，长期关注「物语」的结构问题。他站在推理的立场参与这场讨论，是这个跨界现象里的另一极。"}
+];
+let curPerson = null;
+function renderPeople(){
+  $("#people").innerHTML = PEOPLE.map((p,i)=>
+    `<div class="person" data-p="${i}">
+      <div class="nm">${p.nm}</div>
+      <div class="rl">${p.rl}</div>
+    </div>`).join("");
+  $$("[data-p]").forEach(el=>el.onclick=()=>{
+    const i=+el.dataset.p;
+    if(curPerson===i){ curPerson=null; el.classList.remove("on");
+      $("#pnote").innerHTML=`<div class="w">他们赌的是什么</div><div class="one">原文第 4、5 段</div>
+        <p>点上面任意一个人名，看他在那场赌局里的位置。</p>`; return; }
+    curPerson=i; $$("[data-p]").forEach(x=>x.classList.remove("on")); el.classList.add("on");
+    const p=PEOPLE[i];
+    $("#pnote").innerHTML=`<div class="w">${p.nm}</div><div class="one">${p.rl}　·　${p.pos}</div><p>${p.body}</p>`;
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   期货时间线
+   ══════════════════════════════════════════════════════════════ */
+const TICKS = [
+  {y:"2004", c:"《空之境界》由讲谈社商业出版。一部从社团网站起家的作品进入商业体系，那批人的声势达到顶点。"},
+  {y:"2011", c:"《Faust》出到 Vol.8 后停止刊行——官方在 Vol.8 上宣言要在 Vol.9「解散」，但 Vol.9 从未刊出。<b>注意这个时间差：原文说的那个窗口（2003—2005）比杂志本身结束得早得多。</b>场子还在，但那股劲已经过去了。"},
+  {y:"2000s 后期", c:"奈须蘑菇的主要身份变成游戏公司 TYPE-MOON 的剧本家。《Fate/stay night》大卖。"},
+  {y:"2010s", c:"轻小说成为巨大的商业类别，西尾维新等人成为畅销作家。它成功了——但作为一个商业类别，而不是作为「下一代严肃文学」。"},
+  {y:"今天", c:"《空之境界》有动画、有大量读者。原文列举的那些设定——第二层世界、属性化能力、参数化世界观——遍布动画、手游、网文。<b>它们成了常用的修辞资源，而不是革命性的思想。</b>"}
+];
+let running=false;
+function runFuture(){
+  if(running) return;
+  running=true;
+  $("#timeline").innerHTML = TICKS.map((t,i)=>
+    `<div class="tick" data-i="${i}"><div class="y">${t.y}</div><div class="c">${t.c}</div></div>`).join("");
+  $("#vbox").classList.remove("on");
+  TICKS.forEach((t,i)=>setTimeout(()=>{
+    const el=document.querySelector(`.tick[data-i="${i}"]`);
+    if(el) el.classList.add("on");
+    if(i===TICKS.length-1) setTimeout(()=>{ $("#vbox").classList.add("on"); running=false; }, 700);
+  }, 420*(i+1)));
+}
+function resetFuture(){
+  running=false;
+  $("#timeline").innerHTML="";
+  $("#vbox").classList.remove("on");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   启动
+   ══════════════════════════════════════════════════════════════ */
+renderOrig();
+renderStages("#stageA", STAGE_A);
+renderStages("#stageB", STAGE_B);
+renderPeople();
+$("#bsign").onclick = runFuture;
+$("#breset").onclick = resetFuture;
+showTerm("乐府", null);
+$$("#orig .t").forEach(x=>{ if(x.dataset.t==="乐府") x.classList.add("on"); });
+</script>
+</body>
+</html>

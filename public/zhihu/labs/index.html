@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>收藏夹 · 交互页面</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--line:#2b3444;--fg:#e6edf3;--dim:#8b98a8;--accent:#58a6ff;--gold:#d4a24c}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);line-height:1.7;
+    font-family:"Segoe UI","Microsoft YaHei",-apple-system,sans-serif}
+  .wrap{max-width:900px;margin:0 auto;padding:64px 20px 80px}
+  .kicker{color:var(--accent);font-size:13px;letter-spacing:.18em;text-transform:uppercase;font-weight:600}
+  h1{font-size:34px;margin:12px 0 8px}
+  .lede{color:var(--dim);margin:0 0 40px}
+  h2{font-size:16px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;
+    margin:38px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  a.card{display:block;text-decoration:none;color:inherit;background:var(--panel);
+    border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:14px;transition:.16s}
+  a.card:hover{border-color:var(--accent);transform:translateY(-2px)}
+  a.card .t{font-size:19px;font-weight:600;margin-bottom:6px}
+  a.card .d{color:var(--dim);font-size:14.5px}
+  a.card .tags{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+  a.card .tag{font-size:12px;padding:3px 10px;border-radius:20px;background:#1f2a3a;color:var(--accent)}
+  .pending{background:#14171c;border:1px dashed var(--line);border-radius:14px;
+    padding:20px 24px;margin-bottom:10px;color:var(--dim);font-size:14.5px}
+  .pending b{color:var(--fg)}
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:99;display:flex;gap:16px;align-items:center;justify-content:space-between;padding:9px 18px;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid #2b3444;font-size:13.5px;font-family:'Segoe UI','Microsoft YaHei',sans-serif"><a href="/" style="color:#8b98a8;text-decoration:none">← wzk 的技术笔记</a></div>
+<div class="wrap">
+  <div class="kicker">知乎收藏 · 交互页面</div>
+  <h1>收藏夹 · 交互页面</h1>
+  <p class="lede">按分类为收藏的文章做的配套网页。全部是单文件静态页面，无外部依赖，可离线打开。</p>
+
+  <h2>其他书目</h2>
+  <a class="card" href="llm-lab.html">
+    <div class="t">大模型实验室 · 分词 / 注意力 / 采样</div>
+    <div class="d">三块都是真在算，而且能直接用手改。①BPE 分词：按「单步」看字符两两合并成词，实时显示「谁出现得最多就先合并谁」，strawberry 会被切成 straw|b|e|r|r|y——r 被锁在块里，这就是模型数不清 r 的原因；②注意力：每个词是平面上可拖动的点，Query 和 Key 分开编辑，把该互相注意的词拖到一起，三个谜题（超过 70% / 完全平均 / 每行都最注意自己）；③采样：左右两块面板同一个开头同时逐字生成，看温度 0.3 和 1.6 从第几个字开始分道扬镳，候选表和原始计数全部可见可核对。</div>
+    <div class="tags">
+      <span class="tag">可拖动的注意力</span><span class="tag">真实 BPE 合并过程</span><span class="tag">左右对照生成</span>
+      <span class="tag">《图解大模型》</span>
+    </div>
+  </a>
+  <a class="card" href="wanli-lab.html">
+    <div class="t">万历十五年 · 制度困境模拟器</div>
+    <div class="d">核心规则只有一条：实权与名分此消彼长，而目标需要两者同时够高。可扮演万历／张居正／申时行／海瑞／戚继光，八回合后看史实结局。实测 50 种打法只有 11 种能达成，且全是混合策略。第二模块把五个人的曲线叠在一起——张居正与戚继光的相关系数是 0.971。</div>
+    <div class="tags">
+      <span class="tag">资源互斥</span><span class="tag">五种打法</span><span class="tag">史实结局对照</span>
+      <span class="tag">《万历十五年》</span>
+    </div>
+  </a>
+  <a class="card" href="pyvm-lab.html">
+    <div class="t">Python 虚拟机模拟器 · 字节码 / 语法分析 / 垃圾回收</div>
+    <div class="d">①自己实现的栈式字节码 VM，单步执行可看操作数栈、名字表、指令指针逐格变化（实测 1+2*3 栈深峰值正好是 3）；②手写词法分析器 + 递归下降语法树，点节点可高亮对应 token；③对象图与 GC，能亲手制造引用计数回收不掉的循环引用，再用标记-清除收掉。</div>
+    <div class="tags">
+      <span class="tag">栈式 VM</span><span class="tag">AST 可视化</span><span class="tag">循环引用</span>
+      <span class="tag">《自己动手写Python虚拟机》</span>
+    </div>
+  </a>
+
+  <h2>硬知识推演</h2>
+  <a class="card" href="determinant-lab.html">
+    <div class="t">行列式实验室</div>
+    <div class="d">拖动列向量看面积如何变化，从三条几何公理一步步推出 ad − bc。含公理演示、推导剧场、拖拽挑战、det(AB) 验证与三维体积。</div>
+    <div class="tags">
+      <span class="tag">线性代数</span><span class="tag">可交互</span><span class="tag">含挑战模式</span>
+      <span class="tag">对应 <a href="/blog/zhihu/tech/what-is-a-determinant-really">行列式的本质是什么？</a></span>
+    </div>
+  </a>
+  <div class="pending">其余 33 篇硬知识尚未制作网页。</div>
+
+  <a class="card" href="music-lab.html">
+    <div class="t">一个音里，藏着什么 <span style="color:var(--accent);font-size:13px">带声音 · 零基础</span></div>
+    <div class="d">不需要任何乐理基础。①按一个按钮听一个音，再拖滑块把它现场拆开——看着弦在 2、3、4 段上振动，六个泛音的名字去重后正好是 C-E-G，一个大三和弦；②拖滑块让两个音一起响，自己找出最"顺"的那几个位置，再回头解释为什么；③沿着纯五度绕 12 次，听最后那一下踩空，然后做一次调音师必须做的取舍。术语在每一步的最后才出现。</div>
+    <div class="tags">
+      <span class="tag">先听再懂</span><span class="tag">弦振动动画</span><span class="tag">逐步揭示</span>
+      <span class="tag">对应 <a href="/blog/zhihu/tech/music-theory-in-10-minutes">十分钟带你入门乐理</a> / <a href="/blog/zhihu/tech/music-theory-reader-part-2">写给重度音乐爱好者的十万字乐理（Music Theory）读本：从入门到飞升（下）</a> / <a href="/blog/zhihu/tech/music-theory-reader-part-1">写给重度音乐爱好者的十万字乐理（Music Theory）读本：从入门到飞升（上）</a></span>
+    </div>
+  </a>
+  <a class="card" href="kernel-lab.html">
+    <div class="t">一台机器上发生的事 <span style="color:var(--accent);font-size:13px">生活化比喻</span></div>
+    <div class="d">不堆术语，换成三个日常场景：①三个工人抢四张桌子——亲手发现"优先级"只在有人抢的时候才起作用，而"硬上限"会把工人直接掐停；②一张桌子，材料越堆越高，越线后不是变慢而是整堆消失，这就是内存和 CPU 最根本的区别；③客人要用主人的工具，每次都得走出房间办手续——四个开关把出门次数从 250 降到 80。每个场景先讲比喻，最后才给出它在 Linux 里的名字。</div>
+    <div class="tags">
+      <span class="tag">工人与工位</span><span class="tag">桌子与材料</span><span class="tag">客房与工具</span>
+      <span class="tag">对应 <a href="/blog/zhihu/tech/brilliant-linux-kernel-designs">Linux 内核中有哪些比较牛逼的设计?</a></span>
+    </div>
+  </a>
+
+  <a class="card" href="conv1x1-lab.html">
+    <div class="t">1×1 卷积实验室 · 它和全连接层到底差在哪</div>
+    <div class="d">①两条路径（conv1x1 / permute→Linear→permute）当场算给你看，200 次随机形状误差恒为 0；②参数量对比，实测 H=W=32 时 flatten+Linear 是 1×1 conv 的 1048576 倍，正好是 (H·W)²；③连接图揭示那个被说反了的结论——不是卷积额外获得了权重共享，是 flatten 破坏了共享。</div>
+    <div class="tags">
+      <span class="tag">等价性当场验证</span><span class="tag">参数量四次方</span><span class="tag">连接图可视化</span>
+      <span class="tag">对应 <a href="/blog/zhihu/tech/conv-1x1-vs-fully-connected">1*1的卷积核和全连接层有什么异同？</a></span>
+    </div>
+  </a>
+  <a class="card" href="android-lab.html">
+    <div class="t">Android 实验室 · 它到底能不能跑 Linux 程序</div>
+    <div class="d">①九个条目逐个判定：只有「普通 App」不是 ELF、只有「裸拷的 glibc 程序」跑不起来，其余全都能跑；②Ubuntu 与 Android 九层栈并排，实测 1 层完全相同、3 层因协议而不同、5 层因技术而不同；③你来做 Google 的工程师：在「全用 GNU」和「全部自研」之间做取舍，看 GPL 风险与工作量怎么换。</div>
+    <div class="tags">
+      <span class="tag">破除误解</span><span class="tag">九层栈对比</span><span class="tag">协议决策模拟</span>
+      <span class="tag">对应 <a href="/blog/zhihu/tech/why-android-doesnt-run-linux-binaries">Android为什么不直接执行Linux的程序？而是自己搞一套？</a></span>
+    </div>
+  </a>
+
+  <h2>观点推演</h2>
+  <a class="card" href="cybernetics-lab.html">
+    <div class="t">控制台 · 反馈回路与势函数地形 <span style="color:var(--accent);font-size:13px">模拟器</span></div>
+    <div class="d">《控制论与科学方法论》的地基两块。模块一：调增益、阻尼、延迟，亲手把系统稳住、荡起来、弄发散——亲手量出「延迟越大，需要的阻尼越大」。模块二：拖动条件参数让势能地形实时形变，看稳定态如何移动、消失，并量出「矫枉必须过正」的滞后宽度。</div>
+    <div class="tags">
+      <span class="tag">可调参数</span><span class="tag">任务驱动</span><span class="tag">真实动力学模型</span>
+      <span class="tag">对应 <a href="/blog/zhihu/opinion/cybernetics-and-scientific-methodology">如何评价《控制论与科学方法论》这本书？ 有类似或进阶版的书籍推荐吗？</a></span>
+    </div>
+  </a>
+  <a class="card" href="game-strategy.html">
+    <div class="t">博弈场 · 承诺、耐心与可否认性 <span style="color:var(--accent);font-size:13px">网页游戏</span></div>
+    <div class="d">四个关卡，每关拆开《如何提高自己的博弈能力？》里的一个机制：懦夫博弈与可信承诺、有限与无限的游戏、软硬切换的采集与收割、可否认性与三角化。前两关你是被算计的一方，第三关换你做局，第四关再回到防守。</div>
+    <div class="tags">
+      <span class="tag">可通关</span><span class="tag">四关递进</span><span class="tag">原则卡解锁</span>
+      <span class="tag">对应 <a href="/blog/zhihu/opinion/improve-your-game-theory-skills">如何提高自己的博弈能力？</a></span>
+    </div>
+  </a>
+
+  <h2>作品解读</h2>
+  <a class="card" href="karano-literary.html">
+    <div class="t">一篇一千字的答案，为什么读不懂 · 《空之境界》文学性之争</div>
+    <div class="d">原文只用 1029 字，却在一句话里塞进六朝乐府、正始玄学、骈文、名士清谈四个中国文学史典故。这一页把 19 个术语做成可点的浮层，并把全文唯一的论证工具——「乐府 vs 玄学」两种不同的「留下来」——拆成两条并排的命运线：乐府留下的是作品（成为经典），玄学留下的是词汇（渗进别的学问）。最后把结尾那句金融比喻做成可交互的期货交割演示。</div>
+    <div class="tags">
+      <span class="tag">术语浮层</span><span class="tag">两条命运线</span><span class="tag">期货交割演示</span>
+      <span class="tag">史实与观点分层标注</span>
+    </div>
+  </a>
+  <a class="card" href="daomubiji-map.html">
+    <div class="t">《盗墓笔记》全文脉络</div>
+    <div class="d">三条叙事线（明线 / 暗线 / 人物线）、正传八卷每卷走到哪一步、跨远古至 2015 年的大事时间线。出版事实与读者推演分层标注。</div>
+    <div class="tags">
+      <span class="tag">畅销小说</span><span class="tag">主线支线</span><span class="tag">含权威源核对</span>
+      <span class="tag">对应 <a href="/blog/zhihu/works/what-is-daomubiji-about">《盗墓笔记》讲了什么?</a></span>
+    </div>
+  </a>
+  <a class="card" href="daomubiji-author-model.html">
+    <div class="t">徐磊为什么会这么写 · 作者直觉模型</div>
+    <div class="d">深挖作者生平（嘉善童年、外婆的口传故事、外贸滑坡转写作、2013 封笔入院），提炼出五个写作驱动，并用它回看三个具体片段：十年之约、秦岭神树、大结局为什么"没有结尾"。</div>
+    <div class="tags">
+      <span class="tag">作者视角</span><span class="tag">一手访谈证据</span><span class="tag">区分原话与推断</span>
+      <span class="tag">配套 <a href="/blog/zhihu/works/what-is-daomubiji-about">《盗墓笔记》讲了什么?</a></span>
+    </div>
+  </a>
+  <a class="card" href="mushoku-author-model.html">
+    <div class="t">《无职转生》· 作者直觉模型</div>
+    <div class="d">理不尽な孫の手 2007 年投稿全败、放弃当小说家，数年后在なろう重开一局——与鲁迪"34 岁报废后重来"形状相同。含五个写作驱动与三处片段还原（转移事件、酒馆父子戏、第 4 集引爆点）。</div>
+    <div class="tags">
+      <span class="tag">二次元</span><span class="tag">作者视角</span><span class="tag">日文一手访谈</span>
+      <span class="tag">对应 <a href="/blog/zhihu/works/mushoku-tensei-backlash">关于《无职转生》被喷，最大的原因是什么？</a> / <a href="/blog/zhihu/works/mushoku-tensei-growth-narrative">《无职转生》粉丝口中的成长叙事真的经得起推敲吗？</a></span>
+    </div>
+  </a>
+  <a class="card" href="mushoku-controversy.html">
+    <div class="t">《无职转生》· 争议解剖与成长叙事检验</div>
+    <div class="d">把 013 的"自我接纳论"和 016 的《周礼》读法逐条对照证据：哪些站得住、哪些证据不足、哪些是过度拟合。并把"成长叙事是否成立"拆成能力层 / 人格层 / 作者层三个答案。</div>
+    <div class="tags">
+      <span class="tag">争议时间线</span><span class="tag">论点检验</span><span class="tag">不可靠叙述者</span>
+      <span class="tag">对应 <a href="/blog/zhihu/works/mushoku-tensei-backlash">关于《无职转生》被喷，最大的原因是什么？</a> / <a href="/blog/zhihu/works/mushoku-tensei-growth-narrative">《无职转生》粉丝口中的成长叙事真的经得起推敲吗？</a></span>
+    </div>
+  </a>
+  <div class="pending">
+    其余 2 篇待做：<b>日本动漫后期为何走到血统论</b>、<b>「十二魔器」「十二神器」24 个游戏剧情</b>。
+  </div>
+</div>
+</body>
+</html>

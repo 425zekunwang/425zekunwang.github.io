@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Android 实验室 · 它到底能不能跑 Linux 程序</title>
+<style>
+  :root{
+    --bg:#0b0e13; --panel:#141922; --panel2:#1b212c; --line:#28303e;
+    --fg:#e8ecf2; --dim:#8792a4; --cyan:#3fb6c8; --jade:#46c08a;
+    --red:#e05a5a; --amber:#d9a441; --blue:#5b9bd5; --purple:#a97bd6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);line-height:1.72;
+    font-family:"Segoe UI","Microsoft YaHei",-apple-system,sans-serif}
+  .wrap{max-width:1160px;margin:0 auto;padding:30px 18px 80px}
+  button{font-family:inherit}
+  .hide{display:none !important}
+  h1{font-size:clamp(24px,3.8vw,34px);margin:0 0 8px}
+  .lede{color:var(--dim);font-size:16px;margin:0 0 22px;max-width:880px}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+  .tab{background:var(--panel);border:1px solid var(--line);color:var(--dim);
+    padding:10px 18px;border-radius:10px;cursor:pointer;font-size:14.5px;transition:.14s}
+  .tab:hover{color:var(--fg);border-color:#38424f}
+  .tab.on{background:var(--cyan);color:#04212a;border-color:var(--cyan);font-weight:700}
+  .lab{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:20px;align-items:start}
+  @media(max-width:940px){.lab{grid-template-columns:1fr}}
+  .canvas-box{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  canvas{display:block;width:100%}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .panel h3{margin:0 0 12px;font-size:12.5px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase}
+  .btn{background:var(--panel2);color:var(--fg);border:1px solid var(--line);
+    border-radius:9px;padding:9px 14px;font-size:13.8px;cursor:pointer;transition:.14s}
+  .btn:hover{background:#222a36;border-color:#3a4553}
+  .btn.primary{background:var(--cyan);color:#04212a;border-color:var(--cyan);font-weight:700}
+  .btn.small{padding:6px 11px;font-size:12.6px}
+  .btn.on{background:var(--cyan);color:#04212a;border-color:var(--cyan);font-weight:700}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .readout{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .readout:last-of-type{border-bottom:0}
+  .readout .k{color:var(--dim)}
+  .readout .v{font-variant-numeric:tabular-nums;font-weight:600}
+  .v.ok{color:var(--jade)} .v.bad{color:var(--red)} .v.warn{color:var(--amber)}
+  .task{background:linear-gradient(135deg,#08181c,#141922);border:1px solid #173038;
+    border-radius:13px;padding:18px 22px;margin-top:20px}
+  .task .k{font-size:11.5px;letter-spacing:.16em;color:var(--cyan);font-weight:700;text-transform:uppercase}
+  .task h3{margin:8px 0 8px;font-size:18px}
+  .task p{margin:0 0 10px;color:var(--dim);font-size:14.6px}
+  .task p:last-child{margin-bottom:0}
+  .verdict{margin-top:12px;font-weight:700;font-size:14.6px;min-height:22px}
+  .verdict.ok{color:var(--jade)} .verdict.no{color:var(--dim)}
+  .note{background:#0e151c;border:1px solid var(--line);border-radius:11px;
+    padding:15px 19px;font-size:14.4px;color:var(--dim);margin-top:18px}
+  .note b{color:var(--fg)}
+  .quote{background:#12161c;border-left:3px solid var(--jade);border-radius:0 10px 10px 0;
+    padding:13px 17px;margin:13px 0;font-size:14.6px;color:#dfe6ee}
+  .quote .src{display:block;margin-top:8px;font-size:12.4px;color:var(--dim)}
+  code{background:#080b0f;padding:2px 6px;border-radius:5px;font-size:13.2px;
+    font-family:"Cascadia Code",Consolas,monospace}
+  .items{display:grid;gap:8px}
+  .it{background:var(--panel2);border:1px solid var(--line);border-radius:9px;
+    padding:11px 14px;cursor:pointer;transition:.14s;display:flex;gap:12px;align-items:center}
+  .it:hover{border-color:var(--cyan)}
+  .it.on{border-color:var(--cyan);background:#152028}
+  .it .nm{font-weight:600;font-size:14.4px;flex:1}
+  .it .tag{font-size:11.5px;padding:3px 9px;border-radius:20px;white-space:nowrap}
+  .tg-ok{background:#16261d;color:var(--jade)} .tg-no{background:#2e1a1d;color:var(--red)}
+  .tg-mid{background:#2b2416;color:var(--amber)}
+  .foot{color:var(--dim);font-size:13px;margin-top:40px;border-top:1px solid var(--line);padding-top:18px}
+  table{width:100%;border-collapse:collapse;font-size:13.6px;margin-top:12px}
+  th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--line)}
+  th{color:var(--dim);font-weight:600;font-size:12.4px}
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:99;display:flex;gap:16px;align-items:center;justify-content:space-between;padding:9px 18px;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid #2b3444;font-size:13.5px;font-family:'Segoe UI','Microsoft YaHei',sans-serif"><a href="/" style="color:#8b98a8;text-decoration:none">← wzk 的技术笔记</a><a href="/zhihu/labs/" style="color:#58a6ff;text-decoration:none">全部交互页面</a></div>
+<div class="wrap">
+
+<h1>Android 实验室</h1>
+<p class="lede">
+  这篇回答在拆一个流行的误解。很多人以为「Android 不能跑 Linux 程序」，但事实是：
+  <b>Android 一直都能跑 ELF 程序</b>——内核、ART 虚拟机、Chrome、Unity 引擎，全是 ELF。
+  真正被限制的不是「能不能跑」，是<b>「App 必须跑在 ART 之上」</b>。而不用 glibc，是<b>协议问题，不是技术问题</b>。
+</p>
+
+<div class="tabs">
+  <button class="tab on" data-m="0">① 能不能跑</button>
+  <button class="tab" data-m="1">② 两套栈并排</button>
+  <button class="tab" data-m="2">③ 你来做 Google 的工程师</button>
+</div>
+
+<!-- ══════ 1 ══════ -->
+<div id="mod0">
+  <div class="lab">
+    <div>
+      <div class="panel" style="padding:16px 20px">
+        <h3 style="margin-bottom:10px">点一个东西，看它能不能在 Android 上跑</h3>
+        <div class="items" id="itemlist"></div>
+      </div>
+      <div class="canvas-box" style="margin-top:14px"><canvas id="cv1" height="230"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3>判定</h3>
+      <div class="readout"><span class="k">它是 ELF 吗</span><span class="v" id="oElf">—</span></div>
+      <div class="readout"><span class="k">必须跑在 ART 上吗</span><span class="v" id="oArt">—</span></div>
+      <div class="readout"><span class="k">能不能在 Android 上跑</span><span class="v" id="oRun">—</span></div>
+      <div class="readout"><span class="k">受限的真正原因</span><span class="v" id="oWhy" style="font-size:12.5px;font-weight:400;max-width:190px;text-align:right">—</span></div>
+      <div class="note" style="margin-top:16px" id="explain">← 点左边任意一项</div>
+    </div>
+  </div>
+  <div class="task">
+    <div class="k">任务 <span id="t1n">1</span> / 3</div>
+    <h3 id="t1title"></h3><p id="t1desc"></p>
+    <div class="verdict no" id="t1verdict"></div>
+    <div class="row"><button class="btn" id="b1skip">换一个任务</button></div>
+    <div class="note" id="t1note" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<!-- ══════ 2 ══════ -->
+<div id="mod1" class="hide">
+  <div class="lab">
+    <div>
+      <div class="canvas-box"><canvas id="cv2" height="470"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3>点一层看差异</h3>
+      <div class="note" id="layerInfo" style="margin-top:0">← 点左边任意一层</div>
+      <h3 style="margin-top:18px">统计</h3>
+      <div class="readout"><span class="k">完全相同的层</span><span class="v ok" id="oSame">—</span></div>
+      <div class="readout"><span class="k">因协议而不同的层</span><span class="v warn" id="oLicense">—</span></div>
+      <div class="readout"><span class="k">因技术而不同的层</span><span class="v" id="oTech">—</span></div>
+      <div class="row">
+        <button class="btn small" data-only="all">显示全部</button>
+        <button class="btn small" data-only="same">只看相同的</button>
+        <button class="btn small" data-only="diff">只看不同的</button>
+      </div>
+    </div>
+  </div>
+  <div class="task">
+    <div class="k">任务 <span id="t2n">1</span> / 3</div>
+    <h3 id="t2title"></h3><p id="t2desc"></p>
+    <div class="verdict no" id="t2verdict"></div>
+    <div class="row"><button class="btn" id="b2skip">换一个任务</button></div>
+    <div class="note" id="t2note" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<!-- ══════ 3 ══════ -->
+<div id="mod2" class="hide">
+  <div class="lab">
+    <div>
+      <div class="canvas-box"><canvas id="cv3" height="420"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3>你会怎么选</h3>
+      <div id="choices"></div>
+      <h3 style="margin-top:16px">读数</h3>
+      <div class="readout"><span class="k">自研工作量</span><span class="v" id="oWork">—</span></div>
+      <div class="readout"><span class="k">GPL 传染风险</span><span class="v" id="oRisk">—</span></div>
+      <div class="readout"><span class="k">与 GNU/Linux 的兼容性</span><span class="v" id="oCompat">—</span></div>
+      <div class="row">
+        <button class="btn small" data-preset="gnu">全用 GNU 的</button>
+        <button class="btn small" data-preset="google">Google 的实际选择</button>
+        <button class="btn small" data-preset="self">全部自研</button>
+      </div>
+    </div>
+  </div>
+  <div class="task">
+    <div class="k">任务 <span id="t3n">1</span> / 3</div>
+    <h3 id="t3title"></h3><p id="t3desc"></p>
+    <div class="verdict no" id="t3verdict"></div>
+    <div class="row"><button class="btn" id="b3skip">换一个任务</button></div>
+    <div class="note" id="t3note" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<div class="foot">
+  对应文章：你收藏的知乎回答《Android为什么不直接执行Linux的程序？而是自己搞一套？》（作者 eechen，赞同 588）。<br>
+  文中几处关键判断：<b>Android 不是 GNU/Linux 发行版，但 Android 是一个完完全全的 Linux 系统</b>；
+  <b>不用 GNU 的 libc 是协议上的风险问题，不是技术上的实现问题</b>；
+  <b>如果 Linux 内核不是 GPL 协议，那 F2FS、zram 这些技术真可能就是 Android 独享了</b>。
+</div>
+
+</div>
+
+<script>
+"use strict";
+const $=(s)=>document.querySelector(s);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+
+/* ══════════════════════════════════════════════════════════════
+   模块 1 · 能不能跑
+   ══════════════════════════════════════════════════════════════ */
+const ITEMS = [
+  { id:"art", name:"Android 系统本身（内核 + ART）", elf:true, art:false, run:"可以", why:"它自己",
+    tag:"ok", tagText:"是 ELF",
+    ex:"<b>Android 自己就是一堆 ELF。</b>Linux 内核、Dalvik/ART 虚拟机、所有系统服务，全是 ELF 格式的可执行文件或共享库。所以「Android 不能跑 ELF」这个说法，从第一层就不成立。" },
+  { id:"chrome", name:"Chrome / WebView", elf:true, art:false, run:"可以", why:"NDK 编译的原生程序",
+    tag:"ok", tagText:"是 ELF",
+    ex:"<b>Chrome 和基于 Chromium 的 WebView 是纯原生程序</b>，用 NDK 编译，直接跑在内核上，不经过 ART。它们的渲染、网络、JS 引擎全是 C++。<br><br>你在手机上刷的每一个网页，背后跑的都是一个不经过 Java 虚拟机的 ELF 程序。" },
+  { id:"unity", name:"Unity / UE 引擎做的游戏", elf:true, art:false, run:"可以", why:"游戏引擎原生代码",
+    tag:"ok", tagText:"是 ELF",
+    ex:"<b>主流游戏引擎的核心都是原生代码。</b>Unity 的运行时、UE 的渲染管线，都是 NDK 编译出来的 .so。<br><br>Java 层只负责生命周期和输入转发——真正在跑的还是 ELF。" },
+  { id:"busybox", name:"BusyBox（adb shell 里跑）", elf:true, art:false, run:"可以", why:"标准 Linux ELF",
+    tag:"ok", tagText:"是 ELF",
+    ex:"<b>在 adb shell 里直接就能跑。</b>BusyBox 是个小型的 GNU/Linux 工具集，把 ls、grep、tar 这些命令打包成一个静态或动态链接的 ELF。<br><br>文中专门提了这个例子——它是「Android 能跑标准 Linux 程序」最直接的证据。" },
+  { id:"rpi", name:"树莓派 Raspbian 的二进制（打包依赖后）", elf:true, art:false, run:"可以", why:"需要自带依赖库",
+    tag:"ok", tagText:"是 ELF",
+    ex:"<b>文中原话：你甚至可以把树莓派 Raspbian 上的二进制程序打包依赖库后放到 Android 上跑。</b><br><br>注意附加条件——「打包依赖库」。裸拷一个二进制过去不行，因为 Android 的用户态库和 Raspbian 不是同一套。但只要依赖带上，就能跑。" },
+  { id:"ksweb", name:"Nginx + PHP + MySQL（KSWeb 那种）", elf:true, art:false, run:"可以", why:"整套服务搬到手机上",
+    tag:"ok", tagText:"是 ELF",
+    ex:"<b>KSWeb 就是一个把 LEMP 整套搬到 Android 上的 App。</b>它把一个完整的 Web 服务器环境塞进手机，你在手机上跑一个网站，用的是和服务器上一模一样的 Nginx 和 PHP。<br><br>这些程序完全不知道自己在 Android 上——它们只调用内核的系统调用。" },
+  { id:"pocketmine", name:"PocketMine（PHP 写的 Minecraft 服务器）", elf:true, art:false, run:"可以", why:"PHP 解释器是 ELF",
+    tag:"ok", tagText:"是 ELF",
+    ex:"<b>用 Android 手机跑 Minecraft 服务器，是真实存在的事。</b>PocketMine 是 PHP 写的，PHP 解释器本身是个 ELF 程序，跑在内核上。<br><br>这个例子最能说明问题：整条链路（内核 → PHP 解释器 → PHP 代码）里，<b>没有任何一环经过 ART</b>。" },
+  { id:"app", name:"一个普通的 Android App（Java/Kotlin 写的）", elf:false, art:true, run:"可以（但必须走 ART）", why:"被要求跑在 ART 上",
+    tag:"mid", tagText:"不是 ELF",
+    ex:"<b>这才是「Android 自己搞一套」真正指的东西。</b><br><br>App 的代码是 DEX 字节码，不是原生机器码。它必须由 ART（早期是 Dalvik）来执行。所以程序的入口是由虚拟机掌握的——你不能直接 <code>./myapp</code>。<br><br>但注意：<b>你完全可以在 Java 代码里 JNI 调用原生库，或者 Runtime.exec 一个 ELF 文件</b>，文中说得很清楚：「我也不拦你」。" },
+  { id:"glibcbin", name:"一个 Ubuntu 上编译的 glibc 动态链接程序（裸拷）", elf:true, art:false, run:"不行（缺依赖）", why:"找不到 libc.so.6",
+    tag:"no", tagText:"缺依赖",
+    ex:"<b>这是唯一真的会失败的场景——但原因不是「不是 ELF」，是「找不到它依赖的 so」。</b><br><br>Ubuntu 的程序链接的是 <code>libc.so.6</code>（glibc），而 Android 提供的是 <code>libc.so</code>（bionic）。名字、ABI、符号表都不一样。<br><br>解决办法不是「Android 不支持」，是<b>把依赖打包带上</b>，或者用 NDK 重新编译。这就是上一项那个例子的意思。" },
+];
+
+const M1 = {
+  cur:"art",
+  render() {
+    $("#itemlist").innerHTML = ITEMS.map(it =>
+      `<div class="it ${it.id===this.cur?"on":""}" data-it="${it.id}">
+        <span class="nm">${it.name}</span>
+        <span class="tag tg-${it.tag}">${it.tagText}</span>
+      </div>`).join("");
+    document.querySelectorAll("[data-it]").forEach(b=>b.onclick=()=>{ this.cur=b.dataset.it; this.render(); T1.check(); });
+    const it = ITEMS.find(x=>x.id===this.cur);
+    $("#oElf").textContent = it.elf ? "是" : "不是（DEX 字节码）";
+    $("#oElf").className = "v " + (it.elf ? "ok" : "warn");
+    $("#oArt").textContent = it.art ? "是（强制的）" : "否";
+    $("#oArt").className = "v " + (it.art ? "bad" : "ok");
+    const runOk = it.run.startsWith("可以");
+    $("#oRun").textContent = it.run;
+    $("#oRun").className = "v " + (runOk ? "ok" : "bad");
+    $("#oWhy").textContent = it.why;
+    $("#explain").innerHTML = it.ex;
+    this.draw();
+    T1.check();
+  },
+  draw() {
+    const cv=$("#cv1"); if(!cv||!cv.clientWidth) return;
+    const dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=230;
+    cv.width=W*dpr; cv.height=H*dpr;
+    const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+    c.fillStyle="#0a0d13"; c.fillRect(0,0,W,H);
+    const it = ITEMS.find(x=>x.id===this.cur);
+    const cx=W/2;
+    // 内核
+    c.fillStyle="#16303a"; c.fillRect(cx-190, 170, 380, 40);
+    c.strokeStyle="#3fb6c8"; c.strokeRect(cx-190, 170, 380, 40);
+    c.fillStyle="#3fb6c8"; c.font="600 13px 'Segoe UI',sans-serif"; c.textAlign="center";
+    c.fillText("Linux 内核（所有东西最终都调它）", cx, 195);
+    // ART 层
+    c.fillStyle = it.art ? "#2a1a1d" : "#151a22";
+    c.fillRect(cx-190, 108, 380, 42);
+    c.strokeStyle = it.art ? "#e05a5a" : "#242c38"; c.strokeRect(cx-190, 108, 380, 42);
+    c.fillStyle = it.art ? "#e05a5a" : "#3a424e"; c.font="600 13px 'Segoe UI',sans-serif";
+    c.fillText("ART 虚拟机（只有 App 必须经过这里）", cx, 134);
+    // 当前对象
+    const onArt = it.art;
+    const bx = cx-110, by = onArt ? 34 : 34;
+    c.fillStyle = "#1d2634"; c.fillRect(bx, by, 220, 46);
+    c.strokeStyle = "#5b9bd5"; c.lineWidth=2; c.strokeRect(bx, by, 220, 46);
+    c.fillStyle="#e8ecf2"; c.font="600 12.5px 'Segoe UI',sans-serif"; c.textAlign="center";
+    const nm = it.name.length > 20 ? it.name.slice(0,19)+"…" : it.name;
+    c.fillText(nm, cx, by+28);
+    // 路径
+    c.strokeStyle = onArt ? "#e05a5a" : "#46c08a"; c.lineWidth=2.5;
+    c.beginPath();
+    if (onArt) { c.moveTo(cx, by+46); c.lineTo(cx, 108); c.stroke();
+      c.beginPath(); c.moveTo(cx, 150); c.lineTo(cx, 170); c.stroke(); }
+    else { c.moveTo(cx-70, by+46); c.lineTo(cx-70, 96); c.lineTo(cx-70, 170); c.stroke(); }
+    c.fillStyle = onArt ? "#e05a5a" : "#46c08a"; c.font="600 11.5px 'Segoe UI',sans-serif";
+    c.textAlign="left";
+    c.fillText(onArt ? "必须经过 ART" : "直接调用系统调用，绕过 ART", cx-180, onArt ? 92 : 96-Math.abs(0));
+    if (!onArt) { c.fillStyle="#46c08a"; c.fillText("直接调用内核", cx-64, 100); }
+  },
+};
+const T1 = {
+  idx:0, done:[false,false,false],
+  tasks:[
+    {
+      title:"找出「不是 ELF」的那一个",
+      desc:"点左边每一项，看「它是 ELF 吗」这一栏。找出唯一一个不是 ELF 的。",
+      setup(){ M1.cur="art"; M1.render(); },
+      note:"<b>九个条目里，只有「普通 Android App」不是 ELF。</b>其余八个——包括系统本身、Chrome、Unity 游戏、BusyBox、Nginx、PHP 服务器——全都是 ELF，全都能在 Android 上跑。<br><br>这就是文章第一段那句：<b>Android 一直都可以执行 ELF 程序。</b>「Android 自己搞一套」指的从来不是这件事。",
+      test:()=> M1.cur === "app",
+      hint:"找那个 Java/Kotlin 写的普通 App。",
+    },
+    {
+      title:"找出唯一真的跑不起来的那一个",
+      desc:"继续点。有一项标着「不行」——看它的原因是什么。",
+      setup(){ M1.cur="app"; M1.render(); },
+      note:"<b>是「Ubuntu 上编译的 glibc 程序裸拷过去」这一项。但原因值得看清楚：不是「Android 不认识 ELF」，是「找不到 libc.so.6」。</b><br><br>这是纯粹的依赖问题。前面「树莓派二进制」那一项给出了答案——<b>打包依赖库之后就能跑</b>。<br><br>所以这个失败恰恰证明了文章的观点：<b>不用 GNU 的 libc，不代表 GNU 的 libc 不能跑在 Android 上。</b>你把 glibc 一起带过去就行了。",
+      test:()=> M1.cur === "glibcbin",
+      hint:"找那个标着「缺依赖」的 Ubuntu 二进制。",
+    },
+    {
+      title:"把整条 Web 服务链路走一遍",
+      desc:"点「Nginx + PHP + MySQL」和「PocketMine」，看它们的路径图有什么共同点。",
+      setup(){ M1.cur="app"; M1.render(); },
+      note:"<b>它们的路径都绕过了 ART，直接落到内核。</b>下面那张图会显示绿色的直连箭头。<br><br>这就是「Android 是一个完完全全的 Linux 系统」的实际含义：<b>只要是原生程序，它在 Android 上和在任何 Linux 上的处境是一样的。</b>Android 加的约束只作用于「App 这个开发形态」，不作用于内核。<br><br>文中那句总结最准确：<b>Android 不是 GNU/Linux 发行版，但 Android 是一个完完全全的 Linux 系统。</b>",
+      test:()=> M1.cur === "ksweb" || M1.cur === "pocketmine",
+      hint:"点「Nginx + PHP + MySQL」或「PocketMine」。",
+    },
+  ],
+  render(){ const t=this.tasks[this.idx];
+    $("#t1n").textContent=this.idx+1; $("#t1title").textContent=t.title;
+    $("#t1desc").innerHTML=t.desc; $("#t1note").innerHTML=t.note;
+    if(!this.done[this.idx]){ $("#t1verdict").className="verdict no"; $("#t1verdict").textContent="点左边条目，自动判定。"; }
+    else { $("#t1verdict").className="verdict ok"; $("#t1verdict").textContent="✓ 已达成。"; } },
+  check(){ if(this.done[this.idx]) return; const t=this.tasks[this.idx];
+    if(t.test()){ this.done[this.idx]=true;
+      $("#t1verdict").className="verdict ok"; $("#t1verdict").textContent="✓ 达成。看下面的解释。";
+      $("#t1note").innerHTML=t.note;
+    } else { $("#t1verdict").textContent="还没达成 —— "+t.hint; } },
+  next(){ this.idx=(this.idx+1)%this.tasks.length; this.tasks[this.idx].setup(); this.render(); this.check(); },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   模块 2 · 两套栈并排
+   ══════════════════════════════════════════════════════════════ */
+const LAYERS = [
+  { id:"kernel", name:"Linux 内核", ubuntu:"Linux 5.x/6.x", android:"Linux 5.x/6.x", kind:"same",
+    ex:"<b>完全相同的层，而且是同一份代码。</b>Android 用的就是上游 Linux 内核（加上一些 Android 特有的补丁，比如 binder、ashmem、wakelocks，但这些也在逐步上游化）。<br><br>这一层相同，是「Android 是 Linux 系统」这句话的全部依据。后面的所有差异，都发生在这个内核之上。" },
+  { id:"fs", name:"文件系统", ubuntu:"ext4 / btrfs", android:"ext4 / F2FS", kind:"tech",
+    ex:"<b>F2FS 是 Android 为闪存读写优化的文件系统——而所有 GNU/Linux 发行版都能直接用。</b><br><br>这正是文中那句反问的落点：<b>如果 Linux 内核不是 GPL 协议，那 F2FS、zram 这些技术真可能就是 Android 独享了。</b>它们之所以两边都能用，是因为它们被贡献进了 GPL 的内核。<br><br>所以这一层的「不同」是技术选择（针对闪存优化），不是生态隔离。" },
+  { id:"mem", name:"内存管理", ubuntu:"swap 分区", android:"zram 内存压缩", kind:"tech",
+    ex:"<b>两者都用内核提供的能力。</b>Android 不用 swap 分区（闪存写入寿命有限），改用 zram 在内存里压缩。<br><br>而 zram 本身是内核模块——<b>任何 Linux 都能加载它</b>。这又是一个「Android 先用了，但 GNU/Linux 也能用」的例子。" },
+  { id:"libc", name:"C 运行库", ubuntu:"glibc（LGPL）", android:"bionic（BSD）", kind:"license",
+    ex:"<b>这是整条栈上最重要的一处分歧，而它的原因不是技术。</b><br><br>文中说得很直接：<b>Android 不用 GNU 的 libc 库，是协议上的风险问题，不是技术上的实现问题。如果 glibc 不是 LGPL/GPL 授权，而是 zlib 之类的宽松授权，那 Google 大概率会直接使用 glibc。</b><br><br>技术上 glibc 完全能跑在 Android 上（把依赖打包带上就行）。Google 自己重写一个 bionic，唯一的原因是许可证。" },
+  { id:"toolchain", name:"编译器工具链", ubuntu:"GCC（GPL）", android:"LLVM/Clang（Apache）", kind:"license",
+    ex:"<b>同一个原因。</b>文中：<b>Android NDK 以前一直用的都是 GNU GCC 的套件，后来才逐渐转移到 LLVM/Clang 上，更多地也是为了规避协议风险。</b><br><br>注意这里的时间顺序：NDK 一开始就是用 GCC 的。切到 Clang 不是因为 GCC 不好用，是因为不想让工具链的 GPL 约束波及到用它编译出来的东西（以及不想在自家产品里分发 GPL 软件）。" },
+  { id:"shell", name:"Shell 与核心工具", ubuntu:"bash + coreutils（GPL）", android:"mksh + toybox（BSD）", kind:"license",
+    ex:"<b>还是协议。</b>GNU 的 coreutils 和 bash 都是 GPL，Android 换成了 BSD 协议的 toybox 和 mksh。<br><br>这解释了一个日常现象：为什么 Android 的 adb shell 里很多命令的行为和 Linux 上不太一样——因为它们根本不是同一套实现。" },
+  { id:"runtime", name:"应用运行时", ubuntu:"没有（直接跑原生程序）", android:"ART / Dalvik", kind:"tech",
+    ex:"<b>这一层是 Android 真正「自己搞一套」的地方，但它管的只是 App。</b><br><br>为什么需要它？因为 Android 要解决几个 Linux 桌面不关心的问题：<b>应用沙箱</b>（每个 App 一个 UID）、<b>安装即隔离</b>、<b>细粒度权限</b>、<b>后台进程的统一管理</b>。<br><br>用原生程序很难做到这些——你得给每个 App 都配一套完整的权限管控。而托管运行时天然拥有这些能力。<b>代价就是 App 不能是普通 ELF，必须由 ART 来执行。</b>" },
+  { id:"gui", name:"图形与窗口", ubuntu:"X11 / Wayland", android:"SurfaceFlinger", kind:"tech",
+    ex:"<b>桌面和移动的交互模型差得太远，这一层必须重写。</b>X11 假设有窗口、有鼠标指针、有多个可重叠的顶层窗口；手机上前台永远只有一个应用，输入是触摸。<br><br>再加上 Android 的每一帧都要经过 SurfaceFlinger 统一合成（这和它的权限模型、DRM 保护是绑在一起的），X11 那套架构搬不过来。<b>这是纯技术原因，和许可证无关。</b>" },
+  { id:"init", name:"启动与服务管理", ubuntu:"systemd", android:"init + servicemanager + zygote", kind:"tech",
+    ex:"<b>一个关键的技术差异：zygote。</b><br><br>Linux 上每个进程都是 fork+exec 从零启动。Android 不一样——它先启动一个 zygote 进程，把 ART 虚拟机和常用类库都预加载好，之后所有 App 都是 fork 这个 zygote。<b>这样 App 冷启动就省掉了加载虚拟机的时间。</b><br><br>这是移动端对启动速度的极致要求催生的设计，桌面 Linux 没有这个压力。" },
+];
+const KINDCOL = { same:"#46c08a", license:"#d9a441", tech:"#5b9bd5" };
+const KINDNAME = { same:"完全相同", license:"因协议而不同", tech:"因技术而不同" };
+const M2 = { cur:"libc", filter:"all",
+  render() {
+    const same = LAYERS.filter(l=>l.kind==="same").length;
+    const lic = LAYERS.filter(l=>l.kind==="license").length;
+    const tec = LAYERS.filter(l=>l.kind==="tech").length;
+    $("#oSame").textContent = same + " 层";
+    $("#oLicense").textContent = lic + " 层";
+    $("#oTech").textContent = tec + " 层";
+    document.querySelectorAll("[data-only]").forEach(b=>{
+      b.classList.toggle("on", b.dataset.only===this.filter);
+      b.onclick=()=>{ this.filter=b.dataset.only; this.render(); };
+    });
+    const l = LAYERS.find(x=>x.id===this.cur);
+    $("#layerInfo").innerHTML = `<b style="color:${KINDCOL[l.kind]}">${KINDNAME[l.kind]}</b><br><br>${l.ex}`;
+    this.draw();
+    T2.check();
+  },
+  draw() {
+    const cv=$("#cv2"); if(!cv||!cv.clientWidth) return;
+    const dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=470;
+    cv.width=W*dpr; cv.height=H*dpr;
+    const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+    c.fillStyle="#0a0d13"; c.fillRect(0,0,W,H);
+    const n = LAYERS.length;
+    const padT=44, padB=20, rowH=(H-padT-padB)/n;
+    const colU = 20, colA = W/2+14, colW = W/2-34;
+    c.fillStyle="#8490a2"; c.font="600 12.5px 'Segoe UI',sans-serif"; c.textAlign="center";
+    c.fillText("Ubuntu（GNU/Linux 发行版）", colU+colW/2, 22);
+    c.fillText("Android", colA+colW/2, 22);
+    LAYERS.forEach((l,i) => {
+      const y = padT + i*rowH;
+      const dim = (this.filter==="same" && l.kind!=="same") || (this.filter==="diff" && l.kind==="same");
+      c.globalAlpha = dim ? 0.18 : 1;
+      // 两侧文字
+      const box = (x, txt, col) => {
+        c.fillStyle = i===LAYERS.findIndex(z=>z.id===this.cur) ? "#1d2634" : "#141a22";
+        c.fillRect(x, y+3, colW, rowH-7);
+        c.strokeStyle = i===LAYERS.findIndex(z=>z.id===this.cur) ? KINDCOL[l.kind] : "#232b36";
+        c.lineWidth = i===LAYERS.findIndex(z=>z.id===this.cur) ? 2 : 1;
+        c.strokeRect(x, y+3, colW, rowH-7);
+        c.fillStyle="#c8d2de"; c.font="12.5px 'Segoe UI',sans-serif"; c.textAlign="center";
+        c.fillText(txt, x+colW/2, y+rowH/2+4);
+      };
+      box(colU, l.ubuntu, null);
+      box(colA, l.android, null);
+      // 层名 + 类型点
+      c.beginPath(); c.arc(colU+colW+7, y+rowH/2, 4, 0, Math.PI*2);
+      c.fillStyle = KINDCOL[l.kind]; c.fill();
+      c.save();
+      c.translate(colU+colW+19, y+rowH/2-2);
+      c.fillStyle="#8490a2"; c.font="10.5px 'Segoe UI',sans-serif"; c.textAlign="left";
+      c.fillText(l.name, 0, 0);
+      c.restore();
+      c.globalAlpha = 1;
+    });
+    c.fillStyle="#5a6474"; c.font="11.5px 'Segoe UI',sans-serif"; c.textAlign="left";
+    c.fillText("● 绿=完全相同　● 黄=因协议而不同　● 蓝=因技术而不同", 20, H-6);
+  },
+};
+const T2 = {
+  idx:0, done:[false,false,false],
+  tasks:[
+    {
+      title:"找出「完全相同」的那一层",
+      desc:"点左边每一层（点圆点或方块之间的区域），找出被标为「完全相同」的那几层。先点出 Linux 内核。",
+      setup(){ M2.cur="libc"; M2.filter="all"; M2.render(); },
+      note:"<b>内核层是唯一真正完全相同的。</b>同一份代码，同一个项目，同一套系统调用。<br><br>后面所有的差异都发生在这个内核之上。所以文章那句话在技术上是有依据的：<b>Android 不是 GNU/Linux 发行版，但 Android 是一个完完全全的 Linux 系统。</b>发行版指的是用户态那一整套，而系统指的是内核。" ,
+      test:()=> M2.cur === "kernel",
+      hint:"点那一层「Linux 内核」。",
+    },
+    {
+      title:"数一数有几层是「因协议而不同」",
+      desc:"点右侧「只看不同的」，然后逐层看。记下有几层的差异原因是<b>许可证</b>。",
+      setup(){ M2.cur="kernel"; M2.filter="all"; M2.render(); },
+      note:"<b>三层：C 运行库、编译器工具链、Shell 与核心工具。</b><br><br>而这三层恰好是 GNU 项目最核心的产出——glibc、GCC、bash/coreutils。<b>Android 把它们全部换掉了，换的理由全部是许可证。</b><br><br>文中那个反事实假设很关键：<b>如果 glibc 是 zlib 那样的宽松授权，Google 大概率会直接用 glibc。</b>那样的话 Android 的用户态会长得非常像 GNU/Linux——换句话说，今天 Android 和 Linux 桌面之间的差异，有相当一部分是法律造成的，不是工程造成的。",
+      test:()=> M2.filter === "diff",
+      hint:"点「只看不同的」，然后逐层看哪几层的解释里提到协议。",
+    },
+    {
+      title:"找出「因技术而不同」的层",
+      desc:"切回「显示全部」，点出至少两层被标为「因技术而不同」的。",
+      setup(){ M2.cur="kernel"; M2.filter="all"; M2.render(); },
+      note:"<b>文件系统（F2FS）、内存管理（zram）、应用运行时（ART）、图形（SurfaceFlinger）、启动（zygote）。</b><br><br>注意前两个——<b>F2FS 和 zram 是内核里的东西，GNU/Linux 都能直接用。</b>文中那句话正是冲着它们说的：这些技术之所以没有被 Android 独享，唯一的原因是 Linux 内核是 GPL，改动必须开源。<br><br>所以「协议」在整件事里出现了两次，方向相反：<b>它逼着 Google 换掉了用户态的 GNU 组件（因为不想被 GPL 约束），又逼着 Google 把内核里的改进交了出来（因为内核是 GPL）。</b>同一份许可证，在这条栈的两侧产生了完全相反的效果。",
+      test:()=> M2.filter === "all" && ["fs","mem","runtime","gui","init"].includes(M2.cur),
+      hint:"点「显示全部」，然后点 F2FS、zram、ART 或 SurfaceFlinger 那几层。",
+    },
+  ],
+  render(){ const t=this.tasks[this.idx];
+    $("#t2n").textContent=this.idx+1; $("#t2title").textContent=t.title;
+    $("#t2desc").innerHTML=t.desc; $("#t2note").innerHTML=t.note;
+    if(!this.done[this.idx]){ $("#t2verdict").className="verdict no"; $("#t2verdict").textContent="点左边层，自动判定。"; }
+    else { $("#t2verdict").className="verdict ok"; $("#t2verdict").textContent="✓ 已达成。"; } },
+  check(){ if(this.done[this.idx]) return; const t=this.tasks[this.idx];
+    if(t.test()){ this.done[this.idx]=true;
+      $("#t2verdict").className="verdict ok"; $("#t2verdict").textContent="✓ 达成。看下面的解释。";
+      $("#t2note").innerHTML=t.note;
+    } else { $("#t2verdict").textContent="还没达成 —— "+t.hint; } },
+  next(){ this.idx=(this.idx+1)%this.tasks.length; this.tasks[this.idx].setup(); this.render(); this.check(); },
+};
+
+// 让模块 2 的层可点：在 canvas 上做命中检测
+document.addEventListener("click", (e)=>{
+  const cv = $("#cv2");
+  if (!cv || cv.closest(".hide")) return;
+  if (e.target !== cv) return;
+  const r = cv.getBoundingClientRect();
+  const y = e.clientY - r.top;
+  const padT=44, padB=20, rowH=(470-padT-padB)/LAYERS.length;
+  const i = Math.floor((y-padT)/rowH);
+  if (i>=0 && i<LAYERS.length) { M2.cur = LAYERS[i].id; M2.render(); }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   模块 3 · 你来做 Google 的工程师
+   ══════════════════════════════════════════════════════════════ */
+const COMPS = [
+  { id:"libc", name:"C 运行库",
+    opts:[
+      { k:"gnu", label:"用 glibc（LGPL）", work:0, risk:34, compat:100, why:"技术上是现成的，但 LGPL 要求你给用户替换该库的权利，且分发时要附带源码/可重链接。" },
+      { k:"self", label:"自己写一个（bionic）", work:26, risk:0, compat:38, why:"完全规避许可证。代价是要自己实现一套 libc，且和 glibc 的 ABI 不兼容。" },
+      { k:"perm", label:"用 musl（MIT）", work:4, risk:0, compat:72, why:"宽松协议，但功能子集比 glibc 小，很多 GNU 程序跑不起来。" },
+    ]},
+  { id:"compiler", name:"编译器工具链",
+    opts:[
+      { k:"gnu", label:"用 GCC（GPL）", work:0, risk:30, compat:100, why:"成熟稳定。但 GCC 是 GPLv3，把它的二进制放进自家 SDK 会带来分发义务。文中说 NDK 一开始用的就是 GCC。" },
+      { k:"self", label:"自己写一个", work:60, risk:0, compat:60, why:"不现实——编译器是几十人年的工作量。" },
+      { k:"perm", label:"用 LLVM/Clang（Apache）", work:5, risk:0, compat:88, why:"Google 的实际选择。Apache 2.0 宽松，可以自由分发。" },
+    ]},
+  { id:"shell", name:"Shell 与核心工具",
+    opts:[
+      { k:"gnu", label:"用 bash + coreutils（GPL）", work:0, risk:22, compat:100, why:"功能最全，但 GPL 要求以源码形式分发，且不能与专有代码混合。" },
+      { k:"self", label:"自己写（toybox）", work:18, risk:0, compat:55, why:"BSD 协议，完全自由。代价是工具集要一个个重写。" },
+      { k:"perm", label:"用 busybox（GPL）", work:2, risk:20, compat:78, why:"虽然只有 GPL 一个选择，但它本来就是给嵌入式设计的，体积小。" },
+    ]},
+  { id:"runtime", name:"应用运行时",
+    opts:[
+      { k:"gnu", label:"用 JVM 的现成实现", work:0, risk:26, compat:60, why:"OpenJDK 是 GPL+CE。而且桌面 JVM 太重，不适合手机。" },
+      { k:"self", label:"自己写（Dalvik → ART）", work:52, risk:0, compat:40, why:"Google 的实际选择。要从零实现一个能跑 DEX 的虚拟机 + JIT/AOT 编译器。" },
+      { k:"perm", label:"不上虚拟机，直接跑原生", work:6, risk:0, compat:96, why:"技术最简单，但拿不到应用沙箱、权限管控和后台进程管理——而这三样正是 Android 的立身之本。" },
+    ]},
+  { id:"gui", name:"图形与窗口系统",
+    opts:[
+      { k:"gnu", label:"用 X11 / Wayland", work:0, risk:0, compat:96, why:"开源且协议宽松。但它的交互模型是桌面的——多窗口、鼠标指针，搬到手机上不合适。" },
+      { k:"self", label:"自己写（SurfaceFlinger）", work:34, risk:0, compat:30, why:"Google 的实际选择。为触摸和单前台应用从零设计，并把合成与 DRM 保护绑在一起。" },
+      { k:"perm", label:"用现成的嵌入式 GUI", work:8, risk:0, compat:55, why:"省事，但扩展性和生态都不够。" },
+    ]},
+];
+const PRESETS = {
+  gnu:    { libc:"gnu", compiler:"gnu", shell:"gnu", runtime:"gnu", gui:"gnu" },
+  google: { libc:"self", compiler:"perm", shell:"self", runtime:"self", gui:"self" },
+  self:   { libc:"self", compiler:"self", shell:"self", runtime:"self", gui:"self" },
+};
+const M3 = { pick:{ libc:"gnu", compiler:"gnu", shell:"gnu", runtime:"gnu", gui:"gnu" },
+  totals() {
+    let work=0, risk=0, compat=0;
+    COMPS.forEach(c => {
+      const o = c.opts.find(x=>x.k===this.pick[c.id]);
+      work += o.work; risk += o.risk; compat += o.compat;
+    });
+    return { work, risk, compat: Math.round(compat/COMPS.length) };
+  },
+  render() {
+    $("#choices").innerHTML = COMPS.map(c => `
+      <div style="margin-bottom:12px">
+        <div style="font-size:12.8px;color:var(--dim);margin-bottom:5px">${c.name}</div>
+        <div class="row" style="margin-top:0">
+          ${c.opts.map(o=>`<button class="btn small ${this.pick[c.id]===o.k?"on":""}" data-c="${c.id}" data-o="${o.k}">${o.label}</button>`).join("")}
+        </div>
+      </div>`).join("");
+    document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{
+      this.pick[b.dataset.c]=b.dataset.o; this.render(); T3.check();
+    });
+    const t = this.totals();
+    $("#oWork").textContent = t.work + " 单位";
+    $("#oWork").className = "v " + (t.work>80 ? "bad" : (t.work>40 ? "warn" : "ok"));
+    $("#oRisk").textContent = t.risk;
+    $("#oRisk").className = "v " + (t.risk>60 ? "bad" : (t.risk>20 ? "warn" : "ok"));
+    $("#oCompat").textContent = t.compat + "%";
+    $("#oCompat").className = "v " + (t.compat>80 ? "ok" : (t.compat>50 ? "warn" : "bad"));
+    this.draw();
+    T3.check();
+  },
+  draw() {
+    const cv=$("#cv3"); if(!cv||!cv.clientWidth) return;
+    const dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=420;
+    cv.width=W*dpr; cv.height=H*dpr;
+    const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+    c.fillStyle="#0a0d13"; c.fillRect(0,0,W,H);
+    const t=this.totals();
+    // 三个条形
+    const bar = (y, val, max, col, label, txt) => {
+      const padL=150, gw=W-padL-140;
+      c.fillStyle="#141a22"; c.fillRect(padL, y, gw, 26);
+      c.fillStyle=col; c.fillRect(padL, y, gw*clamp(val/max,0,1), 26);
+      c.fillStyle="#c8d2de"; c.font="12.5px 'Segoe UI',sans-serif"; c.textAlign="right";
+      c.fillText(label, padL-12, y+18);
+      c.textAlign="left"; c.fillStyle=col; c.font="700 13px 'Segoe UI',sans-serif";
+      c.fillText(txt, padL+gw+12, y+18);
+    };
+    c.fillStyle="#8490a2"; c.font="12px 'Segoe UI',sans-serif"; c.textAlign="left";
+    c.fillText("你的选择带来的三个后果", 16, 22);
+    bar(46, t.work, 140, "#e05a5a", "自研工作量", t.work+"");
+    bar(86, t.risk, 100, "#d9a441", "GPL 传染风险", t.risk+"");
+    bar(126, t.compat, 100, "#46c08a", "与 GNU 生态兼容", t.compat+"%");
+
+    // 协议边界示意
+    const cy = 210;
+    c.fillStyle="#16303a"; c.fillRect(60, cy+58, W-120, 54);
+    c.strokeStyle="#3fb6c8"; c.lineWidth=1.5; c.strokeRect(60, cy+58, W-120, 54);
+    c.fillStyle="#3fb6c8"; c.font="600 13px 'Segoe UI',sans-serif"; c.textAlign="center";
+    c.fillText("Linux 内核（GPLv2 —— 改动的义务是开源）", W/2, cy+91);
+    c.strokeStyle="#d9a441"; c.lineWidth=2; c.setLineDash([7,5]);
+    c.beginPath(); c.moveTo(40, cy+50); c.lineTo(W-40, cy+50); c.stroke(); c.setLineDash([]);
+    c.fillStyle="#d9a441"; c.font="600 12px 'Segoe UI',sans-serif"; c.textAlign="left";
+    c.fillText("← 系统调用边界：许可证的边界", 46, cy+40);
+    // 用户态组件
+    const rk = t.risk;
+    c.fillStyle = rk>60 ? "#3a1f1f" : (rk>20 ? "#2b2416" : "#16261d");
+    c.fillRect(60, cy-40, W-120, 74);
+    c.strokeStyle = rk>60 ? "#e05a5a" : (rk>20 ? "#d9a441" : "#46c08a"); c.lineWidth=1.5;
+    c.strokeRect(60, cy-40, W-120, 74);
+    c.fillStyle="#c8d2de"; c.font="600 12.5px 'Segoe UI',sans-serif"; c.textAlign="center";
+    c.fillText("用户态（GPL 在这里不传染 —— 只要你不在内核里放 GPL 代码）", W/2, cy-16);
+    const warn = COMPS.filter(x=>x.opts.find(y=>y.k===this.pick[x.id]).risk>0).map(x=>x.name);
+    c.font="12px 'Segoe UI',sans-serif"; c.textAlign="center";
+    c.fillStyle = rk>60 ? "#e05a5a" : (rk>20 ? "#d9a441" : "#46c08a");
+    c.fillText(warn.length ? ("带 GPL 的组件：" + warn.join("、")) : "没有任何 GPL 组件", W/2, cy+10);
+
+    c.fillStyle="#5a6474"; c.font="11.5px 'Segoe UI',sans-serif"; c.textAlign="left";
+    c.fillText("注意：用户态用 GPL 组件不等于「内核被传染」——麻烦在于分发义务（要提供源码、允许替换），", 16, H-32);
+    c.fillText("以及 Google 不想在自己分发的产品里承担这些义务。这正是文中说的「协议上的风险问题」。", 16, H-14);
+  },
+};
+const T3 = {
+  idx:0, done:[false,false,false],
+  tasks:[
+    {
+      title:"先试试「全用 GNU 的」",
+      desc:"点「全用 GNU 的」，看三个读数。",
+      setup(){ Object.assign(M3.pick, PRESETS.gnu); M3.render(); },
+      note:"<b>自研工作量最低、兼容性最高——但 GPL 风险拉满。</b><br><br>这条路在技术上是完全可行的，它甚至就是绝大多数 GNU/Linux 发行版走的路。所以文章那句判断是有力的：<b>不用 GNU 的 libc 库，是协议上的风险问题，不是技术上的实现问题。</b><br><br>换句话说——如果 Google 不在乎许可证，Android 的用户态可以长得和 Ubuntu 几乎一样。今天我们看到的所有差异，起点是这里。" ,
+      test:()=> COMPS.every(c=>M3.pick[c.id]==="gnu"),
+      hint:"点「全用 GNU 的」。",
+    },
+    {
+      title:"现在做 Google 实际的选择",
+      desc:"点「Google 的实际选择」，对比两个读数：GPL 风险降了多少，自研工作量涨了多少。",
+      setup(){ Object.assign(M3.pick, PRESETS.gnu); M3.render(); },
+      note:"<b>风险降到 0，工作量涨到很高。</b>这就是真实发生的事——Google 在用户态重写了几乎所有 GNU 组件：<br><br>bionic（libc）、toybox + mksh（shell 和工具）、Bionic 配套的链接器、Dalvik/ART（运行时）、SurfaceFlinger（图形）。编译器从 GCC 换到 Clang，也是同一个理由。<br><br>你愿意为「不受 GPL 约束」付出这么大的工程代价，说明这个约束在商业上确实很贵。" ,
+      test:()=> COMPS.every(c=>M3.pick[c.id]===PRESETS.google[c.id]),
+      hint:"点「Google 的实际选择」。",
+    },
+    {
+      title:"找出那个「跟协议无关、纯粹是技术差异」的选择",
+      desc:"点击各个组件，看每个选项的说明。找出图形系统那一层——它的三个选项里，<b>没有一个带 GPL 风险</b>，但 Google 还是自己写了。为什么？",
+      setup(){ Object.assign(M3.pick, PRESETS.google); M3.render(); },
+      note:"<b>因为图形系统这一层的差异和技术有关，和协议无关。</b><br><br>X11 和 Wayland 的许可证很宽松，用它们没有法律障碍。但它们的交互模型是为桌面设计的：多窗口、可重叠、鼠标指针。手机上前台永远只有一个应用，输入是触摸——这套模型搬不过来。<br><br>所以「Android 为什么和 Linux 不一样」这个问题，答案其实是两个：<b>用户态那几层是因为 GPL（法律），应用运行时和图形系统是因为移动端的需求（技术）。</b>而最底下那层内核，完全相同。<br><br>文章最后那句反讽值得记住：<b>为什么 Google 不去折腾协议更宽松的 BSD 系统？因为 BSD 系统生态不好。为什么生态不好？因为 BSD 协议宽松。</b>这不是段子，这是整个开源商业模式的张力所在——GPL 逼着贡献回流，也正因如此，Android 在内核里的每一处改进，最后都回到了所有 Linux 用户手里。",
+      test:()=> M3.pick.gui === "self",
+      hint:"在图形系统那一层选「自己写（SurfaceFlinger）」。",
+    },
+  ],
+  render(){ const t=this.tasks[this.idx];
+    $("#t3n").textContent=this.idx+1; $("#t3title").textContent=t.title;
+    $("#t3desc").innerHTML=t.desc; $("#t3note").innerHTML=t.note;
+    if(!this.done[this.idx]){ $("#t3verdict").className="verdict no"; $("#t3verdict").textContent="改选择，自动判定。"; }
+    else { $("#t3verdict").className="verdict ok"; $("#t3verdict").textContent="✓ 已达成。"; } },
+  check(){ if(this.done[this.idx]) return; const t=this.tasks[this.idx];
+    if(t.test()){ this.done[this.idx]=true;
+      $("#t3verdict").className="verdict ok"; $("#t3verdict").textContent="✓ 达成。看下面的解释。";
+      $("#t3note").innerHTML=t.note;
+    } else { $("#t3verdict").textContent="还没达成 —— "+t.hint; } },
+  next(){ this.idx=(this.idx+1)%this.tasks.length; this.tasks[this.idx].setup(); this.render(); this.check(); },
+};
+document.querySelectorAll("[data-preset]").forEach(b=>b.onclick=()=>{
+  Object.assign(M3.pick, PRESETS[b.dataset.preset]);
+  M3.render(); T3.check();
+});
+
+/* ══════════════════════════════════════════════════════════════
+   绑定
+   ══════════════════════════════════════════════════════════════ */
+$("#b1skip").onclick=()=>T1.next();
+$("#b2skip").onclick=()=>T2.next();
+$("#b3skip").onclick=()=>T3.next();
+
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x === t));
+  const m = t.dataset.m;
+  [0,1,2].forEach(i => $("#mod"+i).classList.toggle("hide", String(i) !== m));
+  requestAnimationFrame(()=>{
+    if (m==="0") M1.draw();
+    if (m==="1") M2.draw();
+    if (m==="2") M3.draw();
+  });
+});
+
+M1.render();
+M2.render();
+M3.render();
+T1.tasks[0].setup(); T1.render(); T1.check();
+T2.tasks[0].setup(); T2.render(); T2.check();
+T3.tasks[0].setup(); T3.render(); T3.check();
+setTimeout(()=>{ M1.draw(); M2.draw(); M3.draw(); }, 60);
+window.addEventListener("resize", ()=>{ M1.draw(); M2.draw(); M3.draw(); });
+</script>
+</body>
+</html>

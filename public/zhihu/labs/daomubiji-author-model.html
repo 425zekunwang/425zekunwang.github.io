@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>《盗墓笔记》· 作者直觉模型 · 徐磊为什么这么写</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a20; --panel2:#1e222a; --line:#2a2f3a;
+    --fg:#e8eaed; --dim:#8b93a1; --gold:#d4a24c; --jade:#4bbf8a;
+    --rose:#c96a7a; --blue:#5b9bd5; --purple:#a97bd6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);line-height:1.78;
+    font-family:"Segoe UI","Microsoft YaHei",-apple-system,BlinkMacSystemFont,sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px 90px}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  header.hero{padding:54px 0 30px;border-bottom:1px solid var(--line);margin-bottom:32px}
+  .kicker{color:var(--rose);font-size:13px;letter-spacing:.2em;text-transform:uppercase;font-weight:600}
+  h1{font-size:clamp(26px,4.2vw,40px);margin:12px 0 10px;font-weight:700;line-height:1.25}
+  .lede{color:var(--dim);font-size:16.5px;max-width:820px;margin:0}
+  .navlinks{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+  .navlinks a{background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    padding:8px 14px;font-size:13.5px;color:var(--dim)}
+  .navlinks a:hover{border-color:var(--blue);color:var(--fg);text-decoration:none}
+
+  section{margin:0 0 54px}
+  h2{font-size:22px;margin:0 0 6px;display:flex;align-items:center;gap:10px}
+  h2 .num{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+    border-radius:8px;background:var(--rose);color:#1a0a0e;font-size:15px;font-weight:700;flex:none}
+  .sub{color:var(--dim);margin:0 0 20px;font-size:15px}
+
+  /* 证据分层 */
+  .layers{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  @media(max-width:780px){.layers{grid-template-columns:1fr}}
+  .layer{border-radius:12px;padding:16px 20px;border:1px solid;font-size:14.6px}
+  .l-quote{background:#141a16;border-color:#25402f}
+  .l-infer{background:#1a1614;border-color:#40342a}
+  .layer h4{margin:0 0 8px;font-size:14.5px}
+  .l-quote h4{color:var(--jade)} .l-infer h4{color:var(--gold)}
+  .layer p{margin:0;color:var(--dim)}
+
+  /* 引用块 */
+  .quote{background:#12161c;border-left:3px solid var(--jade);border-radius:0 10px 10px 0;
+    padding:14px 18px;margin:12px 0;font-size:15px}
+  .quote .q{color:#dfe6ee}
+  .quote .src{display:block;margin-top:9px;font-size:12.5px;color:var(--dim)}
+  .quote .src a{color:var(--dim);text-decoration:underline}
+  .inferbox{background:#1a1614;border-left:3px solid var(--gold);border-radius:0 10px 10px 0;
+    padding:14px 18px;margin:12px 0;font-size:15px}
+  .inferbox .lbl{display:inline-block;font-size:11.5px;letter-spacing:.08em;
+    background:#2b2416;color:var(--gold);padding:2px 9px;border-radius:20px;margin-bottom:7px}
+  .inferbox p{margin:0 0 8px}
+  .inferbox p:last-child{margin-bottom:0}
+
+  /* 生平时间轴 */
+  .life{position:relative;padding-left:28px}
+  .life::before{content:"";position:absolute;left:8px;top:8px;bottom:8px;width:2px;background:var(--line)}
+  .le{position:relative;margin-bottom:18px}
+  .le::before{content:"";position:absolute;left:-25px;top:15px;width:12px;height:12px;border-radius:50%;
+    background:var(--bg);border:2.5px solid var(--line)}
+  .le[data-k="origin"]::before{border-color:var(--purple)}
+  .le[data-k="crisis"]::before{border-color:var(--rose)}
+  .le[data-k="turn"]::before{border-color:var(--gold)}
+  .lehead{display:flex;gap:14px;align-items:baseline}
+  .leyear{flex:none;min-width:92px;color:var(--gold);font-weight:700;font-size:14.5px;font-variant-numeric:tabular-nums}
+  .letitle{font-size:15.5px;font-weight:600}
+  .lebody{color:var(--dim);font-size:14.5px;margin:4px 0 0 106px}
+  @media(max-width:700px){.lebody{margin-left:0}}
+  .chip{display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:20px;margin-left:8px;
+    background:#1f2a3a;color:var(--blue);vertical-align:middle}
+
+  /* 驱动卡片 */
+  .drivers{display:grid;gap:16px}
+  .driver{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px}
+  .driver .dnum{font-size:12px;letter-spacing:.14em;color:var(--rose);font-weight:700;text-transform:uppercase}
+  .driver h3{margin:6px 0 4px;font-size:19px}
+  .driver .arrow{color:var(--dim);font-size:14.5px;margin:0 0 12px}
+  .driver .arrow b{color:var(--fg)}
+  .driver .q{background:#12161c;border-left:3px solid var(--jade);border-radius:0 8px 8px 0;
+    padding:11px 15px;margin:10px 0;font-size:14.6px;color:#dfe6ee}
+  .driver .q .src{display:block;margin-top:7px;font-size:12.3px;color:var(--dim)}
+  .driver .inf{background:#1a1614;border-left:3px solid var(--gold);border-radius:0 8px 8px 0;
+    padding:11px 15px;font-size:14.6px;margin:10px 0}
+  .driver .inf .lbl{font-size:11.5px;color:var(--gold);letter-spacing:.06em;display:block;margin-bottom:5px}
+
+  /* 片段还原 */
+  .frag{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:24px 26px;margin-bottom:20px}
+  .frag .fk{font-size:12px;letter-spacing:.14em;color:var(--blue);font-weight:700;text-transform:uppercase}
+  .frag h3{margin:6px 0 14px;font-size:20px}
+  .progress{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+  .pstep{font-size:12.5px;padding:5px 11px;border-radius:7px;background:var(--panel2);
+    color:var(--dim);border:1px solid var(--line)}
+  .pstep.on{background:#241d10;border-color:var(--gold);color:var(--gold);font-weight:600}
+  .frag .row{margin-bottom:14px}
+  .frag .row .k{font-size:13px;color:var(--dim);letter-spacing:.06em;margin-bottom:6px}
+  .note{background:#12181f;border:1px solid var(--line);border-radius:12px;
+    padding:16px 20px;font-size:14.6px;color:var(--dim)}
+  .note b{color:var(--fg)}
+
+  .ask{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:820px){.ask{grid-template-columns:1fr}}
+  .askcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .askcard .n{color:var(--rose);font-weight:700;font-size:13px;letter-spacing:.1em}
+  .askcard h4{margin:6px 0 8px;font-size:16px}
+  .askcard p{margin:0;color:var(--dim);font-size:14.3px}
+
+  .srcbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 22px}
+  .srcbox ol{margin:0;padding-left:20px}
+  .srcbox li{color:var(--dim);font-size:14.2px;margin-bottom:10px}
+  .srcbox li b{color:var(--fg)}
+  code{background:#0c0e12;padding:2px 6px;border-radius:5px;font-size:13.4px;
+    font-family:"Cascadia Code",Consolas,monospace}
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:99;display:flex;gap:16px;align-items:center;justify-content:space-between;padding:9px 18px;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid #2b3444;font-size:13.5px;font-family:'Segoe UI','Microsoft YaHei',sans-serif"><a href="/" style="color:#8b98a8;text-decoration:none">← wzk 的技术笔记</a><a href="/zhihu/labs/" style="color:#58a6ff;text-decoration:none">全部交互页面</a></div>
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">Author Model · 直觉模型</div>
+  <h1>徐磊为什么会这么写</h1>
+  <p class="lede">《盗墓笔记》留下的那些"坑"，从情节层面往往推不通，但从作者状态层面常常推得通。这一页不解释剧情，而是把徐磊的生平材料摊开，还原他写下那些段落时脑子里在发生什么——再用它去回看三个具体片段。</p>
+  <div class="navlinks">
+    <a href="daomubiji-map.html">← 配套：全文脉络图（主线 / 暗线 / 时间线）</a>
+    <a href="index.html">返回目录</a>
+  </div>
+</header>
+
+<!-- ── 0 方法论 ────────────────────────────────────── -->
+<section>
+  <h2><span class="num">0</span>先把两类句子分开</h2>
+  <p class="sub">这一页全部内容只有两种成分。混淆它们，就会把猜测读成事实。</p>
+  <div class="layers">
+    <div class="layer l-quote">
+      <h4>■ 作者原话</h4>
+      <p>徐磊本人接受采访时说出的话，或他在微博、后记里写下的原话。每一条都附媒体与年份，可点开核对。这一页的结论全部建立在它们之上。</p>
+    </div>
+    <div class="layer l-infer">
+      <h4>■ 我的推断</h4>
+      <p>我根据那些原话做的连接与解释。它是我对材料的一种读法，不是徐磊的自述。<b>凡是推断，一律用这个颜色标出。</b></p>
+    </div>
+  </div>
+  <div class="note" style="margin-top:16px">
+    <b>一个必须承认的限制：</b>没有任何一份材料显示徐磊承认过"我是因为某某经历才写某某情节"。这是"作者意图"这类分析的固有风险。所以这一页的目标不是断言"他就是这么想的"，而是给出一套<b>能解释更多文本现象、且每一步都踩在证据上</b>的读法。
+  </div>
+</section>
+
+<!-- ── 1 生平 ────────────────────────────────────── -->
+<section>
+  <h2><span class="num">1</span>生平：材料本身</h2>
+  <p class="sub">只列有出处的事实。紫色的部分是后来反复出现在小说里的素材来源。</p>
+  <div class="life">
+
+    <div class="le" data-k="origin">
+      <div class="lehead"><div class="leyear">1980s</div><div class="letitle">浙江嘉善，在外婆家长大</div></div>
+      <div class="lebody">外婆家曾做烧砖窑生意。因为家里的生意，外婆总和泥土打交道——而"最好的泥就是墓上面"。徐磊因此听了大量地下故事的素材。<span class="chip">澎湃新闻 2020</span></div>
+    </div>
+
+    <div class="le" data-k="origin">
+      <div class="lehead"><div class="leyear">1987</div><div class="letitle">人生第一个睡前故事</div></div>
+      <div class="lebody">关键词是"血红的古棺，古祠堂，地主家萧索的灵堂和漫天的妖雨"：一个路过的书生撞上暴毙地主的棺材，引发尸变，地主和古棺里的僵尸打斗。5 岁的徐磊吓得钻进外婆怀里。<span class="chip">澎湃新闻 2020</span></div>
+    </div>
+
+    <div class="le" data-k="origin">
+      <div class="lehead"><div class="leyear">小学六年级</div><div class="letitle">第一次动笔</div></div>
+      <div class="lebody">原因很具体：妹妹喜欢一个男生但不知道怎么表达，他就写了个故事，把妹妹和那个男生写进小说里，让两人一起经历很多事。后来他自嘲"妹妹喜欢的男生还挺多……结果是我好像越来越会写男生"。<span class="chip">澎湃新闻 2020</span></div>
+    </div>
+
+    <div class="le" data-k="turn">
+      <div class="lehead"><div class="leyear">2006</div><div class="letitle">外贸滑坡，开始在网上写</div></div>
+      <div class="lebody">"徐磊，曾是一名外贸公司职员，2006 年外贸滑坡，他开始在网上创作《盗墓笔记》系列。"他在一个无事深夜想起外婆说的血棺故事，从贴吧开始更新，一晚上加一上午把血尸故事发了出来，帖子点击很快过百万，随后转战起点中文网。<span class="chip">现代快报 2015 · 澎湃新闻 2020</span></div>
+    </div>
+
+    <div class="le" data-k="crisis">
+      <div class="lehead"><div class="leyear">2010 前后</div><div class="letitle">开始扛不住负面声音</div></div>
+      <div class="lebody">"看到微博上别人骂我，我一个月吃不下饭，在那躺着看天。"他逐渐形成一种判断：赞美是可以被收回的，而且收回时会加倍变成恶意。<span class="chip">澎湃新闻 2020</span></div>
+    </div>
+
+    <div class="le" data-k="crisis">
+      <div class="lehead"><div class="leyear">2011.12</div><div class="letitle">《盗墓笔记》大结局出版</div></div>
+      <div class="lebody">分上下两册上市，首周销量破 100 万册。至此系列全部完结，共出版实体书九本，总销量超过 1200 万册。但业界的描述是：他"留下实际上并没有结尾的《盗墓笔记》"就消失了。<span class="chip">今日早报 2015</span></div>
+    </div>
+
+    <div class="le" data-k="crisis">
+      <div class="lehead"><div class="leyear">2013.3.23</div><div class="letitle">微博宣布封笔</div></div>
+      <div class="lebody">"我决定，以后不再进行任何文学创作活动……抱歉，我扛不住了。"他此前承认写《盗墓笔记》写出了忧郁症。<span class="chip">北京晚报 2013</span></div>
+    </div>
+
+    <div class="le" data-k="crisis">
+      <div class="lehead"><div class="leyear">2013.4</div><div class="letitle">主动住进精神病院</div></div>
+      <div class="lebody">他澄清是自己主动住进去的，不是被家人送去。"那是我毕业以来唯一停止工作的日子。"事后他说，病症"诱因很明显，只要规避某几个词语，我基本上就和常人一样"。<span class="chip">现代快报 2015 · 北京晚报 2013</span></div>
+    </div>
+
+    <div class="le" data-k="turn">
+      <div class="lehead"><div class="leyear">2014.12</div><div class="letitle">宣布把"青铜门"填了，但不公布</div></div>
+      <div class="lebody">书出完了，一大堆悬念没写完。他发微博说填了全书最大的"坑"青铜门，却不公布内容，被网友骂"耍流氓"。<span class="chip">现代快报 2015</span></div>
+    </div>
+
+    <div class="le" data-k="turn">
+      <div class="lehead"><div class="leyear">2015.8.17</div><div class="letitle">"十年之约"兑现</div></div>
+      <div class="lebody">他承诺在 8 月 17 日前公布青铜门的答案。被问为何选这一天，他的回答是："8 月 17 日，他们都这么说，那就 8 月 17 日，我又打不过他们。"<span class="chip">现代快报 2015</span></div>
+    </div>
+
+    <div class="le" data-k="turn">
+      <div class="lehead"><div class="leyear">2017→</div><div class="letitle">写《重启》，承认"认命"</div></div>
+      <div class="lebody">"当你真的松了一口气之后，再回头看这件事情，你会发现路都是自己选的……你曾经以为自己是被迫的，其实不是。"<span class="chip">澎湃新闻 2020</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── 2 五个驱动 ──────────────────────────────────── -->
+<section>
+  <h2><span class="num">2</span>直觉模型的五个驱动</h2>
+  <p class="sub">每一条的形状都一样：<b>生平里的某个事实</b> → <b>它在写作决策上留下的痕迹</b>。前四条是原因，第五条是后果。</p>
+
+  <div class="drivers">
+
+    <div class="driver">
+      <div class="dnum">驱动 01 · 起点</div>
+      <h3>对死亡的好奇心</h3>
+      <p class="arrow">→ 决定了全书为什么围绕<b>墓</b>与<b>长生</b>展开，而不是别的冒险题材</p>
+      <div class="q">
+        "你最初创作《盗墓笔记》的原因是什么？"<br>
+        "因为我对死亡有非常大的好奇心，从小就对这个命题着迷。"
+        <span class="src">今日早报 / 中国作家网，2015-06-21 <a href="https://www.chinawriter.com.cn/2015/2015-06-21/246187.html" target="_blank" rel="noopener">原文</a></span>
+      </div>
+      <div class="inf"><span class="lbl">我的推断</span>
+        "长生"在书里从来不是奖励，而是一份诅咒：西王母独居、万奴王被机关锁住、张起灵不老却不断失忆。这和一个"对死亡着迷"的人的写法是一致的——他感兴趣的不是战胜死亡，而是死亡缺席之后人会变成什么样。
+      </div>
+    </div>
+
+    <div class="driver">
+      <div class="dnum">驱动 02 · 素材</div>
+      <h3>外婆的口传故事与"墓上面的泥"</h3>
+      <p class="arrow">→ 决定了全书的质地是<b>市井的、口传的</b>，而不是考据的、知识型的</p>
+      <div class="q">
+        外婆家做烧砖窑生意，"外婆总和泥土打交道，而<b>最好的泥就是墓上面</b>"，徐磊因此听了许多地下故事素材。
+        <span class="src">澎湃新闻，2020-09-20 <a href="https://m.thepaper.cn/newsDetail_forward_8911489" target="_blank" rel="noopener">原文</a></span>
+      </div>
+      <div class="q">
+        "鬼故事啊，传奇故事，只要能让小孩子安静下来的故事我都讲。这些故事大部分都是听长辈说的……我记忆力超好的，一般看过就不会忘记。"
+        <span class="src">现代快报 / 中国作家网，2015-01-22</span>
+      </div>
+      <div class="inf"><span class="lbl">我的推断</span>
+        《盗墓笔记》的恐怖感来自"听来的"质感——不精确、不解释、前后矛盾，而不是来自严谨设定。这解释了为什么书里的机关、生物、民俗常常经不起细抠：它们本来就不是知识，是哄孩子睡觉的故事。也解释了他自称的"市井文笔"——像市井故事一样能吸引路人。
+      </div>
+    </div>
+
+    <div class="driver">
+      <div class="dnum">驱动 03 · 缺口</div>
+      <h3>从小缺乏赞赏 → 造一个守护神</h3>
+      <p class="arrow">→ 决定了<b>张起灵为什么被写得那么强、那么无条件</b></p>
+      <div class="q">
+        "因为从小缺乏赞赏，家里人夸得不多，夸得不多的孩子容易自卑。"
+        <span class="src">澎湃新闻，2020-09-20</span>
+      </div>
+      <div class="q">
+        "吴邪是一个人的理想状态，他希望身边有一个特别特别强的人能够帮他处理很多问题，但事实上这是不可能发生的，就算有这么一个人在你身边，你总会失去，一个人面对一切。最开始盗墓的时候，有张起灵保护他，但张起灵走了之后，吴邪经历了一模一样的一切，他并没有因为张起灵曾经存在过而得到加成。<b>人生就是这样的。</b>"
+        <span class="src">腾讯娱乐 / 国际在线，2016-08-08 <a href="https://ent.cri.cn/2016-08-08/af0340e0-5066-81ad-1c74-1585a4fa4557.html" target="_blank" rel="noopener">原文</a></span>
+      </div>
+      <div class="inf"><span class="lbl">我的推断</span>
+        注意这段话的结构：他先承认张起灵是"理想状态"的产物（一个替他解决一切的人），紧接着自己否定它（"这是不可能发生的"），最后给出结论（"人生就是这样的"）。<b>他一边造神，一边亲手拆掉自己造的神。</b>这条自我否定，是理解全书结局走向的钥匙——张起灵的每一次消失都不是剧情需要，是作者需要。
+      </div>
+    </div>
+
+    <div class="driver">
+      <div class="dnum">驱动 04 · 恐惧</div>
+      <h3>赞美会被收回</h3>
+      <p class="arrow">→ 决定了故事<b>为什么注定以悲剧收场</b>，以及"离别"为什么要被反复安排</p>
+      <div class="q">
+        "赞美是可以拿回去的，并不属于你，你没有经历过，无数次，别人把赞扬原样收回去，半个月之后开始用双倍难听的话骂你。反复太多次了。<b>10 年前骂你的人还在骂你，但是 10 年前夸你的人到哪去了，都不知道了。</b>"
+        <span class="src">澎湃新闻，2020-09-20</span>
+      </div>
+      <div class="q">
+        "张起灵是长生不老的，落在这一刻的时候，就应该知道，<b>故事一开始的设定和人物关系已经注定了，这个故事必须得以一个悲剧收场</b>，吴邪和胖子都会老去，而张起灵会一直活下去。"
+        <span class="src">澎湃新闻，2020-09-20</span>
+      </div>
+      <div class="inf"><span class="lbl">我的推断</span>
+        这两段话放在一起很有说服力：一个反复经历"好东西会被收走"的人，写出的守护神必然是一个"会一直在、却永远不能真正留下"的存在。张起灵的长生不老不是幻想设定，而是一个精确的隐喻装置——<b>他既满足"永远有人保护你"的愿望，又保证"你终究要独自面对"这个结论不被推翻。</b>
+      </div>
+    </div>
+
+    <div class="driver">
+      <div class="dnum">驱动 05 · 后果</div>
+      <h3>不肯补全心理状态，因为痛苦</h3>
+      <p class="arrow">→ 决定了<b>吴邪身上大量留白，以及结局的"没有结尾"</b></p>
+      <div class="q">
+        "一龙会把我写作时候很多东西撕开，从里面把东西挖出来，但是你写的时候，<b>为什么不愿意把心理状态补全？就是因为痛苦啊。</b>比如说吴邪从极度崩溃到归零重启，可能只用了 50 秒……<b>我可以直接留白，看一下天空回来就结束了</b>，但是朱一龙不行，他必须把每一秒抠出来。"
+        <span class="src">澎湃新闻，2020-09-20</span>
+      </div>
+      <div class="inf"><span class="lbl">我的推断</span>
+        这段自述把"留白"从修辞手法还原成了一种<b>回避行为</b>。它不是作者高明地"把想象空间留给读者"，而是他真的下不去手写。这也让"《盗墓笔记》实际上没有结尾"这件事有了另一种解释：不完全是他不会收尾，而是收尾这个动作本身，就是要他把自己最不愿碰的部分写完。
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── 3 片段还原 ──────────────────────────────────── -->
+<section>
+  <h2><span class="num">3</span>片段还原：三个场景的"当时状态"</h2>
+  <p class="sub">选段标准：既要能对上作品内部的进度，也要能对上作者外部人生的进度。两套进度对齐的地方，就是模型最有力的地方。</p>
+
+  <!-- 片段 A -->
+  <div class="frag">
+    <div class="fk">片段 A · 全书的结构性枢纽</div>
+    <h3>张起灵走进青铜门，与"十年之约"</h3>
+
+    <div class="progress">
+      <span class="pstep">第 1 卷</span>
+      <span class="pstep">第 2 卷</span>
+      <span class="pstep on">第 3 卷 · 定约</span>
+      <span class="pstep">第 4–7 卷</span>
+      <span class="pstep on">第 8 卷 · 执行</span>
+      <span class="pstep on">2015 · 现实中的兑现</span>
+    </div>
+
+    <div class="row">
+      <div class="k">故事内部发生了什么</div>
+      <div>第 3 卷《云顶天宫》，张起灵进入青铜门，与吴邪定下十年之约。此后每一卷他都会消失又回来。到第 8 卷，他把选择权交给吴邪，自己进青铜门守十年。这个约定后来溢出小说，变成了现实中粉丝共同等待的日期。</div>
+    </div>
+
+    <div class="row">
+      <div class="k">作者那时在经历什么</div>
+      <div class="q">
+        "我的粉丝其实不太在乎我和谁交往，<b>大部分只在乎 2015。</b>"
+        <span class="src">北京晚报 / 中新网，2013-11-01（他刚宣布封笔、入院治疗之后） <a href="https://www.chinanews.com.cn/cul/2013/11-01/5454229.shtml" target="_blank" rel="noopener">原文</a></span>
+      </div>
+      <div class="q">
+        被问为什么选 8 月 17 日公布青铜门的答案：<br>
+        "<b>8 月 17 日，他们都这么说，那就 8 月 17 日，我又打不过他们。</b>"
+        <span class="src">现代快报 / 中国作家网，2015-01-22</span>
+      </div>
+    </div>
+
+    <div class="inferbox">
+      <span class="lbl">我的推断</span>
+      <p>把一个虚构的离别日期变成读者会去数日子的东西，这是全书最厉害的一次结构设计——而它同时服务于作者的两个互相冲突的需求：</p>
+      <p><b>需求一：守护神必须离开。</b>因为按驱动 03 的说法，"就算有这么一个人在你身边，你总会失去"。张起灵不能留下来，留下来故事就假了。</p>
+      <p><b>需求二：离开必须可控。</b>按驱动 04，他最恐惧的是"好东西被无理由地收走"。所以他不能写张起灵死掉或消失得不明不白，他必须给这个离开<b>装上期限和约定</b>——有期限，就意味着不是失去，只是暂存。</p>
+      <p>于是"十年之约"成了一个精密的减压装置：它让离别发生了（满足真实性），同时保证离别不是永久的（满足安全感）。对照 2013 年他说"粉丝只在乎 2015"、2015 年他说"我又打不过他们"——现实里他封笔了，但留下了一个日期。小说里的约定和现实里的复出，是同一种应对方式。</p>
+    </div>
+  </div>
+
+  <!-- 片段 B -->
+  <div class="frag">
+    <div class="fk">片段 B · 全书最"脱轨"的一卷</div>
+    <h3>《秦岭神树》：为什么这一卷像另一个故事</h3>
+
+    <div class="progress">
+      <span class="pstep">第 1 卷</span>
+      <span class="pstep on">第 2 卷 · 脱轨</span>
+      <span class="pstep">第 3 卷 · 归位</span>
+      <span class="pstep">第 4–8 卷</span>
+    </div>
+
+    <div class="row">
+      <div class="k">故事内部发生了什么</div>
+      <div>第 1 卷刚把"战国帛书"这条全书引子抛出来，第 2 卷却几乎完全抛开它：主角被出狱的朋友老痒带去秦岭，看一棵巨大的青铜树，接触所谓"物质化"能力。铁三角里的另外两人基本缺席。这一卷和主线衔接最松，是读者公认的异类。</div>
+    </div>
+
+    <div class="row">
+      <div class="k">作者那时在经历什么</div>
+      <div class="q">
+        "很多作者写完一个长系列之后求新求变都失败了，最后还得回到原系列来，<b>我以前一直以为他们想不开，后来自己写出来才真正明白</b>，大系列真不是人写的，到最后不是赚钱不赚钱的问题，而是<b>人生有几个 7 年，总想看看自己更大的可能性的问题</b>。"
+        <span class="src">北京晚报 / 中新网，2013-11-01</span>
+      </div>
+    </div>
+
+    <div class="inferbox">
+      <span class="lbl">我的推断</span>
+      <p>这段话里"我以前一直以为他们想不开，后来自己写出来才真正明白"是一个明确的自我修正——他承认自己亲身验证过"求新求变"这条路，并且失败了。</p>
+      <p>第 2 卷很可能就是那次尝试的痕迹：他刚靠第 1 卷拿到读者，在还没被"大系列"绑死的阶段，试着写一个更独立、更超自然、更少牵挂的冒险故事。而它之所以成为异类，不是设计精巧，而是<b>一次没有被完全回收的实验</b>。他后来自己回到了原系列——这段"想不开"的自我坦白，正好解释了为什么第 3 卷之后主线突然收紧。</p>
+    </div>
+  </div>
+
+  <!-- 片段 C -->
+  <div class="frag">
+    <div class="fk">片段 C · 结局</div>
+    <h3>大结局：为什么"没有结尾"</h3>
+
+    <div class="progress">
+      <span class="pstep">第 7 卷</span>
+      <span class="pstep on">第 8 卷 · 出版 2011.12</span>
+      <span class="pstep on">2013.3 · 封笔</span>
+      <span class="pstep on">2013.4 · 入院</span>
+    </div>
+
+    <div class="row">
+      <div class="k">故事内部发生了什么</div>
+      <div>第 8 卷里，吴邪戴上面具接管长沙盘口，三路人马会合张家古楼，终极悬念"一次揭晓"。但揭晓之后，读者普遍的感觉是——很多问题仍然没有答案。</div>
+    </div>
+
+    <div class="row">
+      <div class="k">作者那时在经历什么</div>
+      <div class="q">
+        出版方与媒体对他当时的描述：他"留下<b>实际上并没有结尾</b>的《盗墓笔记》就'人间蒸发'了"。
+        <span class="src">今日早报 / 中国作家网，2015-06-21</span>
+      </div>
+      <div class="q">
+        "我决定，以后不再进行任何文学创作活动……<b>抱歉，我扛不住了。</b>"（2013-03-23 微博）
+        <span class="src">北京晚报 / 中新网，2013-11-01</span>
+      </div>
+      <div class="q">
+        "为什么不愿意把心理状态补全？就是因为痛苦啊……我可以直接留白，看一下天空回来就结束了。"
+        <span class="src">澎湃新闻，2020-09-20</span>
+      </div>
+    </div>
+
+    <div class="inferbox">
+      <span class="lbl">我的推断</span>
+      <p>把时间线并排看：<b>2011 年 12 月出版大结局 → 2013 年 3 月宣布封笔 → 2013 年 4 月主动入院。</b>三者相隔不到一年半，方向是同一条下坡线。</p>
+      <p>在这个背景下，"结局没写完"就不太像技术性问题。按驱动 05，他自己承认留白是回避痛苦的产物；而大结局恰恰是全书中他必须直面"离别"的地方——按他自己的说法，人物关系在设定之初就注定了悲剧。所以最需要写透的那一段，也正是他最难写完的那一段。</p>
+      <p><b>需要说明的是：</b>这不等于"他故意不写完以保留悬念"。更合理的读法是——他既无法写完，也无法承认写不完，于是"青铜门后面是什么"被留成了一个他承诺日后填上的空。而这一留，就是四年，直到 2015 年那个被读者倒计时的日期。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── 4 怎么用 ──────────────────────────────────────── -->
+<section>
+  <h2><span class="num">4</span>拿到这个模型之后，怎么读</h2>
+  <p class="sub">以后再遇到一个"坑"，不要先问"答案是什么"，先问下面三个问题。答案常常不在情节里。</p>
+  <div class="ask">
+    <div class="askcard">
+      <div class="n">Q1</div>
+      <h4>这个悬念，是在给谁留余地？</h4>
+      <p>是给读者留想象空间，还是给作者留回避的余地？区分方法：看它有没有被封上一个期限或条件。有期限的（十年之约）通常是作者需要它、而非需要答案。</p>
+    </div>
+    <div class="askcard">
+      <div class="n">Q2</div>
+      <h4>这个人物为什么必须消失一次？</h4>
+      <p>张起灵反复消失又回来。按徐磊自己的话，守护神"不可能存在，即使存在过也会消失不见"。所以先假设：这次消失不是剧情推的，是作者的结论推的。</p>
+    </div>
+    <div class="askcard">
+      <div class="n">Q3</div>
+      <h4>这一段是不是被"留白"带过去了？</h4>
+      <p>凡是大段情绪转折被一句景物描写带过的地方，都值得停下来。按作者自述，那些地方多半不是技巧，是他当时写不下去。</p>
+    </div>
+  </div>
+  <div class="note" style="margin-top:16px">
+    这个模型有一个明确的适用边界：它能解释<b>故事的形状</b>——为什么这么留、这么走、这么收；它不能反推出<b>具体谜题的答案</b>。青铜门后面是什么，仍然没有人知道，模型也不会告诉你。<b>把"作者状态"当成万能钥匙，是这套读法最常见的滥用。</b>
+  </div>
+</section>
+
+<!-- ── 5 来源 ──────────────────────────────────────── -->
+<section>
+  <h2><span class="num">5</span>来源</h2>
+  <div class="srcbox">
+    <ol>
+      <li>
+        <b>澎湃新闻《专访｜南派三叔：我给吴邪的留白，朱一龙抠到每一秒》</b>（记者 杨茜，2020-09-20）<br>
+        <a href="https://m.thepaper.cn/newsDetail_forward_8911489" target="_blank" rel="noopener">m.thepaper.cn</a><br>
+        本页最关键的一手材料：嘉善童年、1987 年第一个睡前故事、外婆的烧砖窑与"最好的泥就是墓上面"、小学六年级第一次动笔、2006 年从贴吧开始更新、2010 年前后负面声音的完整因果、以及"为什么不愿意把心理状态补全"的自述。
+      </li>
+      <li>
+        <b>中国作家网《南派三叔：把〈盗墓笔记〉中最大"坑"青铜门给填了》</b>（现代快报，郑文静，2015-01-22）<br>
+        <a href="https://www.chinawriter.com.cn/2015/2015-01-22/231714.html" target="_blank" rel="noopener">chinawriter.com.cn</a><br>
+        外贸公司职员出身、2006 年外贸滑坡、填青铜门的承诺、"我又打不过他们"、主动住院经过、阅读口味（史蒂芬·金、希尔顿、迈克尔·克莱顿）。
+      </li>
+      <li>
+        <b>中国作家网《南派三叔：看完先导集，第一反应是搬家》</b>（今日早报，裘晟佳，2015-06-21）<br>
+        <a href="https://www.chinawriter.com.cn/2015/2015-06-21/246187.html" target="_blank" rel="noopener">chinawriter.com.cn</a><br>
+        "因为我对死亡有非常大的好奇心"、"大系列真不是人写的"、"留下实际上并没有结尾的《盗墓笔记》"、出版与销量事实。
+      </li>
+      <li>
+        <b>中新网《南派三叔首谈病情：只要规避几个词语就没事》</b>（北京晚报，陈梦溪，2013-11-01）<br>
+        <a href="https://www.chinanews.com.cn/cul/2013/11-01/5454229.shtml" target="_blank" rel="noopener">chinanews.com.cn</a><br>
+        2013 年封笔微博原文、父亲代为发布入院消息、"我的粉丝……大部分只在乎 2015"、《沙海 2》后记中描述"疯了"的过程、"我对于写作和作品是很不自信的"。
+      </li>
+      <li>
+        <b>国际在线《〈盗墓〉"瓶邪"是 CP？张起灵更像吴邪的父亲》</b>（转载腾讯娱乐，2016-08-08）<br>
+        <a href="https://ent.cri.cn/2016-08-08/af0340e0-5066-81ad-1c74-1585a4fa4557.html" target="_blank" rel="noopener">ent.cri.cn</a><br>
+        其中引用的徐磊原话（吴邪是"一个人的理想状态"、"就算有这么一个人在你身边，你总会失去"、"人生就是这样的"）是本页驱动 03 的直接依据。需要注意的是，<b>该文对这段原话的心理学解读（"孩童心理""父爱需求"等）是评论者观点，不是徐磊的话</b>，本页未采用。
+      </li>
+    </ol>
+    <div class="note" style="margin-top:16px">
+      <b>未能核对的来源：</b>维基百科在本机网络环境下无法访问，百度百科返回 403 反爬，因此这两处未作参考。本页所有引文均来自上列可访问的公开报道。<br><br>
+      本地文件：<code><a href="/blog/zhihu/works/what-is-daomubiji-about">《盗墓笔记》讲了什么?</a></code>（本页不依赖该文的解读框架，只共享同一部作品）
+    </div>
+  </div>
+</section>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>《无职转生》· 作者直觉模型 · 理不尽な孫の手为什么这么写</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a20; --panel2:#1e222a; --line:#2a2f3a;
+    --fg:#e8eaed; --dim:#8b93a1; --gold:#d4a24c; --jade:#4bbf8a;
+    --rose:#c96a7a; --blue:#5b9bd5; --purple:#a97bd6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);line-height:1.78;
+    font-family:"Segoe UI","Microsoft YaHei",-apple-system,BlinkMacSystemFont,sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px 90px}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  header.hero{padding:54px 0 30px;border-bottom:1px solid var(--line);margin-bottom:32px}
+  .kicker{color:var(--rose);font-size:13px;letter-spacing:.2em;text-transform:uppercase;font-weight:600}
+  h1{font-size:clamp(25px,4.1vw,38px);margin:12px 0 10px;font-weight:700;line-height:1.28}
+  .lede{color:var(--dim);font-size:16.5px;max-width:840px;margin:0}
+  .navlinks{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+  .navlinks a{background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    padding:8px 14px;font-size:13.5px;color:var(--dim)}
+  .navlinks a:hover{border-color:var(--blue);color:var(--fg);text-decoration:none}
+
+  section{margin:0 0 54px}
+  h2{font-size:22px;margin:0 0 6px;display:flex;align-items:center;gap:10px}
+  h2 .num{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+    border-radius:8px;background:var(--rose);color:#1a0a0e;font-size:15px;font-weight:700;flex:none}
+  .sub{color:var(--dim);margin:0 0 20px;font-size:15px}
+
+  .layers{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  @media(max-width:780px){.layers{grid-template-columns:1fr}}
+  .layer{border-radius:12px;padding:16px 20px;border:1px solid;font-size:14.6px}
+  .l-quote{background:#141a16;border-color:#25402f}
+  .l-infer{background:#1a1614;border-color:#40342a}
+  .layer h4{margin:0 0 8px;font-size:14.5px}
+  .l-quote h4{color:var(--jade)} .l-infer h4{color:var(--gold)}
+  .layer p{margin:0;color:var(--dim)}
+
+  .quote{background:#12161c;border-left:3px solid var(--jade);border-radius:0 10px 10px 0;
+    padding:14px 18px;margin:12px 0;font-size:15px}
+  .quote .src{display:block;margin-top:9px;font-size:12.5px;color:var(--dim)}
+  .inferbox{background:#1a1614;border-left:3px solid var(--gold);border-radius:0 10px 10px 0;
+    padding:14px 18px;margin:12px 0;font-size:15px}
+  .inferbox .lbl{display:inline-block;font-size:11.5px;letter-spacing:.08em;
+    background:#2b2416;color:var(--gold);padding:2px 9px;border-radius:20px;margin-bottom:7px}
+  .inferbox p{margin:0 0 8px}
+  .inferbox p:last-child{margin-bottom:0}
+
+  .mirror{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;margin:20px 0}
+  @media(max-width:760px){.mirror{grid-template-columns:1fr}}
+  .mcol h4{margin:0 0 10px;font-size:15px}
+  .mcol.a h4{color:var(--purple)} .mcol.b h4{color:var(--jade)}
+  .mcol ul{margin:0;padding-left:18px;color:var(--dim);font-size:14.4px}
+  .mcol li{margin-bottom:7px}
+  .mcol li b{color:var(--fg)}
+  .meq{font-size:26px;color:var(--gold);font-weight:700;text-align:center}
+
+  .life{position:relative;padding-left:28px}
+  .life::before{content:"";position:absolute;left:8px;top:8px;bottom:8px;width:2px;background:var(--line)}
+  .le{position:relative;margin-bottom:18px}
+  .le::before{content:"";position:absolute;left:-25px;top:15px;width:12px;height:12px;border-radius:50%;
+    background:var(--bg);border:2.5px solid var(--line)}
+  .le[data-k="origin"]::before{border-color:var(--purple)}
+  .le[data-k="fail"]::before{border-color:var(--rose)}
+  .le[data-k="turn"]::before{border-color:var(--gold)}
+  .lehead{display:flex;gap:14px;align-items:baseline}
+  .leyear{flex:none;min-width:104px;color:var(--gold);font-weight:700;font-size:14.5px;font-variant-numeric:tabular-nums}
+  .letitle{font-size:15.5px;font-weight:600}
+  .lebody{color:var(--dim);font-size:14.5px;margin:4px 0 0 118px}
+  @media(max-width:700px){.lebody{margin-left:0}}
+  .chip{display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:20px;margin-left:8px;
+    background:#1f2a3a;color:var(--blue);vertical-align:middle}
+
+  .drivers{display:grid;gap:16px}
+  .driver{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px}
+  .driver .dnum{font-size:12px;letter-spacing:.14em;color:var(--rose);font-weight:700;text-transform:uppercase}
+  .driver h3{margin:6px 0 4px;font-size:19px}
+  .driver .arrow{color:var(--dim);font-size:14.5px;margin:0 0 12px}
+  .driver .arrow b{color:var(--fg)}
+  .driver .q{background:#12161c;border-left:3px solid var(--jade);border-radius:0 8px 8px 0;
+    padding:11px 15px;margin:10px 0;font-size:14.6px;color:#dfe6ee}
+  .driver .q .src{display:block;margin-top:7px;font-size:12.3px;color:var(--dim)}
+  .driver .inf{background:#1a1614;border-left:3px solid var(--gold);border-radius:0 8px 8px 0;
+    padding:11px 15px;font-size:14.6px;margin:10px 0}
+  .driver .inf .lbl{font-size:11.5px;color:var(--gold);letter-spacing:.06em;display:block;margin-bottom:5px}
+
+  .frag{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:24px 26px;margin-bottom:20px}
+  .frag .fk{font-size:12px;letter-spacing:.14em;color:var(--blue);font-weight:700;text-transform:uppercase}
+  .frag h3{margin:6px 0 14px;font-size:20px}
+  .progress{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+  .pstep{font-size:12.5px;padding:5px 11px;border-radius:7px;background:var(--panel2);
+    color:var(--dim);border:1px solid var(--line)}
+  .pstep.on{background:#241d10;border-color:var(--gold);color:var(--gold);font-weight:600}
+  .frag .row{margin-bottom:14px}
+  .frag .row .k{font-size:13px;color:var(--dim);letter-spacing:.06em;margin-bottom:6px}
+  .note{background:#12181f;border:1px solid var(--line);border-radius:12px;
+    padding:16px 20px;font-size:14.6px;color:var(--dim)}
+  .note b{color:var(--fg)}
+  .srcbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 22px}
+  .srcbox ol{margin:0;padding-left:20px}
+  .srcbox li{color:var(--dim);font-size:14.2px;margin-bottom:10px}
+  .srcbox li b{color:var(--fg)}
+  code{background:#0c0e12;padding:2px 6px;border-radius:5px;font-size:13.4px;
+    font-family:"Cascadia Code",Consolas,monospace}
+  .jp{color:#9fb0c4;font-size:14px;font-style:normal}
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:99;display:flex;gap:16px;align-items:center;justify-content:space-between;padding:9px 18px;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid #2b3444;font-size:13.5px;font-family:'Segoe UI','Microsoft YaHei',sans-serif"><a href="/" style="color:#8b98a8;text-decoration:none">← wzk 的技术笔记</a><a href="/zhihu/labs/" style="color:#58a6ff;text-decoration:none">全部交互页面</a></div>
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">Author Model · 直觉模型</div>
+  <h1>理不尽な孫の手为什么这么写鲁迪</h1>
+  <p class="lede">《无职转生》最容易被问的两个问题是：主角那些令人不适的毛病为什么非写不可？以及"成长叙事"到底成不成立？这一页不谈剧情评价，只把作者的生平和他自己的话摊开，看这部作品的形状是怎么被决定的。</p>
+  <div class="navlinks">
+    <a href="mushoku-controversy.html">配套：争议解剖与成长叙事检验 →</a>
+    <a href="index.html">返回目录</a>
+  </div>
+</header>
+
+<!-- ── 0 ─────────────────────────────────────────── -->
+<section>
+  <h2><span class="num">0</span>先说方法与限制</h2>
+  <p class="sub">和《盗墓笔记》那页同样的规则：只有两种成分，颜色区分。</p>
+  <div class="layers">
+    <div class="layer l-quote">
+      <h4>■ 作者原话 / 可核查事实</h4>
+      <p>理不尽な孫の手本人受访或活动报告中的发言，以及出版、连载等硬信息。每条附出处。</p>
+    </div>
+    <div class="layer l-infer">
+      <h4>■ 我的推断</h4>
+      <p>我基于这些材料做的连接与解释。不是作者自述，一律用这个颜色标出。</p>
+    </div>
+  </div>
+  <div class="note" style="margin-top:16px">
+    <b>关于译者与转述：</b>本页引用的日文原话，凡中文译文均标注译者来源；无译者的由我翻译，并同时给出日文原文供核对。<b>转述一层就可能失真</b>，尤其是从英译或中译再转引的段落——所以凡属关键结论，我优先使用日文一手访谈。
+  </div>
+</section>
+
+<!-- ── 1 生平 ─────────────────────────────────────── -->
+<section>
+  <h2><span class="num">1</span>生平：一条失败过的时间线</h2>
+  <p class="sub">这一节请特别留意 2007 和 2012 两个年份。后面整个模型都挂在它们上面。</p>
+  <div class="life">
+
+    <div class="le" data-k="origin">
+      <div class="lehead"><div class="leyear">小学</div><div class="letitle">因为一部动画开始对小说感兴趣</div></div>
+      <div class="lebody">契机是看《耳をすませば》（侧耳倾听）。初中加入电脑部，用文本编辑器写简单的小说、用 PowerPoint 做纸芝居，开始接触"创作故事"这件事。<span class="chip">日文维基 · 据作者自述</span></div>
+    </div>
+
+    <div class="le" data-k="fail">
+      <div class="lehead"><div class="leyear">2007 前后</div><div class="letitle">大学毕业，认真写作，然后彻底失败</div></div>
+      <div class="lebody">大学毕业后开始正式创作，向出版社的奖项投了几次稿，<b>全部没有结果，于是放弃了成为小说家的念头</b>。<span class="chip">日文维基 · 据作者自述</span></div>
+    </div>
+
+    <div class="le" data-k="turn">
+      <div class="lehead"><div class="leyear">数年后</div><div class="letitle">发现「小説家になろう」</div></div>
+      <div class="lebody">因为读了金斬児狐的《Re:Monster》而知道这个投稿网站。读了几部连载之后他判断：<b>「ここなら自分の作品を投稿してもバカにされないんじゃないか」</b>（在这里投稿的话，大概不会被嘲笑吧）——于是开始投稿。<span class="chip">日文维基 · 据作者自述</span></div>
+    </div>
+
+    <div class="le" data-k="turn">
+      <div class="lehead"><div class="leyear">2012.11</div><div class="letitle">《無職転生》开始在なろう连载</div></div>
+      <div class="lebody">Web 版连载至 2015 年 4 月。番外篇《蛇足編》2015 年 5 月至 2017 年 9 月。</div>
+    </div>
+
+    <div class="le" data-k="turn">
+      <div class="lehead"><div class="leyear">2013.10</div><div class="letitle">登上なろう累计排行榜第一</div></div>
+      <div class="lebody">此后保持 5 年以上，直到 2019 年 2 月被《转生史莱姆》超过。长月达平的说法是：「没受动画化影响也能保持第一位的《无职转生》是 Web 小说界的王者。」<span class="chip">現代ビジネス 2021 · コミックナタリー 2020</span></div>
+    </div>
+
+    <div class="le" data-k="turn">
+      <div class="lehead"><div class="leyear">2014.1</div><div class="letitle">书籍版由 MF ブックス 出版</div></div>
+      <div class="lebody">插画 シロタカ，全 26 卷，至 2022 年 11 月完结。这也是他的书籍出道作——距离那次放弃，过去了大约七年。</div>
+    </div>
+
+    <div class="le" data-k="origin">
+      <div class="lehead"><div class="leyear">长期</div><div class="letitle">游戏与阅读口味</div></div>
+      <div class="lebody">小学时玩的第一款 RPG 是《勇者斗恶龙》，也玩过红白机版《巫术 II》，对它的难度留下"理不尽"的印象。喜欢水野良《罗德斯岛战记》《魔法战士李维》，漫画方面自称是水上悟志《惑星のさみだれ》的粉丝。<span class="chip">Real Sound 2026 · 日文维基</span></div>
+    </div>
+
+  </div>
+
+  <div class="mirror">
+    <div class="mcol a">
+      <h4>■ 2007 年的作者</h4>
+      <ul>
+        <li>大学毕业，<b>正式动笔</b></li>
+        <li>投出版社奖项，<b>全部落选</b></li>
+        <li><b>放弃</b>当小说家</li>
+        <li>数年后才重新开始写</li>
+      </ul>
+    </div>
+    <div class="meq">≅</div>
+    <div class="mcol b">
+      <h4>■ 作品的前提设定</h4>
+      <ul>
+        <li>34 岁，<b>家里蹲 / 无职</b></li>
+        <li>什么都是<b>半途而废</b></li>
+        <li>被赶出家门，<b>人生报废</b></li>
+        <li>转生，<b>「今度こそ本気だす」</b></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="inferbox">
+    <span class="lbl">我的推断</span>
+    <p>副标题「<b>異世界行ったら本気だす</b>」（到了异世界就拿出真本事）里的"本気だす"，一般被读成主角的台词。但把时间线并下来看，它更像作者写给自己的：<b>一个已经放弃过一次的人，在多年之后拿到了第二次机会。</b></p>
+    <p>这不是说鲁迪等于作者——鲁迪的设定（被霸凌、父母葬礼都不出席、被兄弟赶出家门）远比作者的经历极端。但两者共享同一个<b>形状</b>：<b>在某个年纪判定自己没戏了，又在后来重新开了一局。</b>而作品整体要处理的情感，正是这个形状带来的：不甘、羞耻、以及"这次要好好活"的决心。</p>
+  </div>
+</section>
+
+<!-- ── 2 驱动 ─────────────────────────────────────── -->
+<section>
+  <h2><span class="num">2</span>直觉模型的五个驱动</h2>
+  <p class="sub">每条形状一致：生平或原话事实 → 它在写作决策上留下的痕迹。</p>
+
+  <div class="drivers">
+
+    <div class="driver">
+      <div class="dnum">驱动 01 · 场所</div>
+      <h3>"在这里投稿大概不会被嘲笑"</h3>
+      <p class="arrow">→ 决定了作品的<b>发表场所与连载形态</b>，也决定了它为什么会长成"每天更新"的节奏</p>
+      <div class="q">
+        「ここなら自分の作品を投稿してもバカにされないんじゃないか」
+        <span class="src">日文维基转述作者自述 · 参见作者活動報告</span>
+      </div>
+      <div class="q">
+        「ウェブ小説っていう形態で書いていると、読者の反応が一話ごとに分かるんで、<b>やりすぎたって思うことはあんまりなかった</b>ですね。これぐらいのことはやっていいんだと思いながら書いていました」
+        <span class="src">Real Sound 2026-03-10 対談（蝸牛くも × 理不尽な孫の手）· 我译</span>
+      </div>
+      <div class="inf"><span class="lbl">我的推断</span>
+        这两句话连起来，解释了这部作品一个被忽视的特征：<b>它的"尺度"不是设计出来的，是在逐话反馈中校准出来的。</b>作者自己说"没觉得写过头"，因为每一话的读者反应都在实时告诉他"这个程度是可以的"。<br><br>这一点直接关系到《无职转生》在中国引发的争议——那些让新观众暴怒的内容，在被保留下来的时候，依据的是 2012 年日本 Web 小说读者的容忍度，而不是 2021 年跨文化传播后的观众预期。
+      </div>
+    </div>
+
+    <div class="driver">
+      <div class="dnum">驱动 02 · 机制</div>
+      <h3>关注"失败在哪"，而不是"怎么成功"</h3>
+      <p class="arrow">→ 决定了副标题是「本気だす」而不是「最强」，也决定了全书的挫折密度</p>
+      <div class="q">
+        「《无职转生》的副标题不正是'拿出真本事'嘛。我的话会关注'<b>失败在哪</b>'这点。本来要写'全部都成功'的故事是可以的，但卢迪乌斯的前世是家里蹲还是尼特族，所以很多事都是没有经历过的。因此没有经历过的事一次就成功本来就不可能，<b>他前世没有经历过的事很大机率都是会导致失败的</b>。在这前提如何做现在的自己力所能及之事，<b>失败了的话如何再挽回</b>。我专注写这部分的故事。」
+        <span class="src">コミックナタリー 2020 年 12 月采访 · 中译见 bilibili 无职转生研究同好会</span>
+      </div>
+      <div class="q">
+        被问到 10 岁那场把一切打碎的"菲托亚领地转移事件"是不是刻意安排：<br>
+        「これを失ったらつらいだろうなっていうものを<b>失わせないと、読者にダメージを与えられない</b>じゃないですか。……自分で書く時は<b>最低でも自分がショックを受けるもの</b>じゃないと面白くならないですね。」
+        <span class="src">Real Sound 2026-03-10 · 我译</span>
+      </div>
+      <div class="inf"><span class="lbl">我的推断</span>
+        这是全模型里最硬的一条，因为它是作者对写作方法论的直接陈述。<br><br>
+        他要写的不是"逆袭爽文"，而是<b>一个没有经验的人必然反复失败、然后处理失败后果</b>的过程。这也解释了为什么全书前段（婴幼儿期）节奏慢、后段挫折密集：那是"没经历过的领域必然失败"这个前提的必然展开。<br><br>
+        注意第二句的标准很苛刻——<b>先要能击穿作者自己</b>。这跟"讨好读者"是完全相反的方法。
+      </div>
+    </div>
+
+    <div class="driver">
+      <div class="dnum">驱动 03 · 内核</div>
+      <h3>作者自己写下的三条准则</h3>
+      <p class="arrow">→ 决定了鲁迪被写成"<b>有缺陷但行为上守规矩</b>"的人，而不是圣人或恶人</p>
+      <div class="q">
+        维基百科在描述鲁迪的行事准则时，把出处直接标成作者本人的活动报告：<br>
+        「『調子に乗らない』『人のせいにしない』『努力する』を心がけて、幼少時から魔術・剣術・言語などを学び、他人と揉めることを極力避けて、何かあっても相手の立場や自分の悪かったところなどを考え一方的に悪く言うことをしないようにしている（<b>理不尽な孫の手 2013年02月17日</b> より）」
+        <span class="src">日文维基「無職転生」人物节，引用作者 2013-02-17 活動報告</span>
+      </div>
+      <div class="inf"><span class="lbl">我的推断</span>
+        这条的价值在于：<b>"不迁怒于人"是作者明确立下的一条人生准则，而且他把它交给了主角。</b><br><br>
+        这恰好解释了鲁迪这个人物的评价为什么总是两极——他的欲望层面很脏（驱动 01 里那些被保留下来的癖好），但行为层面几乎不主动伤害人，遇到冲突先反省自己。有人读成"猥琐"，有人读成"真诚"，因为这两层在他身上同时成立。<br><br>
+        <b>这不是人物塑造失手，是两个层面被有意分开设计的。</b>
+      </div>
+    </div>
+
+    <div class="driver">
+      <div class="dnum">驱动 04 · 素材</div>
+      <h3>游戏世代的世界感</h3>
+      <p class="arrow">→ 决定了异世界为什么是 RPG 结构，以及"理不尽"为什么是这部作品的关键词</p>
+      <div class="q">
+        「僕も、最初にやったRPG が「ドラクエ」というところもあって染みついている感じがあります。ちょっとゲーム的な部分もあるファンタジー、あるいはライトファンタジーと言われるものがやはり好き」
+        <span class="src">Real Sound 2026-03-10 · 原文</span>
+      </div>
+      <div class="q">
+        谈小时候玩红白机版《巫术 II》：<br>
+        「呪文がいっぱいあるけれど、どれがどのような効果を持つものか分からないし、マップもオートマッピングなど無いので、自分で憶えなきゃいけないから本当に大変です。……ダンジョンの中で普通に廊下かどこかを歩いていて、テレポートしたら石の中に入ってしまったこととか。あれは<b>理不尽</b>でしたね。」
+        <span class="src">Real Sound 2026-03-10 · 原文</span>
+      </div>
+      <div class="inf"><span class="lbl">我的推断</span>
+        注意他笔名的字面意思——「<b>理不尽</b>な孫の手」（不讲理的痒痒挠）。他在谈《巫术》时脱口而出的词，正是自己笔名里的那个词。<br><br>
+        早期 RPG 的特征是：规则不解释、失败很轻易、存档很贵。鲁迪的人生正是这个结构——<b>天赋给了满值，但每个关键节点都可能因为一次意外全部作废</b>（10 岁生日翌日的那场转移事件就是最典型的"teleport 进了石头里"）。<br><br>
+        所以这部作品的世界观不是从文学来的，是从他小时候被游戏折磨的经验来的。
+      </div>
+    </div>
+
+    <div class="driver">
+      <div class="dnum">驱动 05 · 视角</div>
+      <h3>叙述者本身不可信</h3>
+      <p class="arrow">→ 决定了<b>"成长叙事"必须以"他自述的成长"来读，而不能当客观事实</b></p>
+      <div class="q">
+        维基百科对鲁迪叙述身份的说明：<br>
+        「物語の語り手だが<b>物の見方が主観的で、語り手としては信用できない</b>とされている」
+        <span class="src">日文维基「無職転生」人物节 · 我译</span>
+      </div>
+      <div class="inf"><span class="lbl">我的推断</span>
+        这一条是理解整部作品争议的钥匙，也是配套页要展开的核心。<br><br>
+        全书是鲁迪的第一人称自述。如果他的自我评价系统性偏高、或者习惯性把责任讲成"我已经反省了"，那么<b>读者读到的"成长"就同时是"他认为自己成长了"</b>——两者不是一回事。<br><br>
+        这既让"成长叙事经不起推敲"这个质疑变得有道理，也让作品本身变得更复杂：一个不可靠的叙述者讲的重生故事，本身就是个值得琢磨的设计。
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── 3 片段 ─────────────────────────────────────── -->
+<section>
+  <h2><span class="num">3</span>片段还原：三处写法的"当时状态"</h2>
+  <p class="sub">每段对齐两套进度：作品内部的进度，以及作者当时的处境与他自己的说明。</p>
+
+  <div class="frag">
+    <div class="fk">片段 A · 全书的断裂点</div>
+    <h3>菲托亚领地转移事件——为什么要在 10 岁生日第二天毁掉一切</h3>
+    <div class="progress">
+      <span class="pstep">幼年期 · 顺利</span>
+      <span class="pstep on">10 岁 · 转移事件</span>
+      <span class="pstep">魔大陆 3 年</span>
+      <span class="pstep">归乡 · 与艾莉丝分别</span>
+      <span class="pstep">……</span>
+    </div>
+    <div class="row">
+      <div class="k">作品内部发生了什么</div>
+      <div>此前一切顺利：鲁迪是天才少年，跟洛琪希学魔法，七岁就能去当艾莉丝的家庭教师，镇上的人都信任他。然后在他十岁生日的第二天，城镇上空的魔力暴走，居民被抛散到各地。鲁迪和艾莉丝被扔到魔大陆，花了三年才走回来。回来后得知艾莉丝全家死光，随后艾莉丝离他而去。</div>
+    </div>
+    <div class="row">
+      <div class="k">作者怎么说</div>
+      <div class="quote">
+        「これを失ったらつらいだろうなっていうものを失わせないと、読者にダメージを与えられないじゃないですか。最近は読んでいてストレスのないものも結構人気ですし、そういったのが喜ばれるのも分かりますが、<b>自分で書く時は最低でも自分がショックを受けるものじゃないと面白くならない</b>ですね。」
+        <span class="src">Real Sound 2026-03-10 · 我译</span>
+      </div>
+    </div>
+    <div class="inferbox">
+      <span class="lbl">我的推断</span>
+      <p>这段话给出了一个可检验的写作标准：<b>破坏的力度要以"作者自己会心疼"为下限。</b>不是以读者承受力为上限，而是以自己是否被击穿为下限。</p>
+      <p>而这个标准正好对上驱动 02——他写的是"没有经验的人必然失败"。一个一路顺风的天才少年，是没有失败机会的；<b>要让他真的失败，就必须先把他的顺境砸碎。</b>所以转移事件不是虐，是必要条件。</p>
+      <p>顺带一提：这一幕也是 2021 年动画在中国引发争议之前，原作读者公认的分界线——很多人的评价是"从这里开始好看"。</p>
+    </div>
+  </div>
+
+  <div class="frag">
+    <div class="fk">片段 B · 父子戏</div>
+    <h3>酒馆里那句"至少正眼瞧瞧他的脸吧"</h3>
+    <div class="progress">
+      <span class="pstep">魔大陆归乡</span>
+      <span class="pstep on">与保罗重逢 · 争吵</span>
+      <span class="pstep">动画第 1 期</span>
+    </div>
+    <div class="row">
+      <div class="k">作品内部发生了什么</div>
+      <div>鲁迪好不容易和父亲保罗重逢，却被痛骂"你到现在都在干什么"。原作里有一幕：两人在酒馆见面，鲁迪一开始完全无法直视保罗的脸，旁边与这场争执毫无关系的酒馆老板对他说"至少正眼瞧瞧他的脸吧"，鲁迪这才看清保罗的脸，明白"保罗也是拼尽全力在活着"。</div>
+    </div>
+    <div class="row">
+      <div class="k">作者怎么介入的</div>
+      <div class="quote">
+        动画制作时，工作人员提议把"至少正眼瞧瞧他的脸吧"这句台词改由鲁迪或保罗的同伴来说。作者否掉了：<br>
+        「因为处在那个位置的角色的话，都会不由自主地偏袒鲁迪或者保罗其中的某一方，所以这是他们<b>绝对说不出口</b>的台词。'至少正眼瞧瞧他的脸吧'这种话，<b>除非是处在毫无关联的第三者的人，而且是和保罗有同为父亲这样经验的人物，不然没人能说出来。</b>我对工作人员这么说了'再不济来说，不是酒馆老板的话就不行'，所以这个地方，工作人员就按我的意见进行了修改。」
+        <span class="src">コミックナタリー 2020 年 12 月采访 · 中译见 bilibili 无职转生研究同好会</span>
+      </div>
+    </div>
+    <div class="inferbox">
+      <span class="lbl">我的推断</span>
+      <p>这是全页唯一一处能看到作者<b>亲自下场干预细节</b>的记录，所以信息量特别大。</p>
+      <p>他要守的不是台词归属，是一件事：<b>这句和解的话必须从"没有立场的人"嘴里说出来才有效。</b>鲁迪来说，是自我开脱；保罗的同伴来说，是帮亲。只有无关的、且同样是父亲的第三者，才有资格要求鲁迪去看父亲的脸。</p>
+      <p>把它和驱动 03 对照：作者给鲁迪定的准则是"<b>人のせいにしない</b>"（不把责任推给别人）。这句台词的设计，正是这条准则的戏剧化——<b>解决冲突的钥匙不能攥在冲突双方手里。</b></p>
+    </div>
+  </div>
+
+  <div class="frag">
+    <div class="fk">片段 C · 引爆点</div>
+    <h3>第 4 集：莉莉娅与保罗的出轨，为什么写得那么轻</h3>
+    <div class="progress">
+      <span class="pstep">幼年期</span>
+      <span class="pstep on">母亲孕期 · 出轨暴露</span>
+      <span class="pstep">2021.1.31 动画第 4 集播出</span>
+      <span class="pstep">2021.2.7 下架</span>
+    </div>
+    <div class="row">
+      <div class="k">作品内部发生了什么</div>
+      <div>母亲塞妮丝怀孕期间，父亲保罗与家中女仆莉莉娅出轨，莉莉娅也怀孕了，事情暴露。鲁迪出面劝母亲原谅，最终一家六口"和谐美满"。动画对这一段的处理是轻拿轻放、一笔带过，看不出背叛者有任何损失。</div>
+    </div>
+    <div class="row">
+      <div class="k">这一段后来发生了什么</div>
+      <div>这一集在中国引爆舆论：B 站 UP 主 LexBurner 发表"成功人士看这种动画片，应该是抱着体恤底层人民的心情"等言论，争议彻底出圈；2 月 7 日 B 站称因技术原因暂时下架该动画，次日 LexBurner 账号被封，"B 站被部分品牌方拉黑"登上微博热搜。<span class="chip">红网 2021-02-12</span></div>
+    </div>
+    <div class="row">
+      <div class="k">作者当时的状态</div>
+      <div class="quote">
+        「ウェブ小説っていう形態で書いていると、読者の反応が一話ごとに分かるんで、<b>やりすぎたって思うことはあんまりなかった</b>ですね。これぐらいのことはやっていいんだと思いながら書いていました。ただ、自分が気をつけていない部分で、読者の反応が悪かったことはありますね。」
+        <span class="src">Real Sound 2026-03-10 · 原文</span>
+      </div>
+    </div>
+    <div class="inferbox">
+      <span class="lbl">我的推断</span>
+      <p>这段话是这一集最合理的解释，也是最不讨喜的解释：<b>他当时没有把它当成一个需要慎重处理的伦理场景，因为他收到的反馈没告诉他需要。</b></p>
+      <p>2012 年的なろう读者对这类情节的反应，构不成"写过头了"的信号。而作者的方法论（驱动 02）本来就是"处理已经发生的事的后果"，不是"避免发生有争议的事"——他关心的是这个家之后怎么重新稳定下来，而不是出轨本身该不该被惩罚。</p>
+      <p><b>这就是 013 那篇知乎回答真正指向的东西</b>：作者保留这些内容并非为了挑衅，而是在他当时的坐标系里，这不成问题。而 2021 年的坐标系已经完全变了——这是一次典型的跨时间、跨文化的预期错位，不是任何一方"三观"的简单问题。配套页会把这件事拆得更细。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── 4 ─────────────────────────────────────────── -->
+<section>
+  <h2><span class="num">4</span>模型怎么用</h2>
+  <div class="note">
+    这套模型能解释三件事：<b>为什么主角必须失败</b>（驱动 02）、<b>为什么他既有肮脏欲望又守着行为底线</b>（驱动 03）、<b>为什么"成长"只能以他的自述形式出现</b>（驱动 05）。<br><br>
+    它<b>不能</b>解释的是：作品里哪些内容在伦理上站得住、哪些站不住。作者动机的还原和作品价值的判断是两件事，把前者当成后者的通行证，是这类分析最常见的滥用。
+  </div>
+</section>
+
+<!-- ── 5 来源 ─────────────────────────────────────── -->
+<section>
+  <h2><span class="num">5</span>来源</h2>
+  <div class="srcbox">
+    <ol>
+      <li>
+        <b>コミックナタリー《「無職転生」理不尽な孫の手 ×「リゼロ」長月達平 対談》</b>（采访于 2020 年 12 月下旬）<br>
+        中文全译：<a href="https://www.bilibili.com/opus/483701166798755389" target="_blank" rel="noopener">bilibili · 无职转生研究同好会</a>　|　备份：<a href="https://www.acfun.cn/a/ac28061417" target="_blank" rel="noopener">AcFun</a><br>
+        驱动 02 与片段 B 的直接依据。"关注失败在哪""最低也要写自己会震惊的东西""不把责任推给别人"等均出自此篇。
+      </li>
+      <li>
+        <b>Real Sound《【特別対談】蝸牛くも × 理不尽な孫の手》</b>（タニグチリウイチ，2026-03-10）<br>
+        <a href="https://realsound.jp/book/2026/03/post-2325717.html" target="_blank" rel="noopener">realsound.jp</a>　<span class="jp">日文原文</span><br>
+        驱动 01、驱动 04 的依据。《巫术 II》的"理不尽"体验、逐话反馈校准尺度、"最低也要写自己会震惊的东西"均出自此篇。本页中译文为我自己翻译。
+      </li>
+      <li>
+        <b>現代ビジネス《「今度こそはきちんと生き抜く」…超人気作『無職転生』の"圧倒的切実さ"の正体》</b>（飯田一史，講談社，2021-01-31）<br>
+        <a href="https://gendai.media/articles/-/79231" target="_blank" rel="noopener">gendai.media</a>　<span class="jp">日文原文</span><br>
+        职业评论者的分析：这部作品<b>不符合</b>"なろう系必须持续给爽点、不接受鬱展开"的通行判断；以及"鲁迪拒绝依赖可疑存在，因为靠上去就不算认真活"这一读法。
+      </li>
+      <li>
+        <b>维基百科「理不尽な孫の手」「無職転生 〜異世界行ったら本気だす〜」条目</b><br>
+        经 <a href="https://www.weblio.jp/content/%E7%90%86%E4%B8%8D%E5%B0%BD%E3%81%AA%E5%AD%AB%E3%81%AE%E6%89%8B" target="_blank" rel="noopener">Weblio 百科事典</a> 镜像读取（本机网络无法直连维基百科）<br>
+        生平时间线、笔名由来、连载与出版信息、鲁迪人物设定及其出处标注。
+      </li>
+      <li>
+        <b>红网《〈无职转生〉引争议：宣发与讨论都需理性》</b>（晏欣嫄，2021-02-12）<br>
+        <a href="https://moment.rednet.cn/pc/content/2021/02/12/8996407.html" target="_blank" rel="noopener">moment.rednet.cn</a><br>
+        2021 年中国争议的事实经过与时间点。
+      </li>
+    </ol>
+    <div class="note" style="margin-top:16px">
+      <b>未能核对的来源：</b>维基百科直连失败（经 Weblio 镜像读取）；Anime News Network 2021-12-15 的作者专访返回 403，未能获取，本页未引用。<br><br>
+      本地文件：<code><a href="/blog/zhihu/works/mushoku-tensei-backlash">关于《无职转生》被喷，最大的原因是什么？</a></code>、<code><a href="/blog/zhihu/works/mushoku-tensei-growth-narrative">《无职转生》粉丝口中的成长叙事真的经得起推敲吗？</a></code>
+    </div>
+  </div>
+</section>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1×1 卷积实验室 · 它和全连接层到底差在哪</title>
+<style>
+  :root{
+    --bg:#0b0e13; --panel:#141922; --panel2:#1b212c; --line:#28303e;
+    --fg:#e8ecf2; --dim:#8792a4; --cyan:#3fb6c8; --jade:#46c08a;
+    --red:#e05a5a; --amber:#d9a441; --blue:#5b9bd5; --purple:#a97bd6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);line-height:1.72;
+    font-family:"Segoe UI","Microsoft YaHei",-apple-system,sans-serif}
+  .wrap{max-width:1160px;margin:0 auto;padding:30px 18px 80px}
+  button{font-family:inherit}
+  .hide{display:none !important}
+  h1{font-size:clamp(24px,3.8vw,34px);margin:0 0 8px}
+  .lede{color:var(--dim);font-size:16px;margin:0 0 22px;max-width:860px}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+  .tab{background:var(--panel);border:1px solid var(--line);color:var(--dim);
+    padding:10px 18px;border-radius:10px;cursor:pointer;font-size:14.5px;transition:.14s}
+  .tab:hover{color:var(--fg);border-color:#38424f}
+  .tab.on{background:var(--cyan);color:#04212a;border-color:var(--cyan);font-weight:700}
+  .lab{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+  @media(max-width:940px){.lab{grid-template-columns:1fr}}
+  .canvas-box{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  canvas{display:block;width:100%}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .panel h3{margin:0 0 12px;font-size:12.5px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase}
+  .ctl{margin-bottom:14px}
+  .ctl .lab2{display:flex;justify-content:space-between;font-size:13.4px;margin-bottom:5px}
+  .ctl .lab2 span{color:var(--dim)}
+  .ctl .lab2 b{font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%;accent-color:var(--cyan)}
+  .btn{background:var(--panel2);color:var(--fg);border:1px solid var(--line);
+    border-radius:9px;padding:9px 14px;font-size:13.8px;cursor:pointer;transition:.14s}
+  .btn:hover{background:#222a36;border-color:#3a4553}
+  .btn.primary{background:var(--cyan);color:#04212a;border-color:var(--cyan);font-weight:700}
+  .btn.small{padding:6px 11px;font-size:12.6px}
+  .btn.on{background:var(--cyan);color:#04212a;border-color:var(--cyan);font-weight:700}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .readout{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .readout:last-of-type{border-bottom:0}
+  .readout .k{color:var(--dim)}
+  .readout .v{font-variant-numeric:tabular-nums;font-weight:600}
+  .v.ok{color:var(--jade)} .v.bad{color:var(--red)} .v.warn{color:var(--amber)}
+  .task{background:linear-gradient(135deg,#08181c,#141922);border:1px solid #173038;
+    border-radius:13px;padding:18px 22px;margin-top:20px}
+  .task .k{font-size:11.5px;letter-spacing:.16em;color:var(--cyan);font-weight:700;text-transform:uppercase}
+  .task h3{margin:8px 0 8px;font-size:18px}
+  .task p{margin:0 0 10px;color:var(--dim);font-size:14.6px}
+  .task p:last-child{margin-bottom:0}
+  .verdict{margin-top:12px;font-weight:700;font-size:14.6px;min-height:22px}
+  .verdict.ok{color:var(--jade)} .verdict.no{color:var(--dim)}
+  .note{background:#0e151c;border:1px solid var(--line);border-radius:11px;
+    padding:15px 19px;font-size:14.4px;color:var(--dim);margin-top:18px}
+  .note b{color:var(--fg)}
+  code{background:#080b0f;padding:2px 6px;border-radius:5px;font-size:13.2px;
+    font-family:"Cascadia Code",Consolas,monospace}
+  .quote{background:#12161c;border-left:3px solid var(--jade);border-radius:0 10px 10px 0;
+    padding:13px 17px;margin:13px 0;font-size:14.6px;color:#dfe6ee}
+  .quote .src{display:block;margin-top:8px;font-size:12.4px;color:var(--dim)}
+  .foot{color:var(--dim);font-size:13px;margin-top:40px;border-top:1px solid var(--line);padding-top:18px}
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:99;display:flex;gap:16px;align-items:center;justify-content:space-between;padding:9px 18px;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid #2b3444;font-size:13.5px;font-family:'Segoe UI','Microsoft YaHei',sans-serif"><a href="/" style="color:#8b98a8;text-decoration:none">← wzk 的技术笔记</a><a href="/zhihu/labs/" style="color:#58a6ff;text-decoration:none">全部交互页面</a></div>
+<div class="wrap">
+
+<h1>1×1 卷积实验室</h1>
+<p class="lede">
+  这篇回答的结论很干脆：<b>管它叫「1×1 conv」还是「全连接」，只是个叫法问题</b>——这个操作和卷积没关系，它就是在通道维度上做一次线性变换。
+  下面三块把它逐层拆开：等效性、参数量的真实差距、以及那个被广泛说反了的「权重共享」。
+</p>
+
+<div class="tabs">
+  <button class="tab on" data-m="0">① 等效性验证</button>
+  <button class="tab" data-m="1">② 参数量到底差多少</button>
+  <button class="tab" data-m="2">③ 谁在共享，谁没有</button>
+</div>
+
+<!-- ══════ 1 等效性 ══════ -->
+<div id="mod0">
+  <div class="lab">
+    <div>
+      <div class="canvas-box"><canvas id="cv1" height="360"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3>张量形状</h3>
+      <div class="ctl">
+        <div class="lab2"><span>H × W（空间）</span><b id="vHW">2 × 2</b></div>
+        <input type="range" id="rHW" min="1" max="4" step="1" value="2">
+      </div>
+      <div class="ctl">
+        <div class="lab2"><span>C1 输入通道</span><b id="vC1">3</b></div>
+        <input type="range" id="rC1" min="1" max="6" step="1" value="3">
+      </div>
+      <div class="ctl">
+        <div class="lab2"><span>C2 输出通道</span><b id="vC2">2</b></div>
+        <input type="range" id="rC2" min="1" max="6" step="1" value="2">
+      </div>
+      <div class="row">
+        <button class="btn primary" id="bRand">换一组权重</button>
+      </div>
+      <h3 style="margin-top:16px">读数</h3>
+      <div class="readout"><span class="k">路径 A 输出</span><span class="v" id="oA">—</span></div>
+      <div class="readout"><span class="k">路径 B 输出</span><span class="v" id="oB">—</span></div>
+      <div class="readout"><span class="k">最大逐元素误差</span><span class="v ok" id="oDiff">—</span></div>
+      <div class="readout"><span class="k">参数量（两条路径）</span><span class="v" id="oParams">—</span></div>
+    </div>
+  </div>
+  <div class="task">
+    <div class="k">任务 <span id="t1n">1</span> / 3</div>
+    <h3 id="t1title"></h3><p id="t1desc"></p>
+    <div class="verdict no" id="t1verdict"></div>
+    <div class="row"><button class="btn" id="b1skip">换一个任务</button></div>
+    <div class="note" id="t1note" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<!-- ══════ 2 参数量 ══════ -->
+<div id="mod1" class="hide">
+  <div class="lab">
+    <div>
+      <div class="canvas-box"><canvas id="cv2" height="330"></canvas></div>
+      <div class="canvas-box" style="margin-top:14px"><canvas id="cv2b" height="160"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3>规模</h3>
+      <div class="ctl">
+        <div class="lab2"><span>H = W（特征图边长）</span><b id="vS">8</b></div>
+        <input type="range" id="rS" min="1" max="56" step="1" value="8">
+      </div>
+      <div class="ctl">
+        <div class="lab2"><span>C1 输入通道</span><b id="vC1b">64</b></div>
+        <input type="range" id="rC1b" min="1" max="512" step="1" value="64">
+      </div>
+      <div class="ctl">
+        <div class="lab2"><span>C2 输出通道</span><b id="vC2b">64</b></div>
+        <input type="range" id="rC2b" min="1" max="512" step="1" value="64">
+      </div>
+      <h3 style="margin-top:16px">读数</h3>
+      <div class="readout"><span class="k">1×1 conv = Linear(C1→C2)</span><span class="v ok" id="oP1">—</span></div>
+      <div class="readout"><span class="k">flatten + Linear</span><span class="v bad" id="oP2">—</span></div>
+      <div class="readout"><span class="k">倍数</span><span class="v bad" id="oRatio">—</span></div>
+      <div class="readout"><span class="k">两者都用的权重</span><span class="v" id="oSame">—</span></div>
+    </div>
+  </div>
+  <div class="task">
+    <div class="k">任务 <span id="t2n">1</span> / 3</div>
+    <h3 id="t2title"></h3><p id="t2desc"></p>
+    <div class="verdict no" id="t2verdict"></div>
+    <div class="row"><button class="btn" id="b2skip">换一个任务</button></div>
+    <div class="note" id="t2note" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<!-- ══════ 3 共享 ══════ -->
+<div id="mod2" class="hide">
+  <div class="lab">
+    <div>
+      <div class="canvas-box"><canvas id="cv3" height="400"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3>看哪一个输出位置</h3>
+      <div id="posbtns" class="row" style="margin-top:0"></div>
+      <h3 style="margin-top:18px">数据流视角</h3>
+      <div class="ctl">
+        <div class="lab2"><span>当前显示</span><b id="vMode">1×1 conv</b></div>
+        <div class="row" style="margin-top:4px">
+          <button class="btn small on" data-mode="conv">1×1 conv</button>
+          <button class="btn small" data-mode="flat">flatten + Linear</button>
+        </div>
+      </div>
+      <h3 style="margin-top:16px">读数</h3>
+      <div class="readout"><span class="k">这个输出依赖几个输入位置</span><span class="v" id="oDep">—</span></div>
+      <div class="readout"><span class="k">不同位置共享权重？</span><span class="v" id="oShare">—</span></div>
+      <div class="readout"><span class="k">输入 shape 可以变吗</span><span class="v" id="oShape">—</span></div>
+    </div>
+  </div>
+  <div class="task">
+    <div class="k">任务 <span id="t3n">1</span> / 3</div>
+    <h3 id="t3title"></h3><p id="t3desc"></p>
+    <div class="verdict no" id="t3verdict"></div>
+    <div class="row"><button class="btn" id="b3skip">换一个任务</button></div>
+    <div class="note" id="t3note" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<div class="foot">
+  对应文章：你收藏的知乎回答《1*1的卷积核和全连接层有什么异同？》（作者 奉系学长方安排，赞同 129）。<br>
+  本页的所有数值都是当场算出来的：路径 A 用 <code>y[p,c2] = Σ_c1 W[c2,c1]·x[p,c1]</code>（逐位置），
+  路径 B 用 <code>permute → Linear(C1→C2) → permute</code>，两条路径的权重是同一份。
+</div>
+
+</div>
+
+<script>
+"use strict";
+const $ = (s)=>document.querySelector(s);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const fx=(n,d=2)=>(Math.round(n*Math.pow(10,d))/Math.pow(10,d)).toFixed(d);
+const rnd=()=>+(Math.random()*2-1).toFixed(2);
+
+/* ══════════════════════════════════════════════════════════════
+   共同：一个小张量 + 一份权重
+   ══════════════════════════════════════════════════════════════ */
+const S = { H:2, W:2, C1:3, C2:2, x:[], wm:[] };   // W = 特征图宽度；wm = 权重矩阵（别撞名）
+function rebuild() {
+  S.x = [];
+  for (let p=0;p<S.H*S.W;p++) {
+    const v = []; for (let c=0;c<S.C1;c++) v.push(rnd());
+    S.x.push(v);
+  }
+  S.wm = [];
+  for (let o=0;o<S.C2;o++) {
+    const row = []; for (let c=0;c<S.C1;c++) row.push(rnd());
+    S.wm.push(row);
+  }
+}
+// 路径 A：1×1 conv —— 每个空间位置各做一次同样的线性变换
+function pathA() {
+  return S.x.map(pos => S.wm.map(row => row.reduce((s,w,c)=> s + w*pos[c], 0)));
+}
+// 路径 B：permute → Linear(C1→C2) → permute back
+// 注意：Linear 作用在最后一维上，每个位置各自做一次——和路径 A 是同一件事
+function pathB() {
+  // (N,C1,H,W) → (N,H,W,C1)
+  const seq = S.x.slice();
+  // Linear(C1→C2)：对最后一维做矩阵乘
+  const out = seq.map(pos => S.wm.map(row => row.reduce((s,w,c)=> s + w*pos[c], 0)));
+  // (N,H,W,C2) → 直接就是 (N,C2,H,W) 的逐位置视图
+  return out;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   模块 1
+   ══════════════════════════════════════════════════════════════ */
+const M1 = {
+  render() {
+    const A = pathA(), B = pathB();
+    let mx = 0;
+    A.forEach((p,i)=>p.forEach((v,j)=>{ mx = Math.max(mx, Math.abs(v-B[i][j])); }));
+    $("#oA").textContent = A[0].map(v=>fx(v)).join(", ") + (A.length>1 ? " …" : "");
+    $("#oB").textContent = B[0].map(v=>fx(v)).join(", ") + (B.length>1 ? " …" : "");
+    $("#oDiff").textContent = mx < 1e-12 ? "0（完全一致）" : mx.toExponential(2);
+    $("#oDiff").className = "v " + (mx < 1e-12 ? "ok" : "bad");
+    $("#oParams").textContent = `${S.C1*S.C2} = ${S.C1}×${S.C2}（两条路径完全相同）`;
+    this.draw();
+    T1.check();
+  },
+  draw() {
+    const cv=$("#cv1"); if(!cv||!cv.clientWidth) return;
+    const dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=360;
+    cv.width=W*dpr; cv.height=H*dpr;
+    const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+    c.fillStyle="#0a0d13"; c.fillRect(0,0,W,H);
+    const A = pathA(), B = pathB();
+    const show = Math.min(S.H*S.W, 8);          // 最多画 8 个位置
+    const cols = Math.min(show, 4), rows = Math.ceil(show/cols);
+    const cellW = Math.min((W-60)/cols, 150), cellH = 118;
+    const ox = (W - cols*cellW)/2 + 14, oy = 52;
+
+    c.fillStyle="#8490a2"; c.font="11.5px 'Segoe UI',sans-serif"; c.textAlign="left";
+    c.fillText("同一个输入，两条路径（权重是同一份 W，形状 C2×C1 = " + S.C2 + "×" + S.C1 + "）", 16, 20);
+    c.fillStyle="#5b9bd5"; c.fillText("蓝 = 输入位置上的 C1 个值", 16, 38);
+    c.fillStyle="#46c08a"; c.fillText("绿 = 输出位置的 C2 个值", 200, 38);
+
+    for (let p=0;p<show;p++) {
+      const r = Math.floor(p/cols), cc = p%cols;
+      const x = ox + cc*cellW, y = oy + r*cellH;
+      c.strokeStyle="#1e2530"; c.lineWidth=1;
+      c.beginPath();
+      if (c.roundRect) c.roundRect(x+4, y, cellW-14, cellH-16, 8); else c.rect(x+4, y, cellW-14, cellH-16);
+      c.stroke();
+      c.fillStyle="#5a6474"; c.font="10.5px 'Segoe UI',sans-serif"; c.textAlign="left";
+      c.fillText("位置 " + p, x+10, y+14);
+      // 输入
+      S.x[p].forEach((v,ci) => {
+        const bx = x+10, by = y+22+ci*15;
+        c.fillStyle="#5b9bd5"; c.fillRect(bx, by, 34, 11);
+        c.fillStyle="#c8d2de"; c.font="10px 'Consolas',monospace"; c.textAlign="left";
+        c.fillText(fx(v), bx+39, by+9);
+      });
+      // 箭头
+      c.strokeStyle="#3a4553"; c.lineWidth=1;
+      const ax = x+10+S.C1*0+96;
+      c.beginPath(); c.moveTo(ax, y+26); c.lineTo(ax+12, y+34); c.stroke();
+      // 输出 A 和 B 并排
+      const oy2 = y+22;
+      c.fillStyle="#46c08a"; c.font="10px 'Segoe UI',sans-serif";
+      c.fillText("A", ax+18, oy2+9);
+      A[p].forEach((v,oi) => {
+        c.fillStyle="#46c08a"; c.fillRect(ax+30, oy2+oi*15, 30, 11);
+        c.fillStyle="#c8d2de"; c.font="10px 'Consolas',monospace";
+        c.fillText(fx(v), ax+63, oy2+oi*15+9);
+      });
+      c.fillStyle="#a97bd6"; c.font="10px 'Segoe UI',sans-serif";
+      c.fillText("B", ax+18, oy2+9+S.C2*15+6);
+      B[p].forEach((v,oi) => {
+        c.fillStyle="#a97bd6"; c.fillRect(ax+30, oy2+oi*15+S.C2*15+6, 30, 11);
+        c.fillStyle="#c8d2de"; c.font="10px 'Consolas',monospace";
+        c.fillText(fx(v), ax+63, oy2+oi*15+S.C2*15+15);
+      });
+    }
+    c.fillStyle="#5a6474"; c.font="11.5px 'Segoe UI',sans-serif"; c.textAlign="left";
+    c.fillText("A（1×1 conv）与 B（permute → Linear → permute）的每一格都相同 —— 它们是同一个运算", 16, H-12);
+  },
+};
+const T1 = {
+  idx:0, done:[false,false,false],
+  tasks:[
+    {
+      title:"验证两条路径逐元素相等",
+      desc:"把 H×W 调到 <b>4×4</b>，然后随便换几次权重。看右边「最大逐元素误差」。",
+      setup(){ S.H=4; S.W=4; S.C1=3; S.C2=2; $("#rHW").value=4; $("#vHW").textContent="4 × 4";
+               $("#rC1").value=3; $("#vC1").textContent=3; $("#rC2").value=2; $("#vC2").textContent=2;
+               rebuild(); M1.render(); },
+      note:"<b>误差恒为 0。</b>因为两条路径做的是同一个矩阵乘：<code>y[p] = W · x[p]</code>。区别只在于「怎么排列这些维度」。<br><br>文章里那句话的意思是：<b>1×1 卷积在数学上就是作用在通道维上的一次线性变换。</b>把它叫 conv 还是 Linear，不改变它是什么。",
+      test:()=> S.H===4 && S.W===4,
+      hint:"把 H×W 滑块拉到 4×4。",
+    },
+    {
+      title:"把通道数改到 6→6，看参数量怎么变",
+      desc:"把 C1 和 C2 都调到 <b>6</b>，看右边的参数量读数。",
+      setup(){ S.H=2; S.W=2; S.C1=3; S.C2=2; $("#rHW").value=2; $("#vHW").textContent="2 × 2";
+               $("#rC1").value=3; $("#vC1").textContent=3; $("#rC2").value=2; $("#vC2").textContent=2;
+               rebuild(); M1.render(); },
+      note:"<b>参数量只由 C1×C2 决定，和 H、W 完全无关。</b>这就是为什么 1×1 conv 可以用在任意尺寸的特征图上。<br><br>而这个「和 H、W 无关」的性质不是卷积带来的——<b>是「不 flatten」带来的</b>。下一块会把这件事算清楚。",
+      test:()=> S.C1===6 && S.C2===6,
+      hint:"把 C1、C2 两个滑块都拉到 6。",
+    },
+    {
+      title:"让输入只有一个位置",
+      desc:"把 H×W 调到 <b>1×1</b>。这时两条路径还相等吗？",
+      setup(){ S.H=2; S.W=2; S.C1=4; S.C2=3; $("#rHW").value=2; $("#vHW").textContent="2 × 2";
+               $("#rC1").value=4; $("#vC1").textContent=4; $("#rC2").value=3; $("#vC2").textContent=3;
+               rebuild(); M1.render(); },
+      note:"<b>当然相等，而且这时候连「卷积」这个词都站不住了。</b>当 H=W=1，1×1 卷积核的感受野就是整张图，它和全连接层<b>完全无法区分</b>——因为它们本来就是同一个运算。<br><br>这也是判断「一个说法有没有道理」的好办法：把参数推到极端，看它还成不成立。空间维度一消失，「空间权重共享」这个说法就没有意义了。",
+      test:()=> S.H===1 && S.W===1,
+      hint:"把 H×W 滑块拉到 1×1。",
+    },
+  ],
+  render(){ const t=this.tasks[this.idx];
+    $("#t1n").textContent=this.idx+1; $("#t1title").textContent=t.title;
+    $("#t1desc").innerHTML=t.desc; $("#t1note").innerHTML=t.note;
+    if(!this.done[this.idx]){ $("#t1verdict").className="verdict no"; $("#t1verdict").textContent="改参数后自动判定。"; }
+    else { $("#t1verdict").className="verdict ok"; $("#t1verdict").textContent="✓ 已达成。"; } },
+  check(){ if(this.done[this.idx]) return; const t=this.tasks[this.idx];
+    if(t.test()){ this.done[this.idx]=true;
+      $("#t1verdict").className="verdict ok"; $("#t1verdict").textContent="✓ 达成。看下面的解释。";
+      $("#t1note").innerHTML=t.note;
+    } else { $("#t1verdict").textContent="还没达成 —— "+t.hint; } },
+  next(){ this.idx=(this.idx+1)%this.tasks.length; this.tasks[this.idx].setup(); this.render(); this.check(); },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   模块 2
+   ══════════════════════════════════════════════════════════════ */
+const M2 = { s:8, c1:64, c2:64,
+  p1() { return this.c1*this.c2; },
+  p2() { return (this.s*this.s*this.c1)*(this.s*this.s*this.c2); },
+  fmt(n) {
+    if (n >= 1e12) return (n/1e12).toFixed(2)+" 万亿";
+    if (n >= 1e8)  return (n/1e8).toFixed(2)+" 亿";
+    if (n >= 1e4)  return (n/1e4).toFixed(2)+" 万";
+    return n.toLocaleString();
+  },
+  render() {
+    const a = this.p1(), b = this.p2();
+    $("#oP1").textContent = this.fmt(a);
+    $("#oP2").textContent = this.fmt(b);
+    const r = b/a;
+    $("#oRatio").textContent = r >= 1000 ? this.fmt(Math.round(r)) + " 倍" : fx(r,1)+" 倍";
+    $("#oSame").textContent = `C1×C2 = ${a.toLocaleString()}`;
+    this.draw(); T2.check();
+  },
+  draw() {
+    const cv=$("#cv2"); if(!cv||!cv.clientWidth) return;
+    const dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=330;
+    cv.width=W*dpr; cv.height=H*dpr;
+    const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+    c.fillStyle="#0a0d13"; c.fillRect(0,0,W,H);
+    const a=this.p1(), b=this.p2();
+    const padL=64,padR=24,padT=52,padB=40, gw=W-padL-padR, gh=H-padT-padB;
+    // 两条对数刻度条
+    const lo = Math.log10(Math.max(a,1)), hi = Math.log10(Math.max(b,10));
+    const span = Math.max(hi-lo, 0.5);
+    const bar = (y, val, col, label, txt) => {
+      const w = (Math.log10(Math.max(val,1))-lo)/span*gw;
+      c.fillStyle=col; c.fillRect(padL, y, Math.max(w,3), 30);
+      c.fillStyle="#e8ecf2"; c.font="600 12.5px 'Segoe UI',sans-serif"; c.textAlign="left";
+      c.fillText(label, padL+8, y+20);
+      c.fillStyle=col; c.font="700 14px 'Segoe UI',sans-serif"; c.textAlign="left";
+      c.fillText(txt, padL+Math.max(w,3)+10, y+20);
+    };
+    c.fillStyle="#8490a2"; c.font="11.5px 'Segoe UI',sans-serif"; c.textAlign="left";
+    c.fillText("参数量（对数刻度）　H=W=" + this.s + "　C1=" + this.c1 + "　C2=" + this.c2, padL, 22);
+    bar(padT, a, "#46c08a", "1×1 conv / Linear(C1→C2)", this.fmt(a));
+    bar(padT+54, b, "#e05a5a", "flatten + Linear", this.fmt(b));
+    c.strokeStyle="#2a3340"; c.lineWidth=1;
+    for (let e=Math.floor(lo); e<=Math.ceil(hi); e++) {
+      const x = padL + (e-lo)/span*gw;
+      c.beginPath(); c.moveTo(x, padT-8); c.lineTo(x, padT+92); c.stroke();
+      c.fillStyle="#5a6474"; c.font="10.5px 'Segoe UI',sans-serif"; c.textAlign="center";
+      c.fillText("1e"+e, x, padT+108);
+    }
+    c.textAlign="left"; c.fillStyle="#8490a2"; c.font="11.5px 'Segoe UI',sans-serif";
+    c.fillText("差距来自 flatten：它把 H×W×C1 当成一个整体的输入向量，于是每个输入位置都和每个输出位置相连", padL, H-14);
+
+    // 小图：连线数量对比
+    const cv2=$("#cv2b");
+    if (cv2 && cv2.clientWidth) {
+      cv2.width=cv2.clientWidth*dpr; cv2.height=160*dpr;
+      const c2=cv2.getContext('2d'); c2.setTransform(dpr,0,0,dpr,0,0);
+      const W2=cv2.clientWidth;
+      c2.fillStyle="#0a0d13"; c2.fillRect(0,0,W2,160);
+      const n=4, ox=W2/2;
+      // 左：1x1 conv 的连接
+      const drawNet=(cx, full, label, col)=>{
+        const inY=126, outY=44, r=7;
+        for (let i=0;i<n;i++) for (let j=0;j<n;j++) {
+          const xi=cx-42+i*28, xo=cx-42+j*28;
+          if (!full && i!==j) continue;
+          c2.strokeStyle = col + (full? "33":"cc"); c2.lineWidth = full?0.8:2;
+          c2.beginPath(); c2.moveTo(xi, inY); c2.lineTo(xo, outY); c2.stroke();
+        }
+        for (let i=0;i<n;i++){
+          c2.beginPath(); c2.arc(cx-42+i*28, outY, r, 0, Math.PI*2); c2.fillStyle=col; c2.fill();
+          c2.beginPath(); c2.arc(cx-42+i*28, inY, r, 0, Math.PI*2); c2.fillStyle=col; c2.fill();
+        }
+        c2.fillStyle="#8490a2"; c2.font="11.5px 'Segoe UI',sans-serif"; c2.textAlign="center";
+        c2.fillText(label, cx, 148);
+        c2.fillText(full? n*n+" 条连接" : n+" 条连接", cx, 24);
+      };
+      drawNet(W2*0.27, false, "1×1 conv", "#46c08a");
+      drawNet(W2*0.73, true,  "flatten + Linear", "#e05a5a");
+      c2.fillStyle="#5a6474"; c2.font="11px 'Segoe UI',sans-serif"; c2.textAlign="center";
+      c2.fillText("（示意图：4 个位置的情形；每一个「位置」在真实网络里是整个 C 维向量）", W2/2, 100);
+    }
+  },
+};
+const T2 = {
+  idx:0, done:[false,false,false],
+  tasks:[
+    {
+      title:"把差距推到 1 万倍以上",
+      desc:"调三个滑块，让右边「倍数」超过 <b>10000 倍</b>。",
+      setup(){ M2.s=8; M2.c1=64; M2.c2=64; $("#rS").value=8; $("#vS").textContent=8;
+               $("#rC1b").value=64; $("#vC1b").textContent=64; $("#rC2b").value=64; $("#vC2b").textContent=64; M2.render(); },
+      note:"<b>这就是为什么没人用 flatten+Linear 做这件事。</b>在 32×32 的特征图上，即使通道只有 64，flatten 之后输入维度是 32×32×64 = 65536，一个 Linear 就要 65536×65536 ≈ 43 亿参数。<br><br>而 1×1 conv 只需要 64×64 = 4096 个参数——<b>少了一百万倍</b>。<br><br>注意：这里的对比是公平的，两条路径用的是<b>完全相同的一份权重</b>（C1×C2）。差距不来自「卷积更省」，来自 flatten 把每个空间位置当成了独立的输入。",
+      test:()=> M2.p2()/M2.p1() >= 10000,
+      hint:"把 H=W 提到 16 以上，通道保持 64 左右。",
+    },
+    {
+      title:"让两条路径的参数一样多",
+      desc:"调到 <b>H=W=1</b>，看两边的参数量。",
+      setup(){ M2.s=16; M2.c1=64; M2.c2=64; $("#rS").value=16; $("#vS").textContent=16;
+               $("#rC1b").value=64; $("#vC1b").textContent=64; $("#rC2b").value=64; $("#vC2b").textContent=64; M2.render(); },
+      note:"<b>H=W=1 时，两个数字完全相等——因为它们变成了同一个运算。</b><br><br>这反过来证明了：1×1 conv 和 flatten+Linear 的差别，<b>全部来自空间维度</b>。空间一旦消失，两种写法就重合了。所以「1×1 conv 有什么特殊之处」这个问题的答案不在卷积里，在「有没有 flatten」里。",
+      test:()=> M2.s===1 && M2.p1()===M2.p2(),
+      hint:"把 H=W 拉到 1。",
+    },
+    {
+      title:"固定通道数，看倍数怎么随特征图边长增长",
+      desc:"设 C1=C2=<b>64</b>，然后把边长从 1 拖到 <b>32</b>，观察倍数的增长速度。",
+      setup(){ M2.s=1; M2.c1=64; M2.c2=64; $("#rS").value=1; $("#vS").textContent=1;
+               $("#rC1b").value=64; $("#vC1b").textContent=64; $("#rC2b").value=64; $("#vC2b").textContent=64; M2.render(); },
+      note:"<b>倍数是 (H·W)² —— 四次方增长。</b>边长翻倍，参数量差 16 倍；边长从 1 到 32，倍数从 1 涨到 32⁴ ≈ 105 万。<br><br>这个四次方关系是理解卷积网络设计的关键：<b>空间分辨率越高，flatten 的代价越不可承受。</b>这也是为什么现代架构几乎不用 flatten，而是用全局池化（把 H×W 先压成 1×1）再接 Linear——那一步池化，本质上就是把 H=W=1 这件事强行做出来。",
+      test:()=> M2.c1===64 && M2.c2===64 && M2.s===32,
+      hint:"把 C1、C2 设为 64，边长拉到 32。",
+    },
+  ],
+  render(){ const t=this.tasks[this.idx];
+    $("#t2n").textContent=this.idx+1; $("#t2title").textContent=t.title;
+    $("#t2desc").innerHTML=t.desc; $("#t2note").innerHTML=t.note;
+    if(!this.done[this.idx]){ $("#t2verdict").className="verdict no"; $("#t2verdict").textContent="改参数后自动判定。"; }
+    else { $("#t2verdict").className="verdict ok"; $("#t2verdict").textContent="✓ 已达成。"; } },
+  check(){ if(this.done[this.idx]) return; const t=this.tasks[this.idx];
+    if(t.test()){ this.done[this.idx]=true;
+      $("#t2verdict").className="verdict ok"; $("#t2verdict").textContent="✓ 达成。看下面的解释。";
+      $("#t2note").innerHTML=t.note;
+    } else { $("#t2verdict").textContent="还没达成 —— "+t.hint; } },
+  next(){ this.idx=(this.idx+1)%this.tasks.length; this.tasks[this.idx].setup(); this.render(); this.check(); },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   模块 3
+   ══════════════════════════════════════════════════════════════ */
+const M3 = { N:4, pos:0, mode:"conv",
+  render() {
+    $("#posbtns").innerHTML = Array.from({length:this.N*this.N},(_,i)=>
+      `<button class="btn small ${i===this.pos?"on":""}" data-pos="${i}">${i}</button>`).join("");
+    document.querySelectorAll("[data-pos]").forEach(b=>b.onclick=()=>{ this.pos=+b.dataset.pos; this.render(); T3.check(); });
+    document.querySelectorAll("[data-mode]").forEach(b=>{
+      b.classList.toggle("on", b.dataset.mode===this.mode);
+      b.onclick = ()=>{ this.mode=b.dataset.mode; this.render(); T3.check(); };
+    });
+    $("#vMode").textContent = this.mode==="conv" ? "1×1 conv" : "flatten + Linear";
+    const dep = this.mode==="conv" ? 1 : this.N*this.N;
+    $("#oDep").textContent = dep + " / " + (this.N*this.N);
+    $("#oDep").className = "v " + (this.mode==="conv" ? "ok" : "bad");
+    $("#oShare").textContent = this.mode==="conv" ? "是 —— 全图共用一份" : "否 —— 每个输出位置一份";
+    $("#oShare").className = "v " + (this.mode==="conv" ? "ok" : "bad");
+    $("#oShape").textContent = this.mode==="conv" ? "可以（参数量与 H、W 无关）" : "不可以（参数量锁死在 H×W 上）";
+    $("#oShape").className = "v " + (this.mode==="conv" ? "ok" : "bad");
+    this.draw(); T3.check();
+  },
+  draw() {
+    const cv=$("#cv3"); if(!cv||!cv.clientWidth) return;
+    const dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=400;
+    cv.width=W*dpr; cv.height=H*dpr;
+    const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+    c.fillStyle="#0a0d13"; c.fillRect(0,0,W,H);
+    const n=this.N, cell=Math.min((W-140)/(n*2+2), 40);
+    const inX = 60, outX = 60 + cell*n + 70;
+    const topY = 66;
+    const conv = this.mode==="conv";
+    const pr = Math.floor(this.pos/n), pc = this.pos%n;
+
+    c.fillStyle="#8490a2"; c.font="11.5px 'Segoe UI',sans-serif"; c.textAlign="left";
+    c.fillText(conv ? "1×1 conv：输出位置的感受野只有它自己，权重全图共用"
+                    : "flatten + Linear：输出位置依赖全部输入位置，每个输出位置一套独立权重", 18, 22);
+    c.fillStyle="#5a6474"; c.font="11.5px 'Segoe UI',sans-serif";
+    c.fillText("（为看得清，这里用 4×4 个「位置」，每个位置代表一个 C 维向量）", 18, 40);
+
+    // 输入网格
+    c.fillStyle="#5b9bd5"; c.font="600 12px 'Segoe UI',sans-serif"; c.textAlign="center";
+    c.fillText("输入 H×W", inX + cell*n/2, topY-12);
+    c.fillText("输出 H×W", outX + cell*n/2, topY-12);
+    for (let r=0;r<n;r++) for (let cc=0;cc<n;cc++) {
+      const i=r*n+cc;
+      const x=inX+cc*cell, y=topY+r*cell;
+      const dep = conv ? (i===this.pos) : true;
+      c.fillStyle = dep ? "#1d3a44" : "#141a22";
+      c.fillRect(x+2,y+2,cell-4,cell-4);
+      c.strokeStyle = dep ? "#3fb6c8" : "#232b36"; c.lineWidth = dep?1.8:1;
+      c.strokeRect(x+2,y+2,cell-4,cell-4);
+      if (conv && i===this.pos) {
+        c.fillStyle="#3fb6c8"; c.font="700 11px 'Segoe UI',sans-serif"; c.textAlign="center";
+        c.fillText("●", x+cell/2, y+cell/2+4);
+      }
+    }
+    // 输出网格
+    for (let r=0;r<n;r++) for (let cc=0;cc<n;cc++) {
+      const i=r*n+cc;
+      const x=outX+cc*cell, y=topY+r*cell;
+      const isCur = i===this.pos;
+      c.fillStyle = isCur ? "#2c4a2e" : "#141a22";
+      c.fillRect(x+2,y+2,cell-4,cell-4);
+      c.strokeStyle = isCur ? "#46c08a" : "#232b36"; c.lineWidth = isCur?1.8:1;
+      c.strokeRect(x+2,y+2,cell-4,cell-4);
+      if (isCur) { c.fillStyle="#46c08a"; c.font="700 11px 'Segoe UI',sans-serif"; c.textAlign="center";
+        c.fillText("●", x+cell/2, y+cell/2+4); }
+    }
+    // 连边
+    const inPos = i => ({ x: inX + (i%n)*cell + cell/2, y: topY + Math.floor(i/n)*cell + cell/2 });
+    const outPos = i => ({ x: outX + (i%n)*cell + cell/2, y: topY + Math.floor(i/n)*cell + cell/2 });
+    const o = outPos(this.pos);
+    for (let i=0;i<n*n;i++) {
+      if (conv && i!==this.pos) continue;
+      const s = inPos(i);
+      c.strokeStyle = conv ? "rgba(63,182,200,.85)" : "rgba(224,90,90,.28)";
+      c.lineWidth = conv ? 2.4 : 1;
+      c.beginPath();
+      c.moveTo(s.x, s.y);
+      c.bezierCurveTo(s.x+70, s.y, o.x-70, o.y, o.x, o.y);
+      c.stroke();
+    }
+    // 权重块示意
+    const wy = topY + cell*n + 26;
+    c.textAlign="left"; c.font="600 12px 'Segoe UI',sans-serif";
+    if (conv) {
+      c.fillStyle="#46c08a";
+      c.fillText("全图共用这一份权重矩阵 W（形状 C2×C1）", inX, wy+14);
+      c.fillStyle="#1d3a44"; c.fillRect(inX, wy+24, 54, 26);
+      c.strokeStyle="#46c08a"; c.strokeRect(inX, wy+24, 54, 26);
+      c.fillStyle="#46c08a"; c.font="11px 'Consolas',monospace"; c.textAlign="center";
+      c.fillText("W", inX+27, wy+41);
+      c.textAlign="left"; c.fillStyle="#8490a2"; c.font="11.5px 'Segoe UI',sans-serif";
+      c.fillText("→ 参数量 " + (M2.c1*M2.c2) + "（与 H、W 无关）", inX+66, wy+41);
+    } else {
+      c.fillStyle="#e05a5a";
+      c.fillText("每个输出位置各有一份独立权重（形状 (H·W·C2) × (H·W·C1)）", inX, wy+14);
+      for (let i=0;i<Math.min(n*n,8);i++) {
+        const x = inX + i*30;
+        c.fillStyle="#3a1f1f"; c.fillRect(x, wy+24, 24, 26);
+        c.strokeStyle="#e05a5a"; c.strokeRect(x, wy+24, 24, 26);
+        c.fillStyle="#e05a5a"; c.font="9.5px 'Consolas',monospace"; c.textAlign="center";
+        c.fillText("W"+i, x+12, wy+41);
+      }
+      c.textAlign="left"; c.fillStyle="#8490a2"; c.font="11.5px 'Segoe UI',sans-serif";
+      c.fillText("→ 参数量随 (H·W)² 爆炸，输入 shape 被锁死", inX, wy+70);
+    }
+    c.fillStyle="#5a6474"; c.font="11.5px 'Segoe UI',sans-serif"; c.textAlign="left";
+    c.fillText("注：图中每个格子代表一个空间位置上的整个 C 维向量，不是单个标量", 18, H-14);
+  },
+};
+const T3 = {
+  idx:0, done:[false,false,false],
+  tasks:[
+    {
+      title:"看「1×1 conv」这一个输出位置依赖哪些输入",
+      desc:"保持「1×1 conv」模式，点上面的位置按钮换几个位置，看连线的数量。",
+      setup(){ M3.mode="conv"; M3.pos=0; M3.render(); },
+      note:"<b>无论点哪个输出位置，都只有一条线。</b>输出位置 (i,j) 只看输入位置 (i,j)，而且用的是同一份权重 W。<br><br>这里要注意一件事：<b>「空间权重共享」不是卷积额外获得的特性，而是「不做 flatten」的自然结果。</b>一个作用在最后一维上的线性层，本来就对前面所有维度一视同仁——它对每个位置做同样的事。",
+      test:()=> M3.mode==="conv",
+      hint:"保持 1×1 conv 模式，点几个位置看看。",
+    },
+    {
+      title:"切到 flatten + Linear，看连接爆炸",
+      desc:"点「flatten + Linear」，仍然是同一个输出位置。",
+      setup(){ M3.mode="conv"; M3.pos=5; M3.render(); },
+      note:"<b>同一个输出位置，现在连到了全部 16 个输入位置。</b>这就是 flatten 的真实后果：它把空间结构拍平成一个长向量，于是「位置」这个概念消失了，每个输出都变成所有输入的加权和。<br><br>所以那篇回答里最关键的一句是：<b>不是 1×1 conv 可以空间共享权重，而是 flatten 破坏了共享。</b>顺序反了。<br><br>一旦看明白这一点，那些关于「conv1x1 输入 shape 可变、Linear 不可变」的说法就都有了解释——可变性来自「没 flatten」，不是来自「用了卷积」。",
+      test:()=> M3.mode==="flat",
+      hint:"点一下「flatten + Linear」。",
+    },
+    {
+      title:"回到 conv 模式，确认参数量与 H、W 无关",
+      desc:"切回「1×1 conv」，读右边「输入 shape 可以变吗」。",
+      setup(){ M3.mode="flat"; M3.pos=10; M3.render(); },
+      note:"<b>结论就是文章最后那句：这个操作和卷积没啥关系。</b><br><br>它是一次作用在通道维度上的线性变换，只不过早期框架的 Linear 只接受 (N, hidden) 的输入，所以当年的人用 1×1 conv 来实现同样的效果。名字留下来了，误会也留下来了。<br><br>今天用 <code>Linear</code> 直接写（输入形状 <code>(*, C1)</code>）语义更清楚——因为你想做的本来就是「对每个位置独立地做一次通道变换」，而不是「在空间上滑动一个窗口」。",
+      test:()=> M3.mode==="conv",
+      hint:"切回「1×1 conv」。",
+    },
+  ],
+  render(){ const t=this.tasks[this.idx];
+    $("#t3n").textContent=this.idx+1; $("#t3title").textContent=t.title;
+    $("#t3desc").innerHTML=t.desc; $("#t3note").innerHTML=t.note;
+    if(!this.done[this.idx]){ $("#t3verdict").className="verdict no"; $("#t3verdict").textContent="改参数后自动判定。"; }
+    else { $("#t3verdict").className="verdict ok"; $("#t3verdict").textContent="✓ 已达成。"; } },
+  check(){ if(this.done[this.idx]) return; const t=this.tasks[this.idx];
+    if(t.test()){ this.done[this.idx]=true;
+      $("#t3verdict").className="verdict ok"; $("#t3verdict").textContent="✓ 达成。看下面的解释。";
+      $("#t3note").innerHTML=t.note;
+    } else { $("#t3verdict").textContent="还没达成 —— "+t.hint; } },
+  next(){ this.idx=(this.idx+1)%this.tasks.length; this.tasks[this.idx].setup(); this.render(); this.check(); },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   绑定
+   ══════════════════════════════════════════════════════════════ */
+$("#rHW").oninput = e => { const v=+e.target.value; S.H=S.W=v; $("#vHW").textContent=v+" × "+v; rebuild(); M1.render(); };
+$("#rC1").oninput = e => { S.C1=+e.target.value; $("#vC1").textContent=S.C1; rebuild(); M1.render(); };
+$("#rC2").oninput = e => { S.C2=+e.target.value; $("#vC2").textContent=S.C2; rebuild(); M1.render(); };
+$("#bRand").onclick = () => { rebuild(); M1.render(); };
+$("#b1skip").onclick = () => T1.next();
+
+$("#rS").oninput = e => { M2.s=+e.target.value; $("#vS").textContent=M2.s; M2.render(); };
+$("#rC1b").oninput = e => { M2.c1=+e.target.value; $("#vC1b").textContent=M2.c1; M2.render(); };
+$("#rC2b").oninput = e => { M2.c2=+e.target.value; $("#vC2b").textContent=M2.c2; M2.render(); };
+$("#b2skip").onclick = () => T2.next();
+$("#b3skip").onclick = () => T3.next();
+
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x === t));
+  const m = t.dataset.m;
+  [0,1,2].forEach(i => $("#mod"+i).classList.toggle("hide", String(i) !== m));
+  requestAnimationFrame(()=>{
+    if (m==="0") M1.draw();
+    if (m==="1") M2.draw();
+    if (m==="2") M3.draw();
+  });
+});
+
+rebuild();
+M1.render();
+M2.render();
+M3.render();
+T1.tasks[0].setup(); T1.render(); T1.check();
+T2.tasks[0].setup(); T2.render(); T2.check();
+T3.tasks[0].setup(); T3.render(); T3.check();
+setTimeout(()=>{ M1.draw(); M2.draw(); M3.draw(); }, 60);
+window.addEventListener("resize", ()=>{ M1.draw(); M2.draw(); M3.draw(); });
+</script>
+</body>
+</html>
