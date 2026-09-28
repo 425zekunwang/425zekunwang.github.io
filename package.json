@@ -12,6 +12,7 @@
     "dev": "astro dev",
     "start": "astro dev",
     "check": "astro check",
+    "import:notes": "node scripts/import-notes.mjs",
     "build": "astro check && astro build && pagefind --site dist",
     "search:clean": "node -e \"require('node:fs').rmSync('public/pagefind',{recursive:true,force:true})\"",
     "search:index": "npm run build && cpy 'dist/pagefind/**' public/pagefind",

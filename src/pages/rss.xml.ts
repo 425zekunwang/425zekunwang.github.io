@@ -33,6 +33,20 @@ function toUtcDate(date: Date): Date {
   );
 }
 
+/**
+ * 截断过长的正文。
+ * 读书笔记单篇就有几万字，整篇塞进 feed 会让 RSS 涨到好几 MB，
+ * 订阅端每次刷新都要全量下载。这里保留开头的完整段落，并在末尾给出原文链接。
+ */
+function clampHtml(html: string, max: number, url: string): string {
+  if (html.length <= max) return html;
+
+  const cut = html.lastIndexOf("</p>", max);
+  const head = cut > max * 0.4 ? html.slice(0, cut + 4) : html.slice(0, max);
+
+  return `${head}<p>…… 内容较长，<a href="${url}">点此阅读全文</a></p>`;
+}
+
 export async function GET(context: APIContext) {
   const siteUrl = context.site ? new URL(context.site) : new URL(USER_SITE);
   const allPosts = await getCollection("blog");
@@ -52,15 +66,19 @@ export async function GET(context: APIContext) {
         body,
       } = blog;
 
+      const postURL = new URL(`/blog/${blog.id}/`, siteUrl);
+
       let content = "No content available.";
       if (body) {
         const renderedHtml = blog.rendered?.html;
         content = renderedHtml
-          ? replacePath(renderedHtml, siteUrl.toString())
+          ? clampHtml(
+              replacePath(renderedHtml, siteUrl.toString()),
+              6000,
+              postURL.toString(),
+            )
           : "No content available.";
       }
-
-      const postURL = new URL(`/blog/${blog.id}/`, siteUrl);
 
       return {
         title,
